@@ -1,0 +1,51 @@
+#! db-deployment.yaml
+# Generated code, do not edit
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+    name: db
+    namespace: finalyearproject
+    labels:
+        com.docker.compose.project: finalyearproject
+        com.docker.compose.service: db
+spec:
+    replicas: 1
+    selector:
+        matchLabels:
+            com.docker.compose.project: finalyearproject
+            com.docker.compose.service: db
+    strategy:
+        type: Recreate
+    template:
+        metadata:
+            labels:
+                com.docker.compose.project: finalyearproject
+                com.docker.compose.service: db
+                com.docker.compose.network.default: "true"
+        spec:
+            containers:
+                - name: ierbms-db
+                  image: postgres:15
+                  imagePullPolicy: IfNotPresent
+                  env:
+                    - name: POSTGRES_DB
+                      value: "ierbms"
+                    - name: POSTGRES_PASSWORD
+                      value: "ierbms_password"
+                    - name: POSTGRES_USER
+                      value: "ierbms_user"
+                  ports:
+                    - name: db-5432
+                      containerPort: 5432
+                  volumeMounts:
+                    - name: var-lib-postgresql-data
+                      mountPath: /var/lib/postgresql/data
+                    - name: docker-entrypoint-initdb-d-schema-sql
+                      mountPath: /docker-entrypoint-initdb.d/schema.sql
+            volumes:
+                - name: var-lib-postgresql-data
+                  persistentVolumeClaim:
+                    claimName: db-pgdata
+                - name: docker-entrypoint-initdb-d-schema-sql
+                  hostPath:
+                    path: /Users/kwabenabrefo/FINAL YEAR PROJECT/backend/src/db/schema.sql
