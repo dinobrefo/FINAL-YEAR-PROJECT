@@ -27,8 +27,8 @@ const mapHospital = (h: any): Hospital => ({
   totalBeds: h.total_general_beds,
   availableBeds: h.total_general_beds - h.occupied_general_beds,
   icuBeds: { total: h.total_icu_beds, available: h.total_icu_beds - h.occupied_icu_beds },
-  specialists: ["General"],
-  equipment: { ventilators: 10, ctScanners: 1, mriMachines: 1, oxygenUnits: 20 },
+  specialists: h.specialists && h.specialists.length > 0 ? h.specialists : ["General Practitioner"],
+  equipment: h.equipment || { ventilators: 5, ctScanners: 0, mriMachines: 0, oxygenUnits: 10 },
 });
 
 export const RealTimeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {

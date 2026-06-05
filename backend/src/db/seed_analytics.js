@@ -16,51 +16,20 @@ const ambulancesData = [
 ];
 
 async function seed() {
-  console.log('Clearing database tables...');
+  console.log('Fetching existing hospitals and ambulances from database...');
+  const hospitalsRes = await db.query('SELECT id FROM hospitals');
+  const ambulancesRes = await db.query('SELECT id FROM ambulances');
   
-  // Clear existing records to start fresh
+  const hospitalIds = hospitalsRes.rows.map(r => r.id);
+  const ambulanceIds = ambulancesRes.rows.map(r => r.id);
+
+  if (hospitalIds.length === 0 || ambulanceIds.length === 0) {
+    console.error('Error: No hospitals or ambulances found in the database. Please run the hospital seed script first.');
+    process.exit(1);
+  }
+
+  console.log('Clearing old historical emergency cases...');
   await db.query('DELETE FROM emergency_cases');
-  await db.query('DELETE FROM hospital_equipment');
-  await db.query('DELETE FROM ambulances');
-  await db.query('DELETE FROM hospitals');
-
-  console.log('Seeding hospitals...');
-  const hospitalIds = [];
-  for (const h of hospitalsData) {
-    const res = await db.query(
-      `INSERT INTO hospitals (name, latitude, longitude, total_general_beds, occupied_general_beds, total_icu_beds, occupied_icu_beds)
-       VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`,
-      [h.name, h.lat, h.lng, h.genBeds, h.genOcc, h.icuBeds, h.icuOcc]
-    );
-    const hospitalId = res.rows[0].id;
-    hospitalIds.push(hospitalId);
-
-    // Seed equipment for each hospital
-    const equipmentList = [
-      { type: "ventilators", total: 20 },
-      { type: "ctScanners", total: 3 },
-      { type: "mriMachines", total: 2 },
-      { type: "oxygenUnits", total: 50 }
-    ];
-    for (const eq of equipmentList) {
-      await db.query(
-        `INSERT INTO hospital_equipment (hospital_id, equipment_type, is_available)
-         VALUES ($1, $2, $3)`,
-        [hospitalId, eq.type, true]
-      );
-    }
-  }
-
-  console.log('Seeding ambulances...');
-  const ambulanceIds = [];
-  for (const a of ambulancesData) {
-    const res = await db.query(
-      `INSERT INTO ambulances (call_sign, status, current_latitude, current_longitude)
-       VALUES ($1, $2, $3, $4) RETURNING id`,
-      [a.call_sign, a.status, a.lat, a.lng]
-    );
-    ambulanceIds.push(res.rows[0].id);
-  }
 
   console.log('Seeding historical emergency cases (6 months of analytics)...');
   const insertCaseQuery = `
@@ -86,7 +55,7 @@ async function seed() {
     ]);
   }
 
-  console.log('Database seeded successfully with hospitals, equipment, ambulances, and cases!');
+  console.log('Database seeded successfully with historical cases!');
   process.exit(0);
 }
 

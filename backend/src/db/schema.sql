@@ -12,6 +12,8 @@ CREATE TABLE IF NOT EXISTS hospitals (
     occupied_general_beds INTEGER NOT NULL DEFAULT 0,
     total_icu_beds INTEGER NOT NULL DEFAULT 0,
     occupied_icu_beds INTEGER NOT NULL DEFAULT 0,
+    specialists TEXT[] DEFAULT '{}',
+    equipment JSONB DEFAULT '{}',
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
