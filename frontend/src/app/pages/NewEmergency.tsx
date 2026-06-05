@@ -59,6 +59,7 @@ export const NewEmergency: React.FC = () => {
         latitude: lat || 5.6037,
         longitude: lng || -0.1870,
         trauma_level: formData.severity === "critical" ? 5 : formData.severity === "moderate" ? 3 : 1,
+        emergency_type: formData.emergencyType,
         hospitals: hospitals.map(h => ({
           id: h.id,
           latitude: h.location.lat,
@@ -66,7 +67,9 @@ export const NewEmergency: React.FC = () => {
           occupied_general_beds: h.totalBeds - h.availableBeds,
           total_general_beds: h.totalBeds,
           occupied_icu_beds: h.icuBeds.total - h.icuBeds.available,
-          total_icu_beds: h.icuBeds.total
+          total_icu_beds: h.icuBeds.total,
+          specialists: h.specialists,
+          equipment: h.equipment
         }))
       };
 

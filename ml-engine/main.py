@@ -18,12 +18,15 @@ class HospitalData(BaseModel):
     total_general_beds: int
     occupied_icu_beds: int
     total_icu_beds: int
+    specialists: List[str] = []
+    equipment: dict = {}
 
 class EmergencyCaseRequest(BaseModel):
     ambulance_id: str
     latitude: float
     longitude: float
     trauma_level: int
+    emergency_type: str = ""
     hospitals: List[HospitalData]
 
 @app.get("/health")
@@ -33,12 +36,13 @@ def health_check():
 @app.post("/predict/route")
 def predict_route(request: EmergencyCaseRequest):
     """
-    Predict optimal hospital routing based on variables like distance, bed capacity, and trauma level.
+    Predict optimal hospital routing based on variables like distance, bed capacity, trauma level, and clinical capabilities.
     """
     recommended = recommend_hospitals(
         amb_lat=request.latitude,
         amb_lon=request.longitude,
         trauma_level=request.trauma_level,
+        emergency_type=request.emergency_type,
         hospitals=request.hospitals
     )
     return {"recommended_hospitals": recommended}
