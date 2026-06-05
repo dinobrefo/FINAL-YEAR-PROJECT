@@ -25,9 +25,35 @@ router.post('/', async (req, res) => {
 
 // Register new emergency case
 router.post('/cases', async (req, res) => {
-  const { ambulance_id, assigned_hospital_id, patient_identifier, trauma_level, patient_vitals, status = 'in-transit' } = req.body;
+  let { ambulance_id, assigned_hospital_id, patient_identifier, trauma_level, patient_vitals, status = 'in-transit' } = req.body;
+  
+  const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   
   try {
+    // Validate and clean up ambulance_id to prevent UUID format or foreign key constraint crashes
+    if (ambulance_id) {
+      if (!UUID_REGEX.test(ambulance_id)) {
+        // Fallback for mock IDs like "AMB-101" to keep demo intakes functioning
+        ambulance_id = null;
+      } else {
+        const ambCheck = await db.query('SELECT id FROM ambulances WHERE id = $1', [ambulance_id]);
+        if (ambCheck.rows.length === 0) {
+          return res.status(400).json({ error: 'The selected ambulance unit does not exist in the database. Please refresh your page.' });
+        }
+      }
+    }
+
+    // Validate and clean up assigned_hospital_id
+    if (assigned_hospital_id) {
+      if (!UUID_REGEX.test(assigned_hospital_id)) {
+        return res.status(400).json({ error: 'Invalid hospital ID format. Please select a valid hospital.' });
+      }
+      const hospCheck = await db.query('SELECT id FROM hospitals WHERE id = $1', [assigned_hospital_id]);
+      if (hospCheck.rows.length === 0) {
+        return res.status(400).json({ error: 'The selected hospital does not exist in the database. Please refresh your page.' });
+      }
+    }
+
     const result = await db.query(
       'INSERT INTO emergency_cases (ambulance_id, assigned_hospital_id, patient_identifier, trauma_level, patient_vitals, status) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
       [ambulance_id, assigned_hospital_id, patient_identifier, trauma_level, patient_vitals || {}, status]
@@ -53,6 +79,11 @@ router.put('/:id/location', async (req, res) => {
   const { id } = req.params;
   const { latitude, longitude } = req.body;
   
+  const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (!UUID_REGEX.test(id)) {
+    return res.status(400).json({ error: 'Invalid ambulance ID format' });
+  }
+  
   const result = await db.query(
     'UPDATE ambulances SET current_latitude = $1, current_longitude = $2, last_ping = CURRENT_TIMESTAMP WHERE id = $3 RETURNING *',
     [latitude, longitude, id]
@@ -70,6 +101,14 @@ router.put('/:id/location', async (req, res) => {
 router.put('/cases/:id/status', async (req, res) => {
   const { id } = req.params;
   const { status, hospital_id } = req.body;
+  
+  const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (!UUID_REGEX.test(id)) {
+    return res.status(400).json({ error: 'Invalid case ID format' });
+  }
+  if (hospital_id && !UUID_REGEX.test(hospital_id)) {
+    return res.status(400).json({ error: 'Invalid hospital ID format' });
+  }
   
   let query = 'UPDATE emergency_cases SET status = $1';
   let params = [status, id];
