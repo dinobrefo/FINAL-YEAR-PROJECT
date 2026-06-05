@@ -26,13 +26,56 @@ export const AmbulanceDashboard: React.FC = () => {
   const [isTracking, setIsTracking] = React.useState(false);
   const [currentCoords, setCurrentCoords] = React.useState<{ lat: number; lng: number } | null>(null);
   const [watchId, setWatchId] = React.useState<number | null>(null);
+  const [autoMatchStatus, setAutoMatchStatus] = React.useState<string>("");
 
-  // Auto-select first ambulance if none is selected or currently selected doesn't exist
+  // Auto-select the ambulance closest to the user's physical location (e.g. KNUST, Kumasi)
   React.useEffect(() => {
-    if (ambulances.length > 0) {
+    if (ambulances.length > 0 && !selectedAmbulance) {
+      if ("geolocation" in navigator) {
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            const userLat = position.coords.latitude;
+            const userLng = position.coords.longitude;
+            
+            let closestAmb = ambulances[0];
+            let minDistance = Infinity;
+            
+            const getDistance = (lat1: number, lng1: number, lat2: number, lng2: number) => {
+              const dLat = lat2 - lat1;
+              const dLng = lng2 - lng1;
+              return Math.sqrt(dLat * dLat + dLng * dLng);
+            };
+            
+            ambulances.forEach(a => {
+              if (a.location?.lat && a.location?.lng) {
+                const dist = getDistance(userLat, userLng, a.location.lat, a.location.lng);
+                if (dist < minDistance) {
+                  minDistance = dist;
+                  closestAmb = a;
+                }
+              }
+            });
+            
+            setSelectedAmbulance(closestAmb.id);
+            const ambName = closestAmb.plateNumber || closestAmb.id.substring(0, 8);
+            const region = userLat > 6.0 ? "Kumasi Metro (KNUST)" : "Accra Metro";
+            setAutoMatchStatus(`Linked to unit ${ambName} based on your physical proximity in ${region}.`);
+          },
+          (err) => {
+            console.error("Could not obtain user location for auto-matching:", err);
+            setSelectedAmbulance(ambulances[0].id);
+          },
+          { enableHighAccuracy: true, timeout: 5000, maximumAge: 60000 }
+        );
+      } else {
+        setSelectedAmbulance(ambulances[0].id);
+      }
+    } else if (ambulances.length > 0 && selectedAmbulance) {
+      // Ensure the selected ambulance still exists in the active DB list
       const exists = ambulances.some(a => a.id === selectedAmbulance);
       if (!exists) {
         setSelectedAmbulance(ambulances[0].id);
+        setAutoMatchStatus("");
       }
     }
   }, [ambulances, selectedAmbulance]);
@@ -374,6 +417,11 @@ export const AmbulanceDashboard: React.FC = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
+                {autoMatchStatus && (
+                  <div className="p-3 bg-[var(--success)]/10 text-[var(--success)] text-xs rounded-lg border border-[var(--success)]/20 font-medium">
+                    {autoMatchStatus}
+                  </div>
+                )}
                 <div className="flex items-center gap-3">
                   <div className="flex-1">
                     <label className="text-xs font-medium text-muted-foreground block mb-1">Ambulance Unit</label>
