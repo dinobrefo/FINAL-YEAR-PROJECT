@@ -68,7 +68,8 @@ export const RealTimeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             },
             timestamp: new Date(c.created_at),
             vitalSigns: c.patient_vitals,
-            assignedHospital: c.assigned_hospital_id
+            assignedHospital: c.assigned_hospital_id,
+            ambulanceId: c.ambulance_id
           })));
         }
       })
@@ -94,7 +95,8 @@ export const RealTimeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         },
         timestamp: new Date(newCase.created_at),
         vitalSigns: newCase.patient_vitals,
-        assignedHospital: newCase.assigned_hospital_id
+        assignedHospital: newCase.assigned_hospital_id,
+        ambulanceId: newCase.ambulance_id
       }]);
     });
 
@@ -115,7 +117,7 @@ export const RealTimeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     socket.on('emergency_status_update', (updatedCase: any) => {
       setEmergencies(prev => prev.map(e => 
         e.id === updatedCase.id 
-          ? { ...e, status: updatedCase.status as any, assignedHospital: updatedCase.assigned_hospital_id }
+          ? { ...e, status: updatedCase.status as any, assignedHospital: updatedCase.assigned_hospital_id, ambulanceId: updatedCase.ambulance_id }
           : e
       ));
     });
