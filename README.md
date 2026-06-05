@@ -41,10 +41,15 @@ docker-compose up -d
    ```bash
    npm install
    ```
-2. **Seed real hospitals in Ghana (via OpenStreetMap Overpass API):**
-   ```bash
-   node backend/src/db/seed_ghana_hospitals.js
-   ```
+2. **Seed real hospitals in Ghana:**
+   * **Option A (Recommended - Google Places API):**
+     ```bash
+     node backend/src/db/seed_hospitals_google.js
+     ```
+   * **Option B (Fallback - OpenStreetMap Overpass API):**
+     ```bash
+     node backend/src/db/seed_ghana_hospitals.js
+     ```
 3. **Seed default authentication accounts:**
    ```bash
    node backend/src/db/seed_users.js
