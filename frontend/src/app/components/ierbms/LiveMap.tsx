@@ -46,6 +46,19 @@ const createSvgMarker = (color: string, emoji: string) => {
   return `data:image/svg+xml;utf-8,${encodeURIComponent(svg.trim())}`;
 };
 
+// Helper to generate a pulsing standard blue dot for user location tracking
+const createUserLocationMarker = () => {
+  const svg = `
+    <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 30 30">
+      <circle cx="15" cy="15" r="10" fill="#2563eb" opacity="0.3">
+        <animate attributeName="r" values="8;14;8" dur="2s" repeatCount="indefinite" />
+      </circle>
+      <circle cx="15" cy="15" r="6" fill="#3b82f6" stroke="white" stroke-width="2" />
+    </svg>
+  `;
+  return `data:image/svg+xml;utf-8,${encodeURIComponent(svg.trim())}`;
+};
+
 interface LiveMapProps {
   emergencies: Emergency[];
   ambulances: Ambulance[];
@@ -81,6 +94,31 @@ export const LiveMap: React.FC<LiveMapProps> = ({
     description: React.ReactNode;
   } | null>(null);
   const [showDetailedRoute, setShowDetailedRoute] = React.useState(false);
+  const [userCoords, setUserCoords] = React.useState<{ lat: number; lng: number } | null>(null);
+
+  // Watch the user's actual browser/device location to show a pulsing blue dot
+  React.useEffect(() => {
+    if ("geolocation" in navigator) {
+      const id = navigator.geolocation.watchPosition(
+        (position) => {
+          setUserCoords({
+            lat: position.coords.latitude,
+            lng: position.coords.longitude
+          });
+        },
+        (err) => console.error("Error watching user location in LiveMap:", err),
+        { enableHighAccuracy: true, maximumAge: 10000 }
+      );
+      return () => navigator.geolocation.clearWatch(id);
+    }
+  }, []);
+
+  // Pan the map to focus on the user's actual coordinates when first loaded (if not routing)
+  React.useEffect(() => {
+    if (map && userCoords && !activeRouteCaseId) {
+      map.panTo(userCoords);
+    }
+  }, [map, userCoords, activeRouteCaseId]);
   
   // Ref to track the last requested route to prevent infinite calls
   const lastRequestedRouteRef = React.useRef<string>("");
@@ -490,6 +528,19 @@ export const LiveMap: React.FC<LiveMapProps> = ({
                 strokeWeight: 6
               }
             }}
+          />
+        )}
+
+        {/* Render Pulsing User Geolocation Blue Dot */}
+        {userCoords && (
+          <MarkerF
+            position={userCoords}
+            icon={{
+              url: createUserLocationMarker(),
+              scaledSize: new window.google.maps.Size(30, 30),
+              anchor: new window.google.maps.Point(15, 15)
+            }}
+            zIndex={1000}
           />
         )}
 
