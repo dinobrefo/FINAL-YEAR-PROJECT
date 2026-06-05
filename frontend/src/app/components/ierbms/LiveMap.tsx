@@ -150,10 +150,12 @@ export const LiveMap: React.FC<LiveMapProps> = ({
     return R * c;
   };
 
-  // Compute dynamic turn-by-turn routing info based on live ambulance location
+  // Compute dynamic turn-by-turn routing info based on user device position or live ambulance location
   const dynamicRouteInfo = React.useMemo(() => {
     const routeLeg = directionsResponse?.routes?.[0]?.legs?.[0];
-    if (!routeLeg || !ambulanceCoords?.lat) {
+    const trackerCoords = userCoords || ambulanceCoords;
+
+    if (!routeLeg || !trackerCoords?.lat) {
       return {
         nextStep: null,
         remainingDistance: "",
@@ -165,15 +167,15 @@ export const LiveMap: React.FC<LiveMapProps> = ({
 
     const steps = routeLeg.steps || [];
     
-    // Find the step closest to the ambulance
+    // Find the step closest to the tracker coordinates
     let closestStepIdx = 0;
     let minDistance = Infinity;
 
     steps.forEach((step, idx) => {
       const stepStart = step.start_location;
       const dist = getDistance(
-        ambulanceCoords.lat,
-        ambulanceCoords.lng,
+        trackerCoords.lat,
+        trackerCoords.lng,
         stepStart.lat(),
         stepStart.lng()
       );
@@ -183,14 +185,14 @@ export const LiveMap: React.FC<LiveMapProps> = ({
       }
     });
 
-    // If the ambulance is closest to step closestStepIdx, but we are very close to its end, 
+    // If the tracker is closest to step closestStepIdx, but we are very close to its end, 
     // transition to the next step.
     const currentStep = steps[closestStepIdx];
     if (currentStep) {
       const stepEnd = currentStep.end_location;
       const distToEnd = getDistance(
-        ambulanceCoords.lat,
-        ambulanceCoords.lng,
+        trackerCoords.lat,
+        trackerCoords.lng,
         stepEnd.lat(),
         stepEnd.lng()
       );
@@ -207,12 +209,12 @@ export const LiveMap: React.FC<LiveMapProps> = ({
     let totalMeters = 0;
     let totalSeconds = 0;
 
-    // For the very first remaining step, estimate remaining distance from the ambulance's current position to the end of this step
+    // For the very first remaining step, estimate remaining distance from the tracker's current position to the end of this step
     if (remainingSteps.length > 0) {
       const currentRemainingStep = remainingSteps[0];
       const distToEnd = getDistance(
-        ambulanceCoords.lat,
-        ambulanceCoords.lng,
+        trackerCoords.lat,
+        trackerCoords.lng,
         currentRemainingStep.end_location.lat(),
         currentRemainingStep.end_location.lng()
       );
@@ -255,7 +257,7 @@ export const LiveMap: React.FC<LiveMapProps> = ({
       routeSteps: steps,
       currentStepIdx: closestStepIdx
     };
-  }, [directionsResponse, ambulanceCoords]);
+  }, [directionsResponse, ambulanceCoords, userCoords]);
 
   const routeLeg = directionsResponse?.routes?.[0]?.legs?.[0];
   const { nextStep, remainingDistance, remainingDuration, routeSteps, currentStepIdx } = dynamicRouteInfo;
@@ -291,15 +293,22 @@ export const LiveMap: React.FC<LiveMapProps> = ({
       a.id === emergency.ambulanceId || a.assignedEmergency === emergency.id || a.status === 'engaged'
     ) || ambulances[0];
 
-    if (!hospital || !ambulance || !ambulance.location?.lat || !hospital.location?.lat) {
+    // Decide the origin coordinates for directions:
+    // Prefer the user's actual browser/device GPS location (userCoords) if available,
+    // otherwise fall back to the assigned ambulance's database location.
+    const originCoords = userCoords || (ambulance ? { lat: ambulance.location.lat, lng: ambulance.location.lng } : null);
+
+    if (!hospital || !originCoords || !originCoords.lat || !hospital.location?.lat) {
       setDirectionsResponse(null);
       lastRequestedRouteRef.current = "";
       return;
     }
 
-    // Only request directions if the case ID, ambulance ID, or hospital ID changes
-    // We do NOT want to re-request on every tiny GPS tick.
-    const routeKey = `${activeRouteCaseId}-${ambulance.id}-${hospital.id}`;
+    // Only request directions if the case ID, ambulance ID, hospital ID, or rounded user coordinates change.
+    // Rounding to 3 decimal places (approx. 110 meters) prevents spamming the API while updating the route on significant movement.
+    const userLatRound = userCoords ? userCoords.lat.toFixed(3) : "no-user-gps";
+    const userLngRound = userCoords ? userCoords.lng.toFixed(3) : "no-user-gps";
+    const routeKey = `${activeRouteCaseId}-${ambulance?.id || "no-amb"}-${hospital.id}-${userLatRound}-${userLngRound}`;
     if (lastRequestedRouteRef.current === routeKey) {
       return;
     }
@@ -309,7 +318,7 @@ export const LiveMap: React.FC<LiveMapProps> = ({
     const directionsService = new window.google.maps.DirectionsService();
     directionsService.route(
       {
-        origin: { lat: ambulance.location.lat, lng: ambulance.location.lng },
+        origin: { lat: originCoords.lat, lng: originCoords.lng },
         destination: { lat: hospital.location.lat, lng: hospital.location.lng },
         travelMode: window.google.maps.TravelMode.DRIVING,
       },
@@ -322,7 +331,7 @@ export const LiveMap: React.FC<LiveMapProps> = ({
         }
       }
     );
-  }, [activeRouteCaseId, emergencies, ambulances, hospitals, isLoaded]);
+  }, [activeRouteCaseId, emergencies, ambulances, hospitals, isLoaded, userCoords]);
 
   // Fit bounds dynamically to encompass all active map elements
   React.useEffect(() => {
