@@ -128,7 +128,8 @@ export const NewEmergency: React.FC = () => {
         throw new Error(errorData.error || `HTTP ${res.status}`);
       }
       
-      navigate("/ambulance");
+      const createdCase = await res.json();
+      navigate(`/ambulance?caseId=${createdCase.id}&showOverlay=true`);
     } catch (err: any) {
       console.error("Error saving case to backend:", err);
       setError(err.message || "Failed to save emergency case");

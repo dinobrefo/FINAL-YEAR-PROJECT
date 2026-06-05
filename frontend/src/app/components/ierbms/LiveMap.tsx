@@ -2,6 +2,7 @@ import * as React from 'react';
 import { GoogleMap, useJsApiLoader, MarkerF, DirectionsRenderer, InfoWindowF } from '@react-google-maps/api';
 import { Emergency, Ambulance, Hospital } from '../../utils/mockData';
 import { StatusBadge } from './StatusBadge';
+import { cn } from '../ui/utils';
 
 // Premium Dark styling for Google Maps to fit the dashboard theme
 const darkMapStyles = [
@@ -79,6 +80,147 @@ export const LiveMap: React.FC<LiveMapProps> = ({
     title: string;
     description: React.ReactNode;
   } | null>(null);
+  const [showDetailedRoute, setShowDetailedRoute] = React.useState(false);
+  
+  // Ref to track the last requested route to prevent infinite calls
+  const lastRequestedRouteRef = React.useRef<string>("");
+
+  // Find the active ambulance coordinates
+  const activeEmergency = React.useMemo(() => {
+    return activeRouteCaseId ? emergencies.find(e => e.id === activeRouteCaseId) : null;
+  }, [activeRouteCaseId, emergencies]);
+
+  const activeAmbulance = React.useMemo(() => {
+    if (!activeEmergency) return null;
+    return ambulances.find(a => 
+      a.id === activeEmergency.ambulanceId || a.assignedEmergency === activeEmergency.id
+    ) || ambulances[0];
+  }, [activeEmergency, ambulances]);
+
+  const ambulanceCoords = activeAmbulance?.location;
+
+  // Haversine distance formula to calculate distance between two lat/lng coordinates in meters
+  const getDistance = (lat1: number, lng1: number, lat2: number, lng2: number) => {
+    const R = 6371e3; // meters
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLng = (lng2 - lng1) * Math.PI / 180;
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+      Math.sin(dLng / 2) * Math.sin(dLng / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+  };
+
+  // Compute dynamic turn-by-turn routing info based on live ambulance location
+  const dynamicRouteInfo = React.useMemo(() => {
+    const routeLeg = directionsResponse?.routes?.[0]?.legs?.[0];
+    if (!routeLeg || !ambulanceCoords?.lat) {
+      return {
+        nextStep: null,
+        remainingDistance: "",
+        remainingDuration: "",
+        routeSteps: [],
+        currentStepIdx: 0
+      };
+    }
+
+    const steps = routeLeg.steps || [];
+    
+    // Find the step closest to the ambulance
+    let closestStepIdx = 0;
+    let minDistance = Infinity;
+
+    steps.forEach((step, idx) => {
+      const stepStart = step.start_location;
+      const dist = getDistance(
+        ambulanceCoords.lat,
+        ambulanceCoords.lng,
+        stepStart.lat(),
+        stepStart.lng()
+      );
+      if (dist < minDistance) {
+        minDistance = dist;
+        closestStepIdx = idx;
+      }
+    });
+
+    // If the ambulance is closest to step closestStepIdx, but we are very close to its end, 
+    // transition to the next step.
+    const currentStep = steps[closestStepIdx];
+    if (currentStep) {
+      const stepEnd = currentStep.end_location;
+      const distToEnd = getDistance(
+        ambulanceCoords.lat,
+        ambulanceCoords.lng,
+        stepEnd.lat(),
+        stepEnd.lng()
+      );
+      // If within 30 meters of the step's end, and there is a next step, transition to next step
+      if (distToEnd < 30 && closestStepIdx < steps.length - 1) {
+        closestStepIdx++;
+      }
+    }
+
+    // Now, slice the remaining steps
+    const remainingSteps = steps.slice(closestStepIdx);
+    
+    // Sum up the remaining distance and duration
+    let totalMeters = 0;
+    let totalSeconds = 0;
+
+    // For the very first remaining step, estimate remaining distance from the ambulance's current position to the end of this step
+    if (remainingSteps.length > 0) {
+      const currentRemainingStep = remainingSteps[0];
+      const distToEnd = getDistance(
+        ambulanceCoords.lat,
+        ambulanceCoords.lng,
+        currentRemainingStep.end_location.lat(),
+        currentRemainingStep.end_location.lng()
+      );
+      
+      totalMeters += distToEnd;
+      
+      // Linearly estimate duration based on distance ratio
+      const stepTotalDist = currentRemainingStep.distance?.value || 1;
+      const stepTotalDuration = currentRemainingStep.duration?.value || 1;
+      const durationRatio = distToEnd / stepTotalDist;
+      totalSeconds += stepTotalDuration * Math.min(1, durationRatio);
+
+      // Add the rest of the steps
+      for (let j = 1; j < remainingSteps.length; j++) {
+        totalMeters += remainingSteps[j].distance?.value || 0;
+        totalSeconds += remainingSteps[j].duration?.value || 0;
+      }
+    }
+
+    // Format remaining distance
+    let formattedDistance = "";
+    if (totalMeters >= 1000) {
+      formattedDistance = `${(totalMeters / 1000).toFixed(1)} km`;
+    } else {
+      formattedDistance = `${Math.round(totalMeters)} m`;
+    }
+
+    // Format remaining duration
+    let formattedDuration = "";
+    if (totalSeconds >= 60) {
+      formattedDuration = `${Math.round(totalSeconds / 60)} mins`;
+    } else {
+      formattedDuration = `${Math.round(totalSeconds)} secs`;
+    }
+
+    return {
+      nextStep: remainingSteps[0] || null,
+      remainingDistance: formattedDistance,
+      remainingDuration: formattedDuration,
+      routeSteps: steps,
+      currentStepIdx: closestStepIdx
+    };
+  }, [directionsResponse, ambulanceCoords]);
+
+  const routeLeg = directionsResponse?.routes?.[0]?.legs?.[0];
+  const { nextStep, remainingDistance, remainingDuration, routeSteps, currentStepIdx } = dynamicRouteInfo;
 
   const onLoad = React.useCallback((mapInstance: google.maps.Map) => {
     setMap(mapInstance);
@@ -92,12 +234,14 @@ export const LiveMap: React.FC<LiveMapProps> = ({
   React.useEffect(() => {
     if (!isLoaded || !activeRouteCaseId) {
       setDirectionsResponse(null);
+      lastRequestedRouteRef.current = "";
       return;
     }
 
     const emergency = emergencies.find(e => e.id === activeRouteCaseId);
     if (!emergency || !emergency.assignedHospital) {
       setDirectionsResponse(null);
+      lastRequestedRouteRef.current = "";
       return;
     }
 
@@ -111,8 +255,18 @@ export const LiveMap: React.FC<LiveMapProps> = ({
 
     if (!hospital || !ambulance || !ambulance.location?.lat || !hospital.location?.lat) {
       setDirectionsResponse(null);
+      lastRequestedRouteRef.current = "";
       return;
     }
+
+    // Only request directions if the case ID, ambulance ID, or hospital ID changes
+    // We do NOT want to re-request on every tiny GPS tick.
+    const routeKey = `${activeRouteCaseId}-${ambulance.id}-${hospital.id}`;
+    if (lastRequestedRouteRef.current === routeKey) {
+      return;
+    }
+
+    lastRequestedRouteRef.current = routeKey;
 
     const directionsService = new window.google.maps.DirectionsService();
     directionsService.route(
@@ -126,6 +280,7 @@ export const LiveMap: React.FC<LiveMapProps> = ({
           setDirectionsResponse(result);
         } else {
           console.error(`Directions request failed: ${status}`);
+          lastRequestedRouteRef.current = ""; // Reset on error to allow retry
         }
       }
     );
@@ -208,6 +363,106 @@ export const LiveMap: React.FC<LiveMapProps> = ({
 
   return (
     <div className="h-full w-full relative z-0">
+      {/* Floating turn-by-turn navigation overlay */}
+      {routeLeg && (
+        <div className="absolute top-4 left-4 z-[999] w-80 max-h-[90%] flex flex-col bg-background/90 backdrop-blur-md border border-border rounded-xl shadow-2xl overflow-hidden text-foreground">
+          {/* Active Navigation Header */}
+          <div className="bg-blue-600 px-4 py-3 text-white flex items-center justify-between shadow-sm">
+            <div>
+              <p className="text-xs uppercase tracking-wider font-bold opacity-80">Emergency Routing</p>
+              <h3 className="font-bold text-sm truncate max-w-[180px]">
+                To: {routeLeg.end_address.split(',')[0]}
+              </h3>
+            </div>
+            <span className="flex h-2.5 w-2.5 relative">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500"></span>
+            </span>
+          </div>
+
+          <div className="p-4 flex-1 overflow-y-auto space-y-4">
+            {/* Primary Next Direction Indicator */}
+            {nextStep && (
+              <div className="flex items-start gap-3 p-3 bg-accent/40 rounded-lg border border-border/50">
+                {/* Arrow Icon based on instruction (turn left, turn right, etc.) */}
+                <div className="h-10 w-10 flex-shrink-0 bg-blue-500/10 text-blue-500 rounded-lg flex items-center justify-center font-bold text-xl">
+                  {nextStep.maneuver?.includes("left") ? "←" : nextStep.maneuver?.includes("right") ? "→" : "↑"}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-semibold text-muted-foreground">NEXT DIRECTION</p>
+                  <p 
+                    className="text-sm font-medium mt-0.5 leading-snug break-words"
+                    dangerouslySetInnerHTML={{ __html: nextStep.instructions }}
+                  />
+                  <p className="text-xs text-muted-foreground mt-1 font-mono">
+                    {nextStep.distance?.text} • {nextStep.duration?.text}
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Travel Summary Stats */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="p-3 bg-muted/50 rounded-lg border text-center">
+                <p className="text-xl font-bold text-blue-500">{remainingDuration}</p>
+                <p className="text-[10px] uppercase font-bold text-muted-foreground mt-0.5">EST. TIME (ETA)</p>
+              </div>
+              <div className="p-3 bg-muted/50 rounded-lg border text-center">
+                <p className="text-xl font-bold text-blue-500">{remainingDistance}</p>
+                <p className="text-[10px] uppercase font-bold text-muted-foreground mt-0.5">REMAINING DIST.</p>
+              </div>
+            </div>
+
+            {/* Toggler button for detailed steps list */}
+            <button
+              onClick={() => setShowDetailedRoute(!showDetailedRoute)}
+              className="w-full py-2 px-3 text-xs font-semibold bg-secondary hover:bg-secondary/80 rounded-lg border transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+            >
+              <span>{showDetailedRoute ? "Hide" : "Show"} Detailed Route</span>
+              <span>{showDetailedRoute ? "▲" : "▼"}</span>
+            </button>
+
+            {/* Expandable Step-by-Step Directions List */}
+            {showDetailedRoute && (
+              <div className="space-y-2 border-t pt-3 max-h-60 overflow-y-auto pr-1">
+                {routeSteps.map((step, idx) => {
+                  const isCompleted = idx < currentStepIdx;
+                  const isCurrent = idx === currentStepIdx;
+                  return (
+                    <div 
+                      key={idx} 
+                      className={cn(
+                        "flex gap-2.5 items-start text-xs border-b border-border/30 pb-2 last:border-0 last:pb-0 transition-opacity",
+                        isCompleted ? "opacity-40" : "opacity-100"
+                      )}
+                    >
+                      <span className={cn(
+                        "font-mono mt-0.5 text-[10px] flex-shrink-0 w-4 text-center",
+                        isCurrent ? "text-blue-500 font-bold" : "text-muted-foreground"
+                      )}>
+                        {isCompleted ? "✓" : isCurrent ? "▶" : `${idx + 1}`}
+                      </span>
+                      <div className="flex-1 min-w-0">
+                        <p 
+                          className={cn(
+                            "leading-snug break-words", 
+                            isCurrent && "font-semibold text-blue-500"
+                          )}
+                          dangerouslySetInnerHTML={{ __html: step.instructions }}
+                        />
+                        <p className="text-[10px] text-muted-foreground mt-0.5 font-mono">
+                          {step.distance?.text} ({step.duration?.text})
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       <GoogleMap
         mapContainerStyle={{ height: '100%', width: '100%', borderRadius: '0.5rem' }}
         center={{ lat: center[0], lng: center[1] }}

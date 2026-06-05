@@ -20,6 +20,7 @@ export const AmbulanceDashboard: React.FC = () => {
   const currentPath = location.pathname;
   const [searchParams] = useSearchParams();
   const activeRouteCaseId = searchParams.get("caseId");
+  const showOverlay = searchParams.get("showOverlay") === "true";
 
   const [selectedAmbulance, setSelectedAmbulance] = React.useState<string>("");
   const [isTracking, setIsTracking] = React.useState(false);
@@ -234,6 +235,68 @@ export const AmbulanceDashboard: React.FC = () => {
 
   return (
     <AppShell role="ambulance" userName="Samuel Osei">
+      {showOverlay && activeRouteCaseId && (
+        <div className="fixed inset-0 z-[9999] bg-background flex flex-col">
+          {/* Immersive Navigation Header */}
+          <div className="bg-slate-900/90 backdrop-blur-md border-b border-border/80 px-6 py-4 flex items-center justify-between text-white shadow-lg">
+            <div className="flex items-center gap-3">
+              <span className="flex h-3 w-3 relative">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+              </span>
+              <div>
+                <h2 className="font-bold text-lg">Emergency Dispatch Live Navigation</h2>
+                <p className="text-xs text-muted-foreground">
+                  Tracking Case: <span className="font-mono text-slate-300">{activeRouteCaseId.substring(0, 8)}...</span>
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="border-slate-700 hover:bg-slate-800 text-white cursor-pointer"
+                onClick={() => {
+                  const params = new URLSearchParams(searchParams);
+                  params.delete("showOverlay");
+                  navigate(`${location.pathname}?${params.toString()}`);
+                }}
+              >
+                Minimize Navigation
+              </Button>
+              <Button 
+                variant="danger" 
+                size="sm"
+                className="cursor-pointer"
+                onClick={async () => {
+                  try {
+                    await fetch(`/api/ambulances/cases/${activeRouteCaseId}/status`, {
+                      method: 'PUT',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ status: 'resolved' })
+                    });
+                    navigate("/ambulance");
+                  } catch (err) {
+                    console.error("Failed to resolve case:", err);
+                  }
+                }}
+              >
+                Complete dropoff / resolve
+              </Button>
+            </div>
+          </div>
+          
+          {/* Live Map in Fullscreen Container */}
+          <div className="flex-1 relative overflow-hidden">
+            <LiveMap 
+              emergencies={emergencies}
+              ambulances={ambulances}
+              hospitals={hospitals}
+              activeRouteCaseId={activeRouteCaseId}
+            />
+          </div>
+        </div>
+      )}
       <div className="space-y-8">
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
