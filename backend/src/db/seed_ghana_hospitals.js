@@ -1,4 +1,5 @@
 const db = require('./index');
+const bcrypt = require('bcrypt');
 
 async function fetchAndSeedGhanaHospitals() {
   console.log('Fetching hospitals in Ghana from OpenStreetMap (Overpass API)...');
@@ -29,8 +30,13 @@ async function fetchAndSeedGhanaHospitals() {
     }
     
     console.log(`Successfully fetched ${elements.length} real hospitals from Ghana OSM registry!`);
-    console.log('Clearing database tables before import...');
+    console.log('Altering database schema and clearing tables before import...');
     
+    await db.query(`
+      ALTER TABLE users 
+      ADD COLUMN IF NOT EXISTS hospital_id UUID REFERENCES hospitals(id) ON DELETE CASCADE;
+    `);
+
     // Clear old tables to prevent conflicts
     await db.query('DELETE FROM emergency_cases');
     await db.query('DELETE FROM hospital_equipment');
@@ -60,6 +66,17 @@ async function fetchAndSeedGhanaHospitals() {
       
       const hospitalId = res.rows[0].id;
       hospitalIds.push(hospitalId);
+      
+      // Generate user account for this hospital
+      const safeName = name.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
+      const email = `${safeName}@ierbms.gov`;
+      const salt = await bcrypt.genSalt(10);
+      const passwordHash = await bcrypt.hash('password123', salt);
+      
+      await db.query(
+        `INSERT INTO users (email, password_hash, role, hospital_id) VALUES ($1, $2, $3, $4) ON CONFLICT (email) DO NOTHING`,
+        [email, passwordHash, 'hospital', hospitalId]
+      );
       
       // Seed equipment
       const equipmentTypes = ["ventilators", "ctScanners", "mriMachines", "oxygenUnits"];

@@ -3,7 +3,9 @@ import { Navigate } from "react-router";
 import { LandingPage } from "./pages/LandingPage";
 import { AmbulanceDashboard } from "./pages/AmbulanceDashboard";
 import { HospitalDashboard } from "./pages/HospitalDashboard";
+import { HospitalSelection } from "./pages/HospitalSelection";
 import { DoctorDashboard } from "./pages/DoctorDashboard";
+import { HospitalSettings } from "./pages/HospitalSettings";
 import { CommandCenterDashboard } from "./pages/CommandCenterDashboard";
 import { NewEmergency } from "./pages/NewEmergency";
 import { Login } from "./pages/Login";
@@ -50,9 +52,17 @@ export const router = createBrowserRouter([
     path: "/ambulance/*",
     element: <ProtectedRoute allowedRoles={['ambulance', 'admin']}><AmbulanceDashboard /></ProtectedRoute>,
   },
-  // Hospital Dashboard & Sub-routes (including fallback for Nurse)
+  // Hospital Dashboard & Sub-routes
   {
-    path: "/hospital/*",
+    path: "/hospitals",
+    element: <ProtectedRoute allowedRoles={['hospital', 'admin']}><HospitalSelection /></ProtectedRoute>,
+  },
+  {
+    path: "/hospital/:hospitalId/settings",
+    element: <ProtectedRoute allowedRoles={['hospital', 'admin']}><HospitalSettings /></ProtectedRoute>,
+  },
+  {
+    path: "/hospital/:hospitalId/*",
     element: <ProtectedRoute allowedRoles={['hospital', 'admin']}><HospitalDashboard /></ProtectedRoute>,
   },
   {

@@ -7,6 +7,7 @@ interface RealTimeContextType {
   ambulances: Ambulance[];
   hospitals: Hospital[];
   connected: boolean;
+  updateEmergencyLocally: (id: string, status: any) => void;
 }
 
 const RealTimeContext = React.createContext<RealTimeContextType | undefined>(undefined);
@@ -127,8 +128,12 @@ export const RealTimeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     };
   }, []);
 
+  const updateEmergencyLocally = (id: string, status: any) => {
+    setEmergencies(prev => prev.map(e => e.id === id ? { ...e, status } : e));
+  };
+
   return (
-    <RealTimeContext.Provider value={{ emergencies, ambulances, hospitals, connected }}>
+    <RealTimeContext.Provider value={{ emergencies, ambulances, hospitals, connected, updateEmergencyLocally }}>
       {children}
     </RealTimeContext.Provider>
   );

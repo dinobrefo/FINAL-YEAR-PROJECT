@@ -6,14 +6,15 @@ import { Button } from "../components/ierbms/Button";
 import { StatusBadge } from "../components/ierbms/StatusBadge";
 import { BedDouble, Activity, Ambulance, Users, AlertTriangle, CheckCircle } from "lucide-react";
 import { useRealTime } from "../components/ierbms/RealTimeProvider";
-import { useNavigate, useLocation } from "react-router";
+import { useNavigate, useLocation, useParams } from "react-router";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 
 export const HospitalDashboard: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { emergencies, hospitals } = useRealTime();
-  const hospital = hospitals[0] || {
+  const { hospitalId } = useParams<{ hospitalId: string }>();
+  const { emergencies, hospitals, updateEmergencyLocally } = useRealTime();
+  const hospital = hospitals.find(h => h.id === hospitalId) || hospitals[0] || {
     id: "h1",
     name: "Ridge Hospital",
     availableBeds: 50,
@@ -31,17 +32,23 @@ export const HospitalDashboard: React.FC = () => {
   const updateEmergencyStatus = async (id: string, status: string) => {
     setLoadingId(id);
     try {
-      await fetch(`/api/ambulances/cases/${id}/status`, {
+      const res = await fetch(`/api/ambulances/cases/${id}/status`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status })
       });
+      if (!res.ok) {
+        throw new Error("Server rejected the status update. Using local offline fallback.");
+      }
     } catch (err) {
       console.error(err);
+      alert(`[Fallback Mode] Case ${id.substring(0, 8)} status changed to ${status}.`);
     } finally {
+      if (updateEmergencyLocally) updateEmergencyLocally(id, status);
       setLoadingId(null);
     }
   };
+
 
   const bedData = [
     { name: "General", total: hospital.totalBeds - hospital.icuBeds.total, occupied: (hospital.totalBeds - hospital.icuBeds.total) - hospital.availableBeds, available: hospital.availableBeds },
@@ -55,9 +62,11 @@ export const HospitalDashboard: React.FC = () => {
 
   const renderBeds = () => (
     <Card>
-      <CardHeader>
-        <CardTitle>Bed Capacity & Department Allocation</CardTitle>
-        <CardDescription>Current bed occupancy across all hospital wards</CardDescription>
+      <CardHeader className="flex flex-row items-center justify-between pb-2">
+        <div className="space-y-1">
+          <CardTitle>Bed Capacity & Department Allocation</CardTitle>
+          <CardDescription>Real-time occupancy across major departments</CardDescription>
+        </div>
       </CardHeader>
       <CardContent>
         <ResponsiveContainer width="100%" height={300}>
@@ -142,7 +151,15 @@ export const HospitalDashboard: React.FC = () => {
                     <CheckCircle className="h-4 w-4" />
                     {loadingId === emergency.id ? "Updating..." : "Mark Arrived"}
                   </Button>
-                  <Button variant="outline" size="sm" className="flex-1">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="flex-1"
+                    onClick={() => {
+                      alert(`Trauma Team assigned to Case ${emergency.id.substring(0, 8)}`);
+                      if (updateEmergencyLocally) updateEmergencyLocally(emergency.id, "team-assigned");
+                    }}
+                  >
                     Assign Team
                   </Button>
                 </div>
@@ -228,28 +245,28 @@ export const HospitalDashboard: React.FC = () => {
             value={hospital.availableBeds}
             icon={BedDouble}
             variant="success"
-            onClick={() => navigate("/hospital/beds")}
+            onClick={() => navigate(`/hospital/${hospital.id}/beds`)}
           />
           <StatCard
             title="ICU Capacity"
             value={`${hospital.icuBeds.available}/${hospital.icuBeds.total}`}
             icon={Activity}
             variant={hospital.icuBeds.available < 5 ? "danger" : "default"}
-            onClick={() => navigate("/hospital/icu")}
+            onClick={() => navigate(`/hospital/${hospital.id}/icu`)}
           />
           <StatCard
             title="Incoming Ambulances"
             value={incomingEmergencies.length}
             icon={Ambulance}
             variant="warning"
-            onClick={() => navigate("/hospital/incoming")}
+            onClick={() => navigate(`/hospital/${hospital.id}/incoming`)}
           />
           <StatCard
             title="Occupancy Rate"
             value={`${occupancyRate}%`}
             icon={Users}
             variant={occupancyRate > 85 ? "danger" : "default"}
-            onClick={() => navigate("/hospital/staff")}
+            onClick={() => navigate(`/hospital/${hospital.id}/staff`)}
           />
         </div>
 
@@ -272,23 +289,23 @@ export const HospitalDashboard: React.FC = () => {
         )}
 
         {/* Conditional Layout Routing */}
-        {currentPath === "/hospital/beds" && (
+        {currentPath === `/hospital/${hospital.id}/beds` && (
           <div className="space-y-6">{renderBeds()}</div>
         )}
 
-        {currentPath === "/hospital/icu" && (
+        {currentPath === `/hospital/${hospital.id}/icu` && (
           <div className="space-y-6">{renderICU()}</div>
         )}
 
-        {currentPath === "/hospital/incoming" && (
+        {currentPath === `/hospital/${hospital.id}/incoming` && (
           <div className="space-y-6">{renderIncoming()}</div>
         )}
 
-        {currentPath === "/hospital/staff" && (
+        {currentPath === `/hospital/${hospital.id}/staff` && (
           <div className="space-y-6">{renderStaff()}</div>
         )}
 
-        {currentPath === "/hospital" && (
+        {(currentPath === `/hospital/${hospital.id}` || currentPath === `/hospital/${hospital.id}/`) && (
           <>
             {renderIncoming()}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

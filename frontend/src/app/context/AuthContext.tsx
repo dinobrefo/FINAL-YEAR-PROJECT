@@ -4,6 +4,7 @@ interface User {
   id: string;
   email: string;
   role: string;
+  hospital_id?: string;
 }
 
 interface AuthContextType {
@@ -16,18 +17,13 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [token, setToken] = useState<string | null>(null);
-
-  useEffect(() => {
-    // Check local storage for existing session on mount
-    const storedToken = localStorage.getItem('ierbms_token');
-    const storedUser = localStorage.getItem('ierbms_user');
-    if (storedToken && storedUser) {
-      setToken(storedToken);
-      setUser(JSON.parse(storedUser));
-    }
-  }, []);
+  const [user, setUser] = useState<User | null>(() => {
+    const stored = localStorage.getItem('ierbms_user');
+    return stored ? JSON.parse(stored) : null;
+  });
+  const [token, setToken] = useState<string | null>(() => {
+    return localStorage.getItem('ierbms_token') || null;
+  });
 
   const login = (newToken: string, newUser: User) => {
     localStorage.setItem('ierbms_token', newToken);

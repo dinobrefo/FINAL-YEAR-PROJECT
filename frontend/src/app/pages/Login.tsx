@@ -1,17 +1,30 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
 import { useAuth } from '../context/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ierbms/Card';
 import { Button } from '../components/ierbms/Button';
-import { Activity } from 'lucide-react';
+import { Activity, Building2 } from 'lucide-react';
 
 export const Login: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [hospitalLogins, setHospitalLogins] = useState<{email: string, hospital_name: string}[]>([]);
   const { login } = useAuth();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    // Fetch dynamically generated hospital logins for demo purposes
+    fetch('/api/auth/hospital-logins')
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) {
+          setHospitalLogins(data);
+        }
+      })
+      .catch(err => console.error("Failed to fetch hospital logins", err));
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,7 +54,11 @@ export const Login: React.FC = () => {
           navigate('/doctor');
           break;
         case 'hospital':
-          navigate('/hospital');
+          if (data.user.hospital_id) {
+            navigate(`/hospital/${data.user.hospital_id}`);
+          } else {
+            navigate('/hospitals');
+          }
           break;
         case 'ambulance':
           navigate('/ambulance');
@@ -111,6 +128,31 @@ export const Login: React.FC = () => {
           </form>
         </CardContent>
       </Card>
+
+      {/* Demo Credentials Section */}
+      <div className="w-full max-w-md mt-6 bg-accent rounded-lg p-4 border shadow-sm">
+        <h3 className="text-sm font-semibold mb-2 flex items-center gap-2">
+          <Building2 className="h-4 w-4" /> Available Hospital Portals (Demo)
+        </h3>
+        <p className="text-xs text-muted-foreground mb-3">
+          Password for all accounts is <strong>password123</strong>
+        </p>
+        <div className="max-h-48 overflow-y-auto space-y-2 pr-2 custom-scrollbar">
+          {hospitalLogins.map((hl, idx) => (
+            <div 
+              key={idx} 
+              className="flex flex-col bg-background p-2 rounded border cursor-pointer hover:border-[var(--primary)] transition-colors"
+              onClick={() => setEmail(hl.email)}
+            >
+              <span className="text-xs font-semibold">{hl.hospital_name}</span>
+              <span className="text-xs text-muted-foreground">{hl.email}</span>
+            </div>
+          ))}
+          {hospitalLogins.length === 0 && (
+            <p className="text-xs text-muted-foreground">No hospitals seeded yet.</p>
+          )}
+        </div>
+      </div>
     </div>
   );
 };

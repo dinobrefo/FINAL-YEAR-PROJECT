@@ -56,6 +56,7 @@ CREATE INDEX idx_emergency_cases_ambulance_id ON emergency_cases(ambulance_id);
 -- Users Table (Authentication)
 CREATE TABLE IF NOT EXISTS users (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    hospital_id UUID REFERENCES hospitals(id) ON DELETE CASCADE,
     email VARCHAR(255) UNIQUE NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
     role VARCHAR(50) NOT NULL, -- 'admin', 'hospital', 'doctor', 'ambulance'

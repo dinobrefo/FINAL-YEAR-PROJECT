@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Link, useLocation, useNavigate } from "react-router";
+import { Link, useLocation, useNavigate, useParams } from "react-router";
 import { cn } from "../ui/utils";
 import { useTheme } from "./ThemeProvider";
 import { useAuth } from "../../context/AuthContext";
@@ -42,6 +42,7 @@ const roleNavigationMap: Record<string, NavItem[]> = {
     { label: "ICU Dashboard", href: "/hospital/icu", icon: Activity },
     { label: "Incoming", href: "/hospital/incoming", icon: Ambulance },
     { label: "Staff", href: "/hospital/staff", icon: Users },
+    { label: "Settings", href: "/hospital/settings", icon: Settings },
   ],
   doctor: [
     { label: "Dashboard", href: "/doctor", icon: LayoutDashboard },
@@ -80,18 +81,24 @@ export interface NavigationProps {
 
 export const Navigation: React.FC<NavigationProps> = ({ role, className }) => {
   const location = useLocation();
+  const { hospitalId } = useParams<{ hospitalId: string }>();
   const navItems = roleNavigationMap[role] || [];
 
   return (
     <nav className={cn("flex flex-col gap-1 p-4", className)}>
       {navItems.map((item) => {
-        const isActive = location.pathname === item.href;
+        let href = item.href;
+        if (role === "hospital" && hospitalId) {
+          href = item.href.replace("/hospital", `/hospital/${hospitalId}`);
+        }
+        
+        const isActive = location.pathname === href || (item.href !== "/hospital" && location.pathname.startsWith(href));
         const Icon = item.icon;
 
         return (
           <Link
-            key={item.href}
-            to={item.href}
+            key={href}
+            to={href}
             className={cn(
               "flex items-center gap-3 px-4 py-3 rounded-lg transition-all",
               isActive
@@ -180,7 +187,7 @@ export const AppShell: React.FC<AppShellProps> = ({ role, userName, children }) 
             className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-foreground hover:bg-accent transition-all cursor-pointer"
           >
             <Settings className="h-5 w-5" />
-            <span className="font-medium">Settings</span>
+            <span className="font-medium">Preferences</span>
           </button>
           <button 
             onClick={handleLogout}

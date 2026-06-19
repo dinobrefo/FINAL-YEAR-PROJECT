@@ -337,7 +337,16 @@ export const LiveMap: React.FC<LiveMapProps> = ({
   React.useEffect(() => {
     if (!map || !isLoaded) return;
 
-    if (directionsResponse) {
+    if (activeRouteCaseId && (userCoords || ambulanceCoords)) {
+      const coords = userCoords || ambulanceCoords;
+      if (coords) {
+         map.panTo(coords);
+         map.setZoom(16);
+      }
+      return;
+    }
+
+    if (directionsResponse && !activeRouteCaseId) {
       // The DirectionsRenderer will automatically adjust bounds to fit the route
       return;
     }
@@ -376,7 +385,7 @@ export const LiveMap: React.FC<LiveMapProps> = ({
         }
       });
     }
-  }, [map, ambulances, emergencies, hospitals, directionsResponse, isLoaded]);
+  }, [map, ambulances, emergencies, hospitals, directionsResponse, isLoaded, activeRouteCaseId, userCoords, ambulanceCoords]);
 
   if (loadError) {
     return (
@@ -531,6 +540,7 @@ export const LiveMap: React.FC<LiveMapProps> = ({
             directions={directionsResponse}
             options={{
               suppressMarkers: true,
+              preserveViewport: !!activeRouteCaseId,
               polylineOptions: {
                 strokeColor: "#3b82f6", // var(--primary) blue
                 strokeOpacity: 0.85,

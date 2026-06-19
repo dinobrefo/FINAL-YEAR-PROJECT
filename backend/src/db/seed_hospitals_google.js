@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const db = require('./index');
+const bcrypt = require('bcrypt');
 
 // 1. Read frontend/.env to get Google Maps API Key
 let googleApiKey = '';
@@ -44,7 +45,10 @@ async function seed() {
     await db.query(`
       ALTER TABLE hospitals 
       ADD COLUMN IF NOT EXISTS specialists TEXT[] DEFAULT '{}',
-      ADD COLUMN IF NOT EXISTS equipment JSONB DEFAULT '{}'
+      ADD COLUMN IF NOT EXISTS equipment JSONB DEFAULT '{}';
+
+      ALTER TABLE users 
+      ADD COLUMN IF NOT EXISTS hospital_id UUID REFERENCES hospitals(id) ON DELETE CASCADE;
     `);
     console.log('Database schema successfully migrated!');
   } catch (err) {
@@ -134,7 +138,19 @@ async function seed() {
       [name, lat, lng, totalGeneral, occupiedGeneral, totalIcu, occupiedIcu, specialists, equipment]
     );
 
-    seededHospitals.push({ id: res.rows[0].id, lat, lng });
+    const hospitalId = res.rows[0].id;
+    seededHospitals.push({ id: hospitalId, lat, lng });
+
+    // Generate user account for this hospital
+    const safeName = name.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
+    const email = `${safeName}@ierbms.gov`;
+    const salt = await bcrypt.genSalt(10);
+    const passwordHash = await bcrypt.hash('password123', salt);
+    
+    await db.query(
+      `INSERT INTO users (email, password_hash, role, hospital_id) VALUES ($1, $2, $3, $4) ON CONFLICT (email) DO NOTHING`,
+      [email, passwordHash, 'hospital', hospitalId]
+    );
   }
 
   console.log(`Seeded ${seededHospitals.length} hospitals into database with dynamic capacities, specialists, and equipment!`);
