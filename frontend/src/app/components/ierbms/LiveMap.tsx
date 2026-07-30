@@ -5,7 +5,7 @@ import { StatusBadge } from './StatusBadge';
 import { cn } from '../ui/utils';
 import { LeafletMap } from './LeafletMap';
 import { audioTelemetry } from '../../utils/audioTelemetry';
-import { Volume2, VolumeX, Flame } from 'lucide-react';
+import { Volume2, VolumeX, Flame, LocateFixed, Compass } from 'lucide-react';
 
 // Premium Dark styling for Google Maps to fit the dashboard theme
 const darkMapStyles = [
@@ -124,7 +124,7 @@ export const LiveMap: React.FC<LiveMapProps> = ({
   // Active Popup to Display (Clicked/Searched marker > Hovered marker)
   const displayedMarker = activeMarker || hoveredMarker;
 
-  // Historic Ghana Emergency Incident Hotspots (Circle, Accra Central, Kaneshie, KNUST, Tema)
+  // Historic Ghana Emergency Incident Hotspots
   const heatmapPoints = React.useMemo(() => {
     const points = [
       { lat: 5.556, lng: -0.205, weight: 8 }, // Circle Interchange
@@ -341,6 +341,48 @@ export const LiveMap: React.FC<LiveMapProps> = ({
       audioTelemetry.playAlertBeep('success');
       audioTelemetry.speak("Voice HUD telemetry active");
     }
+  };
+
+  // Reposition Map Camera to Physical GPS location
+  const handleRepositionGPS = () => {
+    if ("geolocation" in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const coords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+          setUserCoords(coords);
+          if (map) {
+            map.panTo(coords);
+            map.setZoom(17);
+            setTilt3D(60);
+            setHeading(30);
+          }
+          audioTelemetry.speak("Camera repositioned to physical GPS location.");
+        },
+        () => {
+          const fallback = ambulances[0]?.location || { lat: 5.6037, lng: -0.1870 };
+          if (map) {
+            map.panTo(fallback);
+            map.setZoom(17);
+            setTilt3D(60);
+          }
+          audioTelemetry.speak("Camera repositioned to default ambulance unit.");
+        }
+      );
+    }
+  };
+
+  // Proactive Ambulance Staging Reposition Button
+  const handleProactiveStagingReposition = () => {
+    const topHotspot = heatmapPoints[0] || { lat: 5.556, lng: -0.205 }; // Circle Interchange
+    if (map) {
+      map.panTo({ lat: topHotspot.lat, lng: topHotspot.lng });
+      map.setZoom(17);
+      setTilt3D(60);
+      setHeading(45);
+      setShowHeatmap(true);
+    }
+    audioTelemetry.playAlertBeep('warning');
+    audioTelemetry.speak("Proactive staging reposition triggered. Staging ambulance unit at Circle Interchange emergency hotspot.");
   };
 
   const onLoad = React.useCallback((mapInstance: google.maps.Map) => {
@@ -652,6 +694,25 @@ export const LiveMap: React.FC<LiveMapProps> = ({
             className="py-1.5 px-1.5 text-xs font-medium bg-card border-border hover:bg-accent text-foreground rounded-lg border transition-all flex items-center justify-center gap-1 cursor-pointer"
           >
             🗺️ Fit
+          </button>
+        </div>
+
+        {/* Reposition Action Buttons */}
+        <div className="grid grid-cols-2 gap-1 pt-1 border-t border-border/50">
+          <button
+            onClick={handleRepositionGPS}
+            title="Recenter Camera on Physical GPS Location"
+            className="py-1.5 px-2 text-xs font-bold bg-blue-500/20 border border-blue-500/50 text-blue-400 hover:bg-blue-500/30 rounded-lg transition-all flex items-center justify-center gap-1 cursor-pointer"
+          >
+            <LocateFixed className="h-3.5 w-3.5" /> 🎯 GPS Position
+          </button>
+
+          <button
+            onClick={handleProactiveStagingReposition}
+            title="Stage Ambulance Proactively at Circle Hotspot"
+            className="py-1.5 px-2 text-xs font-bold bg-amber-500/20 border border-amber-500/50 text-amber-400 hover:bg-amber-500/30 rounded-lg transition-all flex items-center justify-center gap-1 cursor-pointer"
+          >
+            <Compass className="h-3.5 w-3.5" /> ⚡ Hotspot Stage
           </button>
         </div>
 
