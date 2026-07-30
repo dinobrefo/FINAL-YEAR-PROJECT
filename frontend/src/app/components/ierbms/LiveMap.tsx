@@ -5,7 +5,25 @@ import { StatusBadge } from './StatusBadge';
 import { cn } from '../ui/utils';
 import { LeafletMap } from './LeafletMap';
 import { audioTelemetry } from '../../utils/audioTelemetry';
-import { Volume2, VolumeX, Flame, LocateFixed, Compass } from 'lucide-react';
+import { 
+  Volume2, 
+  VolumeX, 
+  Flame, 
+  LocateFixed, 
+  Compass, 
+  Moon, 
+  Sun, 
+  Globe, 
+  MapPin, 
+  Navigation, 
+  Maximize2, 
+  Box, 
+  RotateCw, 
+  Square,
+  Search,
+  Zap,
+  Plane
+} from 'lucide-react';
 
 // Premium Dark styling for Google Maps to fit the dashboard theme
 const darkMapStyles = [
@@ -594,7 +612,7 @@ export const LiveMap: React.FC<LiveMapProps> = ({
       <div ref={searchContainerRef} className="absolute top-4 left-1/2 -translate-x-1/2 z-[1000] w-full max-w-md px-4">
         <div className="relative">
           <div className="relative flex items-center">
-            <span className="absolute left-3.5 text-blue-500 text-sm font-bold">🔍</span>
+            <Search className="absolute left-3.5 h-4 w-4 text-blue-500 shrink-0" />
             <input
               type="text"
               value={searchQuery}
@@ -618,7 +636,7 @@ export const LiveMap: React.FC<LiveMapProps> = ({
             <div className="absolute top-full left-0 right-0 mt-1.5 bg-card/95 backdrop-blur-md border border-border rounded-xl shadow-2xl overflow-hidden divide-y divide-border/40 z-[1001] max-h-72 overflow-y-auto">
               <div className="px-3 py-1.5 bg-muted/60 text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex justify-between items-center">
                 <span>{searchQuery ? "Search Matches" : "Quick Hospital Suggestions"}</span>
-                <span>Click to Fly 3D ✈️</span>
+                <span className="flex items-center gap-1 text-blue-400 font-semibold"><Plane className="h-3 w-3" /> Fly 3D</span>
               </div>
               {searchResults.map((res) => (
                 <button
@@ -630,8 +648,8 @@ export const LiveMap: React.FC<LiveMapProps> = ({
                     <p className="text-xs font-bold text-foreground group-hover:text-blue-500 truncate">{res.title}</p>
                     <p className="text-[10px] text-muted-foreground truncate mt-0.5">{res.subtitle}</p>
                   </div>
-                  <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-500 group-hover:bg-blue-500 group-hover:text-white transition-all flex-shrink-0">
-                    Fly 3D ✈️
+                  <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-500 group-hover:bg-blue-500 group-hover:text-white transition-all flex-shrink-0 flex items-center gap-1">
+                    <Plane className="h-3 w-3" /> Fly 3D
                   </span>
                 </button>
               ))}
@@ -642,75 +660,89 @@ export const LiveMap: React.FC<LiveMapProps> = ({
 
       {/* Interactive Map Controls Panel (Top Right) */}
       <div className="absolute top-4 right-4 z-[999] flex flex-col gap-2 bg-card/90 backdrop-blur-md border border-border p-2.5 rounded-xl shadow-2xl text-foreground">
+        {/* Map Theme Toggle Group */}
         <div className="flex items-center gap-1 bg-muted/80 p-1 rounded-lg">
           <button
             onClick={() => changeTheme('dark')}
             title="Dark Theme"
             className={cn(
-              "px-2 py-1 text-xs font-semibold rounded-md transition-all cursor-pointer",
-              mapTheme === 'dark' ? "bg-primary text-primary-foreground shadow-sm" : "hover:bg-accent text-muted-foreground"
+              "px-2.5 py-1 text-xs font-bold rounded-md transition-all flex items-center gap-1.5 cursor-pointer border",
+              mapTheme === 'dark'
+                ? "bg-indigo-600 text-white shadow-md border-indigo-500"
+                : "bg-transparent text-muted-foreground hover:bg-accent hover:text-foreground border-transparent"
             )}
           >
-            🌙 Dark
+            <Moon className="h-3.5 w-3.5" /> Dark
           </button>
           <button
             onClick={() => changeTheme('light')}
             title="Light Theme"
             className={cn(
-              "px-2 py-1 text-xs font-semibold rounded-md transition-all cursor-pointer",
-              mapTheme === 'light' ? "bg-primary text-primary-foreground shadow-sm" : "hover:bg-accent text-muted-foreground"
+              "px-2.5 py-1 text-xs font-bold rounded-md transition-all flex items-center gap-1.5 cursor-pointer border",
+              mapTheme === 'light'
+                ? "bg-amber-500 text-slate-950 shadow-md border-amber-400"
+                : "bg-transparent text-muted-foreground hover:bg-accent hover:text-foreground border-transparent"
             )}
           >
-            ☀️ Light
+            <Sun className="h-3.5 w-3.5" /> Light
           </button>
           <button
             onClick={() => changeTheme('hybrid')}
             title="Satellite Theme"
             className={cn(
-              "px-2 py-1 text-xs font-semibold rounded-md transition-all cursor-pointer",
-              mapTheme === 'hybrid' ? "bg-primary text-primary-foreground shadow-sm" : "hover:bg-accent text-muted-foreground"
+              "px-2.5 py-1 text-xs font-bold rounded-md transition-all flex items-center gap-1.5 cursor-pointer border",
+              mapTheme === 'hybrid'
+                ? "bg-teal-600 text-white shadow-md border-teal-500"
+                : "bg-transparent text-muted-foreground hover:bg-accent hover:text-foreground border-transparent"
             )}
           >
-            🛰️ Sat
+            <Globe className="h-3.5 w-3.5" /> Sat
           </button>
           <button
             onClick={() => setUseOsmFallback(true)}
             title="Switch to Free OpenStreetMap Engine"
-            className="px-2 py-1 text-xs font-semibold rounded-md hover:bg-amber-500/20 text-amber-500 border border-amber-500/40 transition-all cursor-pointer"
+            className="px-2 py-1 text-xs font-bold rounded-md bg-amber-500/15 text-amber-500 hover:bg-amber-500/30 border border-amber-500/40 transition-all flex items-center gap-1 cursor-pointer"
           >
-            🗺️ OSM
+            <MapPin className="h-3.5 w-3.5" /> OSM
           </button>
         </div>
 
-        <div className="grid grid-cols-4 gap-1 pt-1">
+        {/* Feature Layer Toggles */}
+        <div className="grid grid-cols-4 gap-1.5 pt-1">
           <button
             onClick={toggleTrafficLayer}
             title="Toggle Traffic Layer"
             className={cn(
-              "py-1.5 px-1.5 text-xs font-medium rounded-lg border transition-all flex items-center justify-center gap-1 cursor-pointer",
-              showTraffic ? "bg-amber-500/20 border-amber-500/50 text-amber-500 font-semibold" : "bg-card border-border hover:bg-accent text-foreground"
+              "py-1.5 px-2 text-xs font-bold rounded-lg border transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-sm",
+              showTraffic
+                ? "bg-amber-500 text-slate-950 border-amber-400 shadow-amber-500/20"
+                : "bg-card/90 border-border/80 text-muted-foreground hover:bg-accent hover:text-foreground"
             )}
           >
-            🚦 Traffic
+            <Navigation className="h-3.5 w-3.5" /> Traffic
           </button>
 
           <button
             onClick={toggleHeatmapLayer}
             title="Toggle Incident Density Heatmap"
             className={cn(
-              "py-1.5 px-1.5 text-xs font-medium rounded-lg border transition-all flex items-center justify-center gap-1 cursor-pointer",
-              showHeatmap ? "bg-red-500/20 border-red-500/50 text-red-400 font-semibold" : "bg-card border-border hover:bg-accent text-foreground"
+              "py-1.5 px-2 text-xs font-bold rounded-lg border transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-sm",
+              showHeatmap
+                ? "bg-red-600 text-white border-red-500 shadow-red-600/20"
+                : "bg-card/90 border-border/80 text-muted-foreground hover:bg-accent hover:text-foreground"
             )}
           >
-            <Flame className="h-3.5 w-3.5 text-red-500" /> Heat
+            <Flame className="h-3.5 w-3.5" /> Heat
           </button>
 
           <button
             onClick={toggleAudio}
             title="Toggle Voice HUD Prompt"
             className={cn(
-              "py-1.5 px-1.5 text-xs font-medium rounded-lg border transition-all flex items-center justify-center gap-1 cursor-pointer",
-              !isAudioMuted ? "bg-emerald-500/20 border-emerald-500/50 text-emerald-400 font-semibold" : "bg-card border-border hover:bg-accent text-muted-foreground"
+              "py-1.5 px-2 text-xs font-bold rounded-lg border transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-sm",
+              !isAudioMuted
+                ? "bg-emerald-600 text-white border-emerald-500 shadow-emerald-600/20"
+                : "bg-card/90 border-border/80 text-muted-foreground hover:bg-accent hover:text-foreground"
             )}
           >
             {!isAudioMuted ? <Volume2 className="h-3.5 w-3.5" /> : <VolumeX className="h-3.5 w-3.5" />} Voice
@@ -719,31 +751,32 @@ export const LiveMap: React.FC<LiveMapProps> = ({
           <button
             onClick={fitAllBounds}
             title="Fit All Facilities & Vehicles"
-            className="py-1.5 px-1.5 text-xs font-medium bg-card border-border hover:bg-accent text-foreground rounded-lg border transition-all flex items-center justify-center gap-1 cursor-pointer"
+            className="py-1.5 px-2 text-xs font-bold bg-blue-600/15 border border-blue-500/40 text-blue-400 hover:bg-blue-600 hover:text-white rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer"
           >
-            🗺️ Fit
+            <Maximize2 className="h-3.5 w-3.5" /> Fit
           </button>
         </div>
 
         {/* Reposition Action Buttons */}
-        <div className="grid grid-cols-2 gap-1 pt-1 border-t border-border/50">
+        <div className="grid grid-cols-2 gap-1.5 pt-1 border-t border-border/50">
           <button
             onClick={handleRepositionGPS}
             title="Recenter Camera on Physical GPS Location"
-            className="py-1.5 px-2 text-xs font-bold bg-blue-500/20 border border-blue-500/50 text-blue-400 hover:bg-blue-500/30 rounded-lg transition-all flex items-center justify-center gap-1 cursor-pointer"
+            className="py-1.5 px-2.5 text-xs font-bold bg-blue-600 text-white hover:bg-blue-500 rounded-lg shadow-md shadow-blue-600/25 border border-blue-400 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
           >
-            <LocateFixed className="h-3.5 w-3.5" /> 🎯 GPS Position
+            <LocateFixed className="h-3.5 w-3.5" /> GPS Position
           </button>
 
           <button
             onClick={handleProactiveStagingReposition}
             title="Stage Ambulance Proactively at Circle Hotspot"
-            className="py-1.5 px-2 text-xs font-bold bg-amber-500/20 border border-amber-500/50 text-amber-400 hover:bg-amber-500/30 rounded-lg transition-all flex items-center justify-center gap-1 cursor-pointer"
+            className="py-1.5 px-2.5 text-xs font-bold bg-amber-500 text-slate-950 hover:bg-amber-400 rounded-lg shadow-md shadow-amber-500/25 border border-amber-400 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
           >
-            <Compass className="h-3.5 w-3.5" /> ⚡ Hotspot Stage
+            <Zap className="h-3.5 w-3.5 fill-slate-950" /> Hotspot Stage
           </button>
         </div>
 
+        {/* 3D Perspective Controls */}
         <div className="flex items-center gap-1.5 pt-1 border-t border-border/50">
           <button
             onClick={() => {
@@ -755,25 +788,27 @@ export const LiveMap: React.FC<LiveMapProps> = ({
             }}
             title="Toggle 3D Mode"
             className={cn(
-              "flex-1 py-1.5 px-2 text-xs font-medium rounded-lg border transition-all flex items-center justify-center gap-1 cursor-pointer",
-              is3DActive ? "bg-violet-500/20 border-violet-500/50 text-violet-400 font-semibold" : "bg-card border-border hover:bg-accent text-foreground"
+              "flex-1 py-1.5 px-2 text-xs font-bold rounded-lg border transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-sm",
+              is3DActive
+                ? "bg-violet-600 text-white border-violet-500 shadow-violet-600/20"
+                : "bg-card/90 border-border/80 text-muted-foreground hover:bg-accent hover:text-foreground"
             )}
           >
-            🏙️ 3D {is3DActive ? "ON" : "OFF"}
+            <Box className="h-3.5 w-3.5" /> 3D {is3DActive ? "ON" : "OFF"}
           </button>
           <button
             onClick={() => setCameraHeadingAndTilt((heading + 45) % 360, tilt3D > 0 ? tilt3D : 60)}
             title="Rotate Camera 45°"
-            className="flex-1 py-1.5 px-2 text-xs font-medium bg-card border-border hover:bg-accent text-foreground rounded-lg border transition-all flex items-center justify-center gap-1 cursor-pointer"
+            className="flex-1 py-1.5 px-2 text-xs font-bold bg-card/90 border border-border/80 hover:bg-accent text-foreground rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer"
           >
-            🔄 Rotate
+            <RotateCw className="h-3.5 w-3.5 text-violet-400" /> Rotate
           </button>
           <button
             onClick={() => setCameraHeadingAndTilt(0, 0)}
             title="Flatten Camera to 2D"
-            className="flex-1 py-1.5 px-2 text-xs font-medium bg-card border-border hover:bg-accent text-foreground rounded-lg border transition-all flex items-center justify-center gap-1 cursor-pointer"
+            className="flex-1 py-1.5 px-2 text-xs font-bold bg-card/90 border border-border/80 hover:bg-accent text-foreground rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer"
           >
-            ⬆️ Flat
+            <Square className="h-3.5 w-3.5 text-muted-foreground" /> Flat
           </button>
         </div>
       </div>
