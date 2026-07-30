@@ -97,27 +97,52 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
   onRetryGoogleMaps,
   isFallbackMode = true
 }) => {
+  const [osrmRoutePoints, setOsrmRoutePoints] = React.useState<Array<[number, number]> | null>(null);
+
   const activeEmergency = React.useMemo(() => {
-    return activeRouteCaseId ? emergencies.find(e => e.id === activeRouteCaseId) : null;
+    return activeRouteCaseId ? (emergencies.find(e => e.id === activeRouteCaseId) || emergencies[0]) : null;
   }, [activeRouteCaseId, emergencies]);
 
   const activeHospital = React.useMemo(() => {
-    if (!activeEmergency?.assignedHospital) return null;
-    return hospitals.find(h => h.id === activeEmergency.assignedHospital || h.name === activeEmergency.assignedHospital);
+    if (!activeEmergency) return hospitals[0];
+    return hospitals.find(h => h.id === activeEmergency.assignedHospital || h.name === activeEmergency.assignedHospital) || hospitals[0];
   }, [activeEmergency, hospitals]);
 
   const activeAmbulance = React.useMemo(() => {
-    if (!activeEmergency) return null;
+    if (!activeEmergency) return ambulances[0];
     return ambulances.find(a => a.id === activeEmergency.ambulanceId || a.assignedEmergency === activeEmergency.id) || ambulances[0];
   }, [activeEmergency, ambulances]);
 
+  // Fetch turn-by-turn road route via OSRM engine for Leaflet
+  React.useEffect(() => {
+    if (!activeHospital?.location || !activeAmbulance?.location) {
+      setOsrmRoutePoints(null);
+      return;
+    }
+    const origin = activeAmbulance.location;
+    const dest = activeHospital.location;
+
+    fetch(`https://router.project-osrm.org/route/v1/driving/${origin.lng},${origin.lat};${dest.lng},${dest.lat}?overview=full&geometries=geojson`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.routes && data.routes[0]?.geometry?.coordinates) {
+          const points = data.routes[0].geometry.coordinates.map((c: [number, number]) => [c[1], c[0]] as [number, number]);
+          setOsrmRoutePoints(points);
+        }
+      })
+      .catch(err => console.warn("Leaflet OSRM fetch error:", err));
+  }, [activeHospital, activeAmbulance]);
+
   const routePolyline = React.useMemo(() => {
+    if (osrmRoutePoints && osrmRoutePoints.length > 0) {
+      return osrmRoutePoints;
+    }
     if (!activeHospital?.location || !activeAmbulance?.location) return null;
     return [
       [activeAmbulance.location.lat, activeAmbulance.location.lng] as [number, number],
       [activeHospital.location.lat, activeHospital.location.lng] as [number, number]
     ];
-  }, [activeHospital, activeAmbulance]);
+  }, [osrmRoutePoints, activeHospital, activeAmbulance]);
 
   return (
     <div className="h-full w-full relative z-0">
@@ -128,7 +153,7 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
             <span className="text-base">🗺️</span>
             <div>
               <p className="font-semibold text-amber-100">Using OpenStreetMap Free Engine</p>
-              <p className="text-[11px] text-amber-300/80">Google Maps API requires enabling billing in Google Cloud Console.</p>
+              <p className="text-[11px] text-amber-300/80">Turn-by-turn road route snapped via OSRM Engine.</p>
             </div>
           </div>
           {onRetryGoogleMaps && (
@@ -163,11 +188,11 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
           zoom={zoom}
         />
 
-        {/* Dispatch Polyline */}
+        {/* Turn-by-Turn Road Route Polyline */}
         {routePolyline && (
           <Polyline
             positions={routePolyline}
-            pathOptions={{ color: '#3b82f6', weight: 5, opacity: 0.8, dashArray: '8, 8' }}
+            pathOptions={{ color: '#3b82f6', weight: 6, opacity: 0.9 }}
           />
         )}
 
@@ -209,7 +234,7 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
               <Popup>
                 <div className="text-gray-900 font-sans p-1 min-w-[170px]">
                   <h4 className="font-bold text-sm text-gray-900">{ambulance.plateNumber || ambulance.id}</h4>
-                  <p className="text-xs text-gray-600 mt-1">Status: <span className="font-semibold capitalize">{ambulance.status}</span></p>
+                  <p className="text-xs text-gray-600 mt-1">Status: <span className="font-semibold text-blue-600 capitalize">{ambulance.status}</span></p>
                 </div>
               </Popup>
             </Marker>
@@ -228,14 +253,13 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
             >
               <Popup>
                 <div className="text-gray-900 font-sans p-1 min-w-[190px]">
-                  <div className="flex items-center justify-between gap-2 border-b pb-1 mb-1">
+                  <div className="flex items-center justify-between border-b border-gray-200 pb-1 mb-1">
                     <h4 className="font-bold text-sm text-gray-900">{emergency.emergencyType}</h4>
-                    <StatusBadge status={emergency.severity} className="text-[10px] font-semibold scale-90">
+                    <StatusBadge status={emergency.severity} className="text-xs">
                       {emergency.severity}
                     </StatusBadge>
                   </div>
                   <p className="text-xs text-gray-600">Patient: <span className="font-semibold">{emergency.patientName}</span></p>
-                  <p className="text-xs text-gray-600">Status: <span className="font-semibold capitalize">{emergency.status}</span></p>
                 </div>
               </Popup>
             </Marker>
