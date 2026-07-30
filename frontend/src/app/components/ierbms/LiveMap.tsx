@@ -1,9 +1,11 @@
 import * as React from 'react';
-import { GoogleMap, useJsApiLoader, MarkerF, DirectionsRenderer, InfoWindowF, TrafficLayer } from '@react-google-maps/api';
+import { GoogleMap, useJsApiLoader, MarkerF, DirectionsRenderer, InfoWindowF, TrafficLayer, HeatmapLayerF } from '@react-google-maps/api';
 import { Emergency, Ambulance, Hospital } from '../../utils/mockData';
 import { StatusBadge } from './StatusBadge';
 import { cn } from '../ui/utils';
 import { LeafletMap } from './LeafletMap';
+import { audioTelemetry } from '../../utils/audioTelemetry';
+import { Volume2, VolumeX, Flame } from 'lucide-react';
 
 // Premium Dark styling for Google Maps to fit the dashboard theme
 const darkMapStyles = [
@@ -88,17 +90,18 @@ export const LiveMap: React.FC<LiveMapProps> = ({
   const { isLoaded, loadError } = useJsApiLoader({
     id: 'google-map-script',
     googleMapsApiKey: googleMapsApiKey,
-    libraries: ['places']
+    libraries: ['places', 'visualization']
   });
 
   const [map, setMap] = React.useState<google.maps.Map | null>(null);
   const [directionsResponse, setDirectionsResponse] = React.useState<google.maps.DirectionsResult | null>(null);
   
-  // Marker Popup State
+  // Marker Popup & Audio State
   const [activeMarker, setActiveMarker] = React.useState<MarkerDetails | null>(null);
   const [hoveredMarker, setHoveredMarker] = React.useState<MarkerDetails | null>(null);
+  const [isAudioMuted, setIsAudioMuted] = React.useState<boolean>(audioTelemetry.getMuted());
+  const [showHeatmap, setShowHeatmap] = React.useState<boolean>(false);
   
-  const [showDetailedRoute, setShowDetailedRoute] = React.useState(false);
   const [userCoords, setUserCoords] = React.useState<{ lat: number; lng: number } | null>(null);
 
   // Controls & Fallback State — DEFAULT 3D TILT 60° ON BOOT
@@ -119,6 +122,35 @@ export const LiveMap: React.FC<LiveMapProps> = ({
 
   // Active Popup to Display (Clicked/Searched marker > Hovered marker)
   const displayedMarker = activeMarker || hoveredMarker;
+
+  // Historic Ghana Emergency Incident Hotspots (Circle, Accra Central, Kaneshie, KNUST, Tema)
+  const heatmapData = React.useMemo(() => {
+    if (!isLoaded || typeof window === 'undefined' || !window.google) return [];
+    
+    const points = [
+      { lat: 5.556, lng: -0.205, weight: 8 }, // Circle Interchange
+      { lat: 5.548, lng: -0.201, weight: 7 }, // Accra Central
+      { lat: 5.562, lng: -0.233, weight: 6 }, // Kaneshie Market
+      { lat: 5.603, lng: -0.187, weight: 5 }, // Ridge Hospital Hub
+      { lat: 6.673, lng: -1.565, weight: 7 }, // KNUST Junction (Kumasi)
+      { lat: 5.669, lng: -0.016, weight: 5 }, // Tema Motorway
+    ];
+
+    emergencies.forEach(e => {
+      if (e.location?.lat && e.location?.lng) {
+        points.push({
+          lat: e.location.lat,
+          lng: e.location.lng,
+          weight: e.severity === 'critical' ? 10 : 5
+        });
+      }
+    });
+
+    return points.map(p => ({
+      location: new window.google.maps.LatLng(p.lat, p.lng),
+      weight: p.weight
+    }));
+  }, [isLoaded, emergencies]);
 
   // Close search dropdown on click outside
   React.useEffect(() => {
@@ -289,6 +321,7 @@ export const LiveMap: React.FC<LiveMapProps> = ({
       map.setZoom(17);
       setTilt3D(60);
       setHeading(35);
+      audioTelemetry.speak(`Navigating 3D camera to ${result.title}`);
     }
 
     if (result.type === 'hospital') {
@@ -303,6 +336,15 @@ export const LiveMap: React.FC<LiveMapProps> = ({
   const handleClosePopup = () => {
     setActiveMarker(null);
     setHoveredMarker(null);
+  };
+
+  const toggleAudio = () => {
+    const muted = audioTelemetry.toggleMute();
+    setIsAudioMuted(muted);
+    if (!muted) {
+      audioTelemetry.playAlertBeep('success');
+      audioTelemetry.speak("Voice HUD telemetry active");
+    }
   };
 
   const onLoad = React.useCallback((mapInstance: google.maps.Map) => {
@@ -363,6 +405,8 @@ export const LiveMap: React.FC<LiveMapProps> = ({
       (result, status) => {
         if (status === window.google.maps.DirectionsStatus.OK && result) {
           setDirectionsResponse(result);
+          audioTelemetry.playAlertBeep('warning');
+          audioTelemetry.speak(`3D Cockpit active. Driving route set to ${hospital.name}.`);
         } else {
           console.error(`Directions request failed: ${status}`);
           lastRequestedRouteRef.current = "";
@@ -554,12 +598,12 @@ export const LiveMap: React.FC<LiveMapProps> = ({
           </button>
         </div>
 
-        <div className="grid grid-cols-3 gap-1.5 pt-1">
+        <div className="grid grid-cols-4 gap-1 pt-1">
           <button
             onClick={() => setShowTraffic(!showTraffic)}
             title="Toggle Traffic Layer"
             className={cn(
-              "py-1.5 px-2 text-xs font-medium rounded-lg border transition-all flex items-center justify-center gap-1 cursor-pointer",
+              "py-1.5 px-1.5 text-xs font-medium rounded-lg border transition-all flex items-center justify-center gap-1 cursor-pointer",
               showTraffic ? "bg-amber-500/20 border-amber-500/50 text-amber-500 font-semibold" : "bg-card border-border hover:bg-accent text-foreground"
             )}
           >
@@ -567,26 +611,33 @@ export const LiveMap: React.FC<LiveMapProps> = ({
           </button>
 
           <button
-            onClick={() => {
-              if (userCoords && map) {
-                map.panTo(userCoords);
-                map.setZoom(17);
-                setTilt3D(60);
-              }
-            }}
-            disabled={!userCoords}
-            title="Center on My Location"
-            className="py-1.5 px-2 text-xs font-medium bg-card border-border hover:bg-accent text-foreground rounded-lg border transition-all flex items-center justify-center gap-1 disabled:opacity-40 cursor-pointer"
+            onClick={() => setShowHeatmap(!showHeatmap)}
+            title="Toggle Incident Density Heatmap"
+            className={cn(
+              "py-1.5 px-1.5 text-xs font-medium rounded-lg border transition-all flex items-center justify-center gap-1 cursor-pointer",
+              showHeatmap ? "bg-red-500/20 border-red-500/50 text-red-400 font-semibold" : "bg-card border-border hover:bg-accent text-foreground"
+            )}
           >
-            🎯 My GPS
+            <Flame className="h-3.5 w-3.5 text-red-500" /> Heat
+          </button>
+
+          <button
+            onClick={toggleAudio}
+            title="Toggle Voice HUD Prompt"
+            className={cn(
+              "py-1.5 px-1.5 text-xs font-medium rounded-lg border transition-all flex items-center justify-center gap-1 cursor-pointer",
+              !isAudioMuted ? "bg-emerald-500/20 border-emerald-500/50 text-emerald-400 font-semibold" : "bg-card border-border hover:bg-accent text-muted-foreground"
+            )}
+          >
+            {!isAudioMuted ? <Volume2 className="h-3.5 w-3.5" /> : <VolumeX className="h-3.5 w-3.5" />} Voice
           </button>
 
           <button
             onClick={fitAllBounds}
             title="Fit All Facilities & Vehicles"
-            className="py-1.5 px-2 text-xs font-medium bg-card border-border hover:bg-accent text-foreground rounded-lg border transition-all flex items-center justify-center gap-1 cursor-pointer"
+            className="py-1.5 px-1.5 text-xs font-medium bg-card border-border hover:bg-accent text-foreground rounded-lg border transition-all flex items-center justify-center gap-1 cursor-pointer"
           >
-            🗺️ Fit All
+            🗺️ Fit
           </button>
         </div>
 
@@ -647,6 +698,16 @@ export const LiveMap: React.FC<LiveMapProps> = ({
         }}
       >
         {showTraffic && <TrafficLayer />}
+
+        {showHeatmap && heatmapData.length > 0 && (
+          <HeatmapLayerF
+            data={heatmapData}
+            options={{
+              radius: 40,
+              opacity: 0.75
+            }}
+          />
+        )}
 
         {directionsResponse && (
           <DirectionsRenderer

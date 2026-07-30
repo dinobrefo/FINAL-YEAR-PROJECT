@@ -4,9 +4,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../co
 import { Button } from "../components/ierbms/Button";
 import { Input } from "../components/ui/input";
 import { StatusBadge } from "../components/ierbms/StatusBadge";
-import { User, Activity, MapPin, Hospital, AlertCircle, Heart, Thermometer, ShieldAlert, Check, LocateFixed } from "lucide-react";
+import { User, Activity, MapPin, Hospital, AlertCircle, Heart, Thermometer, ShieldAlert, Check, LocateFixed, WifiOff, RefreshCw } from "lucide-react";
 import { useRealTime } from "../components/ierbms/RealTimeProvider";
 import { useNavigate, useSearchParams } from "react-router";
+import { offlineQueue } from "../utils/offlineQueue";
+import { audioTelemetry } from "../utils/audioTelemetry";
 
 export const NewEmergency: React.FC = () => {
   const navigate = useNavigate();
@@ -29,14 +31,34 @@ export const NewEmergency: React.FC = () => {
 
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
+  const [offlineNotice, setOfflineNotice] = React.useState<string | null>(null);
   const [gpsDetecting, setGpsDetecting] = React.useState(false);
   const [recommendedHospitals, setRecommendedHospitals] = React.useState<any[]>([]);
   const [showRecommendations, setShowRecommendations] = React.useState(false);
+  const [pendingOfflineCount, setPendingOfflineCount] = React.useState(0);
 
-  // Auto-detect user's physical GPS location on component mount
+  // Auto-detect user's physical GPS location & check offline queue on mount
   React.useEffect(() => {
     detectUserGPS();
+    checkOfflineQueue();
+
+    const handleOnline = async () => {
+      const synced = await offlineQueue.syncPendingItems();
+      if (synced > 0) {
+        audioTelemetry.speak(`Online. ${synced} queued emergency intakes synced successfully.`);
+        setOfflineNotice(`Synced ${synced} offline emergency intakes to central DB.`);
+        setTimeout(() => setOfflineNotice(null), 5000);
+      }
+      checkOfflineQueue();
+    };
+
+    window.addEventListener('online', handleOnline);
+    return () => window.removeEventListener('online', handleOnline);
   }, []);
+
+  const checkOfflineQueue = () => {
+    setPendingOfflineCount(offlineQueue.getQueue().length);
+  };
 
   const detectUserGPS = () => {
     if ("geolocation" in navigator) {
@@ -111,6 +133,7 @@ export const NewEmergency: React.FC = () => {
         setRecommendedHospitals(recs);
       }
       setShowRecommendations(true);
+      audioTelemetry.speak("AI hospital rankings generated.");
     } catch (err) {
       console.warn("ML Engine offline fallback activated:", err);
       const recs = hospitals.map((h, idx) => {
@@ -126,50 +149,72 @@ export const NewEmergency: React.FC = () => {
 
   const handleConfirmHospital = async (hospitalId: string) => {
     setError(null);
+    const vitals = {
+      heartRate: formData.heartRate,
+      bloodPressure: formData.bloodPressure,
+      oxygenSaturation: formData.oxygenSaturation,
+      temperature: formData.temperature,
+    };
+
+    const casePayload = {
+      ambulance_id: selectedAmbulanceId,
+      assigned_hospital_id: hospitalId,
+      patient_identifier: formData.patientName,
+      trauma_level: formData.severity === "critical" ? 5 : formData.severity === "moderate" ? 3 : 1,
+      patient_vitals: vitals,
+      status: 'in-transit'
+    };
+
     try {
-      const [lat, lng] = formData.location.split(',').map(Number);
-      const vitals = {
-        heartRate: formData.heartRate,
-        bloodPressure: formData.bloodPressure,
-        oxygenSaturation: formData.oxygenSaturation,
-        temperature: formData.temperature,
-      };
-      
       const res = await fetch('/api/ambulances/cases', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ambulance_id: selectedAmbulanceId,
-          assigned_hospital_id: hospitalId,
-          patient_identifier: formData.patientName,
-          trauma_level: formData.severity === "critical" ? 5 : formData.severity === "moderate" ? 3 : 1,
-          patient_vitals: vitals,
-          status: 'in-transit'
-        })
+        body: JSON.stringify(casePayload)
       });
       
       if (!res.ok) {
-        const errorData = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));
-        throw new Error(errorData.error || `HTTP ${res.status}`);
+        throw new Error(`HTTP ${res.status}`);
       }
       
       const createdCase = await res.json();
+      audioTelemetry.speak(`Emergency registered. Launching 3D cockpit HUD.`);
       navigate(`/ambulance?caseId=${createdCase.id}&showOverlay=true`);
     } catch (err: any) {
-      console.error("Error saving case to backend:", err);
-      setError(err.message || "Failed to save emergency case");
+      console.warn("Server unavailable. Enqueuing emergency intake into offline storage:", err);
+      const offlineItem = offlineQueue.enqueue(casePayload);
+      checkOfflineQueue();
+      audioTelemetry.speak("Offline mode active. Emergency intake saved locally to device queue.");
+      setOfflineNotice("Network/Server offline. Emergency intake saved to local device queue and will auto-sync.");
+      navigate(`/ambulance?caseId=${offlineItem.id}&showOverlay=true`);
     }
   };
 
   return (
     <AppShell role="ambulance" userName="Paramedic Team Unit #1">
       <div className="max-w-5xl mx-auto space-y-8">
-        <div>
-          <h1 className="text-3xl font-bold mb-2">New Emergency Intake</h1>
-          <p className="text-muted-foreground">
-            Enter patient telemetry to compute AI hospital matching scores & 3D route dispatches
-          </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold mb-2">New Emergency Intake</h1>
+            <p className="text-muted-foreground">
+              Enter patient telemetry to compute AI hospital matching scores & 3D route dispatches
+            </p>
+          </div>
+          {pendingOfflineCount > 0 && (
+            <div className="px-3 py-1.5 rounded-full bg-amber-500/10 text-amber-500 border border-amber-500/30 text-xs font-bold flex items-center gap-2">
+              <WifiOff className="h-4 w-4" />
+              {pendingOfflineCount} Queued Offline
+            </div>
+          )}
         </div>
+
+        {offlineNotice && (
+          <Card className="border-amber-500/40 bg-amber-500/10 text-amber-400">
+            <CardContent className="p-4 flex items-center gap-3">
+              <RefreshCw className="h-5 w-5 flex-shrink-0 animate-spin text-amber-400" />
+              <p className="text-sm font-semibold">{offlineNotice}</p>
+            </CardContent>
+          </Card>
+        )}
 
         {error && (
           <Card className="border-red-500/40 bg-red-500/10 text-red-500">
