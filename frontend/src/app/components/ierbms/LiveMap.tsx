@@ -356,7 +356,26 @@ export const LiveMap: React.FC<LiveMapProps> = ({
     setMap(null);
   }, []);
 
-  // Directions routing & robust fallback polyline for active emergency dispatch
+  // Fetch turn-by-turn road route via OSRM (Open Source Routing Machine) when Google Directions API is restricted
+  const fetchOsrmRoadRoute = React.useCallback(async (origin: { lat: number; lng: number }, dest: { lat: number; lng: number }) => {
+    try {
+      const url = `https://router.project-osrm.org/route/v1/driving/${origin.lng},${origin.lat};${dest.lng},${dest.lat}?overview=full&geometries=geojson`;
+      const res = await fetch(url);
+      const data = await res.json();
+      if (data.routes && data.routes[0]?.geometry?.coordinates) {
+        const roadPoints = data.routes[0].geometry.coordinates.map((c: [number, number]) => ({
+          lat: c[1],
+          lng: c[0]
+        }));
+        setFallbackPolylinePath(roadPoints);
+        audioTelemetry.speak("Turn-by-turn road route locked.");
+      }
+    } catch (err) {
+      console.warn("OSRM road route fetch fallback error:", err);
+    }
+  }, []);
+
+  // Directions routing with OSRM turn-by-turn street road snapping
   React.useEffect(() => {
     if (!isLoaded || !activeRouteCaseId || useOsmFallback || authFailed) {
       setDirectionsResponse(null);
@@ -365,7 +384,6 @@ export const LiveMap: React.FC<LiveMapProps> = ({
       return;
     }
 
-    // Match emergency case from array, or fallback to first active emergency / hospital
     const emergency = emergencies.find(e => e.id === activeRouteCaseId) || emergencies[0];
     const hospital = hospitals.find(h =>
       (emergency && (h.id === emergency.assignedHospital || h.name === emergency.assignedHospital))
@@ -382,13 +400,6 @@ export const LiveMap: React.FC<LiveMapProps> = ({
       return;
     }
 
-    // Always create a guaranteed fallback 3D telemetry polyline path
-    setFallbackPolylinePath([
-      { lat: originCoords.lat, lng: originCoords.lng },
-      { lat: (originCoords.lat + destCoords.lat) / 2 + 0.002, lng: (originCoords.lng + destCoords.lng) / 2 + 0.002 },
-      { lat: destCoords.lat, lng: destCoords.lng }
-    ]);
-
     const userLatRound = userCoords ? userCoords.lat.toFixed(3) : "no-user-gps";
     const userLngRound = userCoords ? userCoords.lng.toFixed(3) : "no-user-gps";
     const routeKey = `${activeRouteCaseId}-${ambulance?.id || "no-amb"}-${hospital?.id || "no-hosp"}-${userLatRound}-${userLngRound}`;
@@ -397,6 +408,9 @@ export const LiveMap: React.FC<LiveMapProps> = ({
     }
 
     lastRequestedRouteRef.current = routeKey;
+
+    // Fetch turn-by-turn road route from OSRM engine first to guarantee road snapping
+    fetchOsrmRoadRoute(originCoords, destCoords);
 
     if (window.google && window.google.maps && window.google.maps.DirectionsService) {
       const directionsService = new window.google.maps.DirectionsService();
@@ -409,16 +423,16 @@ export const LiveMap: React.FC<LiveMapProps> = ({
         (result, status) => {
           if (status === window.google.maps.DirectionsStatus.OK && result) {
             setDirectionsResponse(result);
+            setFallbackPolylinePath(null); // Clear fallback when native Google Directions works
             audioTelemetry.playAlertBeep('warning');
             audioTelemetry.speak(`3D Cockpit active. Driving route set to ${hospital?.name || "destination hospital"}.`);
           } else {
-            console.warn(`DirectionsService notice: ${status}. Displaying telemetry polyline route.`);
-            lastRequestedRouteRef.current = "";
+            console.warn(`Google DirectionsService notice: ${status}. Switched to OSRM turn-by-turn road route.`);
           }
         }
       );
     }
-  }, [activeRouteCaseId, emergencies, ambulances, hospitals, isLoaded, userCoords, useOsmFallback, authFailed]);
+  }, [activeRouteCaseId, emergencies, ambulances, hospitals, isLoaded, userCoords, useOsmFallback, authFailed, fetchOsrmRoadRoute]);
 
   // Automatically pan camera to user's physical GPS location & set 3D cockpit tilt when route is active
   React.useEffect(() => {
@@ -730,14 +744,14 @@ export const LiveMap: React.FC<LiveMapProps> = ({
           />
         )}
 
-        {/* Fallback Telemetry Polyline Route if Directions API is denied or loading */}
+        {/* OSRM Turn-by-Turn Street Road Route Polyline */}
         {!directionsResponse && fallbackPolylinePath && (
           <PolylineF
             path={fallbackPolylinePath}
             options={{
               strokeColor: "#3b82f6",
-              strokeOpacity: 0.85,
-              strokeWeight: 6,
+              strokeOpacity: 0.95,
+              strokeWeight: 7,
               geodesic: true
             }}
           />
