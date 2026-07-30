@@ -319,8 +319,7 @@ export const LiveMap: React.FC<LiveMapProps> = ({
     if (map) {
       map.panTo({ lat: result.lat, lng: result.lng });
       map.setZoom(17);
-      setTilt3D(60);
-      setHeading(35);
+      setCameraHeadingAndTilt(35, 60);
       audioTelemetry.speak(`Navigating 3D camera to ${result.title}`);
     }
 
@@ -338,13 +337,42 @@ export const LiveMap: React.FC<LiveMapProps> = ({
     setHoveredMarker(null);
   };
 
-  const toggleAudio = () => {
-    const muted = audioTelemetry.toggleMute();
-    setIsAudioMuted(muted);
-    if (!muted) {
-      audioTelemetry.playAlertBeep('success');
-      audioTelemetry.speak("Voice HUD telemetry active");
+  // State Change Helper — Preserves Map Camera Center Exactly
+  const withCenterPreserved = (action: () => void) => {
+    const currentCenter = map?.getCenter();
+    action();
+    if (map && currentCenter) {
+      map.setCenter(currentCenter);
     }
+  };
+
+  const toggleAudio = () => {
+    withCenterPreserved(() => {
+      const muted = audioTelemetry.toggleMute();
+      setIsAudioMuted(muted);
+      if (!muted) {
+        audioTelemetry.playAlertBeep('success');
+        audioTelemetry.speak("Voice HUD telemetry active");
+      }
+    });
+  };
+
+  const toggleTrafficLayer = () => {
+    withCenterPreserved(() => {
+      setShowTraffic(prev => !prev);
+    });
+  };
+
+  const toggleHeatmapLayer = () => {
+    withCenterPreserved(() => {
+      setShowHeatmap(prev => !prev);
+    });
+  };
+
+  const changeTheme = (theme: 'dark' | 'light' | 'hybrid') => {
+    withCenterPreserved(() => {
+      setMapTheme(theme);
+    });
   };
 
   // Instant Repositioning Handler — Guarantees Instant Pan & Zoom
@@ -354,8 +382,7 @@ export const LiveMap: React.FC<LiveMapProps> = ({
     if (map) {
       map.panTo({ lat: targetCoords.lat, lng: targetCoords.lng });
       map.setZoom(17);
-      setTilt3D(60);
-      setHeading(30);
+      setCameraHeadingAndTilt(30, 60);
     }
 
     audioTelemetry.speak("Camera repositioned to current location.");
@@ -383,8 +410,7 @@ export const LiveMap: React.FC<LiveMapProps> = ({
     if (map) {
       map.panTo({ lat: topHotspot.lat, lng: topHotspot.lng });
       map.setZoom(16);
-      setTilt3D(60);
-      setHeading(45);
+      setCameraHeadingAndTilt(45, 60);
       setShowHeatmap(true);
     }
     audioTelemetry.playAlertBeep('warning');
@@ -618,7 +644,7 @@ export const LiveMap: React.FC<LiveMapProps> = ({
       <div className="absolute top-4 right-4 z-[999] flex flex-col gap-2 bg-card/90 backdrop-blur-md border border-border p-2.5 rounded-xl shadow-2xl text-foreground">
         <div className="flex items-center gap-1 bg-muted/80 p-1 rounded-lg">
           <button
-            onClick={() => setMapTheme('dark')}
+            onClick={() => changeTheme('dark')}
             title="Dark Theme"
             className={cn(
               "px-2 py-1 text-xs font-semibold rounded-md transition-all cursor-pointer",
@@ -628,7 +654,7 @@ export const LiveMap: React.FC<LiveMapProps> = ({
             🌙 Dark
           </button>
           <button
-            onClick={() => setMapTheme('light')}
+            onClick={() => changeTheme('light')}
             title="Light Theme"
             className={cn(
               "px-2 py-1 text-xs font-semibold rounded-md transition-all cursor-pointer",
@@ -638,7 +664,7 @@ export const LiveMap: React.FC<LiveMapProps> = ({
             ☀️ Light
           </button>
           <button
-            onClick={() => setMapTheme('hybrid')}
+            onClick={() => changeTheme('hybrid')}
             title="Satellite Theme"
             className={cn(
               "px-2 py-1 text-xs font-semibold rounded-md transition-all cursor-pointer",
@@ -658,7 +684,7 @@ export const LiveMap: React.FC<LiveMapProps> = ({
 
         <div className="grid grid-cols-4 gap-1 pt-1">
           <button
-            onClick={() => setShowTraffic(!showTraffic)}
+            onClick={toggleTrafficLayer}
             title="Toggle Traffic Layer"
             className={cn(
               "py-1.5 px-1.5 text-xs font-medium rounded-lg border transition-all flex items-center justify-center gap-1 cursor-pointer",
@@ -669,7 +695,7 @@ export const LiveMap: React.FC<LiveMapProps> = ({
           </button>
 
           <button
-            onClick={() => setShowHeatmap(!showHeatmap)}
+            onClick={toggleHeatmapLayer}
             title="Toggle Incident Density Heatmap"
             className={cn(
               "py-1.5 px-1.5 text-xs font-medium rounded-lg border transition-all flex items-center justify-center gap-1 cursor-pointer",
