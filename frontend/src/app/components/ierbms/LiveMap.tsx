@@ -121,6 +121,10 @@ export const LiveMap: React.FC<LiveMapProps> = ({
   const is3DActive = tilt3D > 0;
   const initialFitDoneRef = React.useRef<boolean>(false);
 
+  // Uncontrolled Initial Center Ref (Prevents map camera from resetting position when state updates!)
+  const initialCenterRef = React.useRef({ lat: center[0], lng: center[1] });
+  const initialZoomRef = React.useRef(zoom);
+
   // Active Popup to Display (Clicked/Searched marker > Hovered marker)
   const displayedMarker = activeMarker || hoveredMarker;
 
@@ -394,6 +398,13 @@ export const LiveMap: React.FC<LiveMapProps> = ({
   const onUnmount = React.useCallback(() => {
     setMap(null);
   }, []);
+
+  // Sync 3D tilt and heading to map instance cleanly without resetting center position
+  React.useEffect(() => {
+    if (!map) return;
+    map.setHeading(heading);
+    map.setTilt(tilt3D);
+  }, [map, heading, tilt3D]);
 
   // Fetch turn-by-turn road route via OSRM (Open Source Routing Machine) when Google Directions API is restricted
   const fetchOsrmRoadRoute = React.useCallback(async (origin: { lat: number; lng: number }, dest: { lat: number; lng: number }) => {
@@ -708,7 +719,6 @@ export const LiveMap: React.FC<LiveMapProps> = ({
                 setHeading(0);
               } else {
                 setTilt3D(60);
-                if (map) map.setZoom(17);
               }
             }}
             title="Toggle 3D Mode"
@@ -740,19 +750,17 @@ export const LiveMap: React.FC<LiveMapProps> = ({
 
       <GoogleMap
         mapContainerStyle={{ height: '100%', width: '100%', borderRadius: '0.5rem' }}
-        center={{ lat: center[0], lng: center[1] }}
-        zoom={zoom}
         onLoad={onLoad}
         onUnmount={onUnmount}
         options={{
+          center: initialCenterRef.current,
+          zoom: initialZoomRef.current,
           disableDefaultUI: false,
           zoomControl: true,
           streetViewControl: false,
           mapTypeControl: false,
           fullscreenControl: false,
           mapTypeId: mapTheme === 'hybrid' ? 'hybrid' : 'roadmap',
-          tilt: tilt3D,
-          heading: heading,
           styles: mapTheme === 'dark' ? darkMapStyles : undefined
         }}
       >
@@ -784,7 +792,7 @@ export const LiveMap: React.FC<LiveMapProps> = ({
             directions={directionsResponse}
             options={{
               suppressMarkers: true,
-              preserveViewport: false,
+              preserveViewport: true,
               polylineOptions: {
                 strokeColor: "#3b82f6",
                 strokeOpacity: 0.95,
