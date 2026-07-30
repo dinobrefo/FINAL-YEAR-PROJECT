@@ -159,12 +159,12 @@ export const AppShell: React.FC<AppShellProps> = ({ role, userName, children }) 
   }, [location.pathname]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-100 via-teal-50/40 to-purple-50/30 dark:from-[#0b1320] dark:via-[#0c1a24] dark:to-[#140e28] text-foreground p-3 sm:p-6 transition-colors duration-500">
+    <div className="h-screen w-screen bg-gradient-to-br from-slate-100 via-teal-50/40 to-purple-50/30 dark:from-[#0b1320] dark:via-[#0c1a24] dark:to-[#140e28] text-foreground p-3 sm:p-6 transition-colors duration-500 overflow-hidden flex flex-col">
       {/* Outer CoachPro Container Shell */}
-      <div className="max-w-[1600px] mx-auto flex flex-col md:flex-row gap-6 items-start">
+      <div className="max-w-[1600px] w-full mx-auto h-full flex flex-col md:flex-row gap-6 items-stretch overflow-hidden">
         
-        {/* Sticky Fixed-Height Sidebar (Fits in window, never disappears on scroll) */}
-        <aside className="w-full md:w-64 bg-card/80 backdrop-blur-xl border border-white/60 dark:border-white/10 rounded-[32px] shadow-2xl shadow-teal-500/5 flex flex-col md:sticky md:top-6 md:max-h-[calc(100vh-3rem)] overflow-hidden shrink-0">
+        {/* Sticky Fixed Sidebar (Fits in window, never scrolls away) */}
+        <aside className="w-full md:w-64 bg-card/80 backdrop-blur-xl border border-white/60 dark:border-white/10 rounded-[32px] shadow-2xl shadow-teal-500/5 flex flex-col h-full overflow-hidden shrink-0">
           <div className="p-6 border-b border-border/40">
             <div className="flex items-center gap-3">
               <div className="h-10 w-10 rounded-2xl bg-gradient-to-tr from-teal-600 to-cyan-500 flex items-center justify-center shadow-md shadow-teal-500/30 text-white font-black text-lg">
@@ -223,10 +223,11 @@ export const AppShell: React.FC<AppShellProps> = ({ role, userName, children }) 
           </div>
         </aside>
 
-        {/* Scrollable Main Content Workspace Panel */}
-        <main className="flex-1 bg-card/70 backdrop-blur-xl border border-white/60 dark:border-white/10 rounded-[32px] shadow-2xl shadow-teal-500/5 p-6 md:p-8 flex flex-col min-w-0">
-          {/* CoachPro Top Header Bar */}
-          <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+        {/* Main Content Workspace Panel */}
+        <main className="flex-1 bg-card/70 backdrop-blur-xl border border-white/60 dark:border-white/10 rounded-[32px] shadow-2xl shadow-teal-500/5 p-6 md:p-8 flex flex-col min-w-0 h-full overflow-hidden relative">
+          
+          {/* CoachPro Fixed Top Header Bar (STAYS FIXED AT TOP ALWAYS) */}
+          <header className="sticky top-0 bg-card/90 backdrop-blur-md z-30 pb-4 pt-1 mb-4 border-b border-border/40 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shrink-0">
             <div>
               <p className="text-xs font-semibold text-teal-600 dark:text-teal-400 flex items-center gap-1.5">
                 Welcome back, {userName || "Officer"} <span className="animate-bounce inline-block">👋</span>
@@ -252,7 +253,7 @@ export const AppShell: React.FC<AppShellProps> = ({ role, userName, children }) 
                 <span className="absolute top-2.5 right-2.5 h-2 w-2 rounded-full bg-red-500" />
               </button>
 
-              {/* User Profile Avatar Pill */}
+              {/* User Profile Avatar Pill (Fixed in Header) */}
               <div className="flex items-center gap-2.5 pl-2 py-1 pr-3 bg-card/90 border border-border/60 rounded-full shadow-sm">
                 <img 
                   src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80" 
@@ -264,8 +265,8 @@ export const AppShell: React.FC<AppShellProps> = ({ role, userName, children }) 
             </div>
           </header>
 
-          {/* Children Content Area (Scrolls naturally) */}
-          <div className="flex-1 min-w-0">
+          {/* Scrollable Body Content Area BELOW Header */}
+          <div className="flex-1 min-h-0 overflow-y-auto pr-1 space-y-6">
             {children}
           </div>
         </main>
