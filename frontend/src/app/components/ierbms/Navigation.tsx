@@ -83,7 +83,7 @@ export const Navigation: React.FC<NavigationProps> = ({ role, className }) => {
   const navItems = roleNavigationMap[role] || [];
 
   return (
-    <nav className={cn("flex flex-col gap-2 p-4", className)}>
+    <nav className={cn("flex flex-col gap-1.5 p-3", className)}>
       {navItems.map((item) => {
         let href = item.href;
         if (role === "hospital" && hospitalId) {
@@ -103,14 +103,14 @@ export const Navigation: React.FC<NavigationProps> = ({ role, className }) => {
             key={href}
             to={href}
             className={cn(
-              "flex items-center gap-3.5 px-4 py-3 rounded-2xl transition-all duration-300 group",
+              "flex items-center gap-3 px-3.5 py-2.5 rounded-2xl transition-all duration-300 group",
               isActive
                 ? "bg-gradient-to-r from-teal-600 to-cyan-600 text-white shadow-lg shadow-teal-500/30 font-bold"
-                : "text-muted-foreground hover:bg-teal-500/10 hover:text-teal-600 dark:hover:text-teal-400 font-medium"
+                : "text-muted-foreground hover:bg-teal-500/10 hover:text-teal-600 dark:hover:text-teal-400 font-semibold"
             )}
           >
-            <Icon className={cn("h-5 w-5 transition-transform group-hover:scale-110", isActive ? "text-white" : "text-teal-600/70 dark:text-teal-400/70")} />
-            <span className="text-sm">{item.label}</span>
+            <Icon className={cn("h-4 w-4 transition-transform group-hover:scale-110", isActive ? "text-white" : "text-teal-600/70 dark:text-teal-400/70")} />
+            <span className="text-xs">{item.label}</span>
           </Link>
         );
       })}
@@ -159,47 +159,47 @@ export const AppShell: React.FC<AppShellProps> = ({ role, userName, children }) 
   }, [location.pathname]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-100 via-teal-50/40 to-purple-50/30 dark:from-[#0b1320] dark:via-[#0c1a24] dark:to-[#140e28] text-foreground p-3 md:p-6 transition-colors duration-500">
-      {/* Outer CoachPro Container Shell */}
-      <div className="max-w-[1600px] mx-auto flex flex-col md:flex-row gap-6 items-stretch">
+    <div className="h-screen w-screen bg-gradient-to-br from-slate-100 via-teal-50/40 to-purple-50/30 dark:from-[#0b1320] dark:via-[#0c1a24] dark:to-[#140e28] text-foreground p-3 sm:p-4 overflow-hidden transition-colors duration-500 flex flex-col">
+      {/* Outer CoachPro Container Shell (Strict Window Height, No Page Scroll) */}
+      <div className="max-w-[1600px] w-full mx-auto h-full flex flex-col md:flex-row gap-4 items-stretch overflow-hidden">
         
         {/* Left Soft Floating Glass Sidebar */}
-        <aside className="w-full md:w-64 bg-card/80 backdrop-blur-xl border border-white/60 dark:border-white/10 rounded-[32px] shadow-2xl shadow-teal-500/5 flex flex-col overflow-hidden">
-          <div className="p-6 border-b border-border/40">
+        <aside className="w-full md:w-60 bg-card/80 backdrop-blur-xl border border-white/60 dark:border-white/10 rounded-[28px] shadow-2xl shadow-teal-500/5 flex flex-col overflow-hidden shrink-0">
+          <div className="p-4 border-b border-border/40">
             <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-2xl bg-gradient-to-tr from-teal-600 to-cyan-500 flex items-center justify-center shadow-md shadow-teal-500/30 text-white font-black text-lg">
+              <div className="h-9 w-9 rounded-2xl bg-gradient-to-tr from-teal-600 to-cyan-500 flex items-center justify-center shadow-md shadow-teal-500/30 text-white font-black text-base">
                 I
               </div>
               <div>
-                <h1 className="text-lg font-black tracking-tight text-foreground">IERBMS</h1>
-                <p className="text-[11px] font-semibold text-teal-600 dark:text-teal-400 capitalize">{role} Portal</p>
+                <h1 className="text-base font-black tracking-tight text-foreground">IERBMS</h1>
+                <p className="text-[10px] font-semibold text-teal-600 dark:text-teal-400 capitalize">{role} Portal</p>
               </div>
             </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto py-2">
+          <div className="flex-1 overflow-y-auto py-1">
             <Navigation role={role} />
           </div>
 
-          <div className="p-4 border-t border-border/40 space-y-1.5">
+          <div className="p-3 border-t border-border/40 space-y-1">
             <button
               onClick={toggleTheme}
-              className="w-full flex items-center gap-3 px-4 py-2.5 rounded-2xl text-muted-foreground hover:text-foreground hover:bg-teal-500/10 transition-all cursor-pointer text-xs font-semibold"
+              className="w-full flex items-center gap-2.5 px-3 py-2 rounded-2xl text-muted-foreground hover:text-foreground hover:bg-teal-500/10 transition-all cursor-pointer text-xs font-semibold"
             >
               {effectiveTheme === "dark" ? (
-                <Sun className="h-4 w-4 text-amber-400" />
+                <Sun className="h-3.5 w-3.5 text-amber-400" />
               ) : (
-                <Moon className="h-4 w-4 text-blue-500" />
+                <Moon className="h-3.5 w-3.5 text-blue-500" />
               )}
               <span>{effectiveTheme === "dark" ? "Light Mode" : "Dark Mode"}</span>
             </button>
 
             <button 
               onClick={() => setShowNotifications(true)}
-              className="w-full flex items-center justify-between px-4 py-2.5 rounded-2xl text-muted-foreground hover:text-foreground hover:bg-teal-500/10 transition-all cursor-pointer text-xs font-semibold"
+              className="w-full flex items-center justify-between px-3 py-2 rounded-2xl text-muted-foreground hover:text-foreground hover:bg-teal-500/10 transition-all cursor-pointer text-xs font-semibold"
             >
-              <div className="flex items-center gap-3">
-                <Bell className="h-4 w-4 text-teal-500" />
+              <div className="flex items-center gap-2.5">
+                <Bell className="h-3.5 w-3.5 text-teal-500" />
                 <span>Notifications</span>
               </div>
               <span className="h-2 w-2 rounded-full bg-red-500 animate-pulse" />
@@ -207,37 +207,37 @@ export const AppShell: React.FC<AppShellProps> = ({ role, userName, children }) 
 
             <button 
               onClick={() => setShowSettings(true)}
-              className="w-full flex items-center gap-3 px-4 py-2.5 rounded-2xl text-muted-foreground hover:text-foreground hover:bg-teal-500/10 transition-all cursor-pointer text-xs font-semibold"
+              className="w-full flex items-center gap-2.5 px-3 py-2 rounded-2xl text-muted-foreground hover:text-foreground hover:bg-teal-500/10 transition-all cursor-pointer text-xs font-semibold"
             >
-              <Settings className="h-4 w-4 text-teal-500" />
+              <Settings className="h-3.5 w-3.5 text-teal-500" />
               <span>Settings</span>
             </button>
 
             <button
               onClick={handleLogout}
-              className="w-full flex items-center gap-3 px-4 py-2.5 rounded-2xl text-red-500 hover:bg-red-500/10 transition-all cursor-pointer text-xs font-semibold"
+              className="w-full flex items-center gap-2.5 px-3 py-2 rounded-2xl text-red-500 hover:bg-red-500/10 transition-all cursor-pointer text-xs font-semibold"
             >
-              <LogOut className="h-4 w-4" />
+              <LogOut className="h-3.5 w-3.5" />
               <span>Sign Out</span>
             </button>
           </div>
         </aside>
 
-        {/* Main Content Workspace Panel */}
-        <main className="flex-1 bg-card/70 backdrop-blur-xl border border-white/60 dark:border-white/10 rounded-[32px] shadow-2xl shadow-teal-500/5 p-6 md:p-8 flex flex-col min-w-0">
+        {/* Main Content Workspace Panel (Fills Viewport Height Exactly) */}
+        <main className="flex-1 bg-card/70 backdrop-blur-xl border border-white/60 dark:border-white/10 rounded-[28px] shadow-2xl shadow-teal-500/5 p-4 sm:p-5 flex flex-col min-w-0 h-full overflow-hidden">
           {/* CoachPro Top Header Bar */}
-          <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+          <header className="flex flex-row items-center justify-between gap-4 mb-4 shrink-0">
             <div>
-              <p className="text-xs font-semibold text-teal-600 dark:text-teal-400 flex items-center gap-1.5">
+              <p className="text-[11px] font-semibold text-teal-600 dark:text-teal-400 flex items-center gap-1.5">
                 Welcome back, {userName || "Officer"} <span className="animate-bounce inline-block">👋</span>
               </p>
-              <h2 className="text-3xl font-black text-foreground tracking-tight mt-0.5">{pageTitle}</h2>
+              <h2 className="text-2xl font-black text-foreground tracking-tight">{pageTitle}</h2>
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2.5">
               <button 
                 onClick={() => setShowSettings(true)}
-                className="h-10 w-10 rounded-2xl bg-card/80 border border-border/60 hover:bg-accent flex items-center justify-center text-muted-foreground hover:text-foreground transition-all cursor-pointer shadow-sm"
+                className="h-9 w-9 rounded-2xl bg-card/80 border border-border/60 hover:bg-accent flex items-center justify-center text-muted-foreground hover:text-foreground transition-all cursor-pointer shadow-sm"
                 title="Search Dashboard"
               >
                 <Search className="h-4 w-4" />
@@ -245,27 +245,27 @@ export const AppShell: React.FC<AppShellProps> = ({ role, userName, children }) 
 
               <button 
                 onClick={() => setShowNotifications(true)}
-                className="h-10 w-10 rounded-2xl bg-card/80 border border-border/60 hover:bg-accent flex items-center justify-center text-muted-foreground hover:text-foreground transition-all relative cursor-pointer shadow-sm"
+                className="h-9 w-9 rounded-2xl bg-card/80 border border-border/60 hover:bg-accent flex items-center justify-center text-muted-foreground hover:text-foreground transition-all relative cursor-pointer shadow-sm"
                 title="Notifications"
               >
                 <Bell className="h-4 w-4" />
-                <span className="absolute top-2.5 right-2.5 h-2 w-2 rounded-full bg-red-500" />
+                <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-red-500" />
               </button>
 
               {/* User Profile Avatar Pill */}
-              <div className="flex items-center gap-2.5 pl-2 py-1 pr-3 bg-card/90 border border-border/60 rounded-full shadow-sm">
+              <div className="flex items-center gap-2 pl-2 py-1 pr-3 bg-card/90 border border-border/60 rounded-full shadow-sm">
                 <img 
                   src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80" 
                   alt="Profile" 
-                  className="h-8 w-8 rounded-full object-cover ring-2 ring-teal-500/40"
+                  className="h-7 w-7 rounded-full object-cover ring-2 ring-teal-500/40"
                 />
                 <span className="text-xs font-bold text-foreground hidden sm:inline-block">{userName || "Chief Commander"}</span>
               </div>
             </div>
           </header>
 
-          {/* Children Content Area */}
-          <div className="flex-1 min-w-0">
+          {/* Children Content Area (Flex Fill, No Outer Scroll) */}
+          <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
             {children}
           </div>
         </main>
