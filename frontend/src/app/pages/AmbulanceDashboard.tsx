@@ -556,16 +556,16 @@ export const AmbulanceDashboard: React.FC = () => {
           </div>
         )}
         {currentPath === "/ambulance/map" && (
-          <Card className="border-2 border-primary/20 overflow-hidden">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Map className="h-5 w-5 text-blue-500" />
-                Live 3D Emergency Map View
+          <Card className="rounded-[28px] border border-border/50 shadow-xl overflow-hidden">
+            <CardHeader className="p-6 border-b border-border/40">
+              <CardTitle className="flex items-center gap-2 font-bold text-lg">
+                <Map className="h-5 w-5 text-teal-500" />
+                Live 3D Emergency Navigation View
               </CardTitle>
-              <CardDescription>Full interactive 3D map with building extrusions & search</CardDescription>
+              <CardDescription>Full interactive 3D map with turn-by-turn road snapping & search</CardDescription>
             </CardHeader>
             <CardContent className="p-0">
-              <div className="h-[550px] w-full">
+              <div className="h-[600px] w-full">
                 <LiveMap
                   emergencies={emergencies}
                   ambulances={ambulances}
