@@ -343,30 +343,32 @@ export const LiveMap: React.FC<LiveMapProps> = ({
     }
   };
 
-  // Reposition Map Camera to Physical GPS location
+  // Instant Repositioning Handler — Guarantees Instant Pan & Zoom
   const handleRepositionGPS = () => {
+    const targetCoords = userCoords || (ambulances[0]?.location) || { lat: 5.6037, lng: -0.1870 };
+    
+    if (map) {
+      map.panTo({ lat: targetCoords.lat, lng: targetCoords.lng });
+      map.setZoom(17);
+      setTilt3D(60);
+      setHeading(30);
+    }
+
+    audioTelemetry.speak("Camera repositioned to current location.");
+
+    // Query physical GPS in parallel
     if ("geolocation" in navigator) {
       navigator.geolocation.getCurrentPosition(
         (pos) => {
-          const coords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-          setUserCoords(coords);
+          const fresh = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+          setUserCoords(fresh);
           if (map) {
-            map.panTo(coords);
+            map.panTo(fresh);
             map.setZoom(17);
-            setTilt3D(60);
-            setHeading(30);
           }
-          audioTelemetry.speak("Camera repositioned to physical GPS location.");
         },
-        () => {
-          const fallback = ambulances[0]?.location || { lat: 5.6037, lng: -0.1870 };
-          if (map) {
-            map.panTo(fallback);
-            map.setZoom(17);
-            setTilt3D(60);
-          }
-          audioTelemetry.speak("Camera repositioned to default ambulance unit.");
-        }
+        () => console.warn("GPS lookup timeout, using active vehicle position"),
+        { timeout: 5000 }
       );
     }
   };
@@ -376,13 +378,13 @@ export const LiveMap: React.FC<LiveMapProps> = ({
     const topHotspot = heatmapPoints[0] || { lat: 5.556, lng: -0.205 }; // Circle Interchange
     if (map) {
       map.panTo({ lat: topHotspot.lat, lng: topHotspot.lng });
-      map.setZoom(17);
+      map.setZoom(16);
       setTilt3D(60);
       setHeading(45);
       setShowHeatmap(true);
     }
     audioTelemetry.playAlertBeep('warning');
-    audioTelemetry.speak("Proactive staging reposition triggered. Staging ambulance unit at Circle Interchange emergency hotspot.");
+    audioTelemetry.speak("Proactive staging reposition triggered. Staging ambulance at Circle Interchange emergency hotspot.");
   };
 
   const onLoad = React.useCallback((mapInstance: google.maps.Map) => {
@@ -470,24 +472,6 @@ export const LiveMap: React.FC<LiveMapProps> = ({
       );
     }
   }, [activeRouteCaseId, emergencies, ambulances, hospitals, isLoaded, userCoords, useOsmFallback, authFailed, fetchOsrmRoadRoute]);
-
-  // Automatically pan camera to user's physical GPS location & set 3D cockpit tilt when route is active
-  React.useEffect(() => {
-    if (!map || !isLoaded || !activeRouteCaseId) return;
-
-    const emergency = emergencies.find(e => e.id === activeRouteCaseId) || emergencies[0];
-    const ambulance = ambulances.find(a => 
-      a.id === emergency?.ambulanceId || a.assignedEmergency === activeRouteCaseId
-    ) || ambulances[0];
-    const origin = userCoords || (ambulance?.location) || (emergency?.location);
-
-    if (origin && origin.lat && origin.lng) {
-      map.panTo({ lat: origin.lat, lng: origin.lng });
-      map.setZoom(17);
-      setTilt3D(60);
-      setHeading(35);
-    }
-  }, [map, isLoaded, activeRouteCaseId, userCoords, emergencies, ambulances]);
 
   // Fit bounds helper (Runs ONLY on explicit button click or initial mount)
   const fitAllBounds = React.useCallback(() => {
@@ -774,7 +758,7 @@ export const LiveMap: React.FC<LiveMapProps> = ({
       >
         {showTraffic && <TrafficLayer />}
 
-        {/* Custom 3D Density Gradient Circles Overlay (Bypasses deprecated Google HeatmapLayer) */}
+        {/* Custom 3D Density Gradient Circles Overlay */}
         {showHeatmap && heatmapPoints.map((pt, idx) => {
           const color = pt.weight >= 8 ? '#ef4444' : pt.weight >= 6 ? '#f97316' : '#eab308';
           return (
