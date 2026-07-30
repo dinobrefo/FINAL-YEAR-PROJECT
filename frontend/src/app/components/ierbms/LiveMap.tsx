@@ -399,12 +399,19 @@ export const LiveMap: React.FC<LiveMapProps> = ({
     setMap(null);
   }, []);
 
-  // Sync 3D tilt and heading to map instance cleanly without resetting center position
-  React.useEffect(() => {
-    if (!map) return;
-    map.setHeading(heading);
-    map.setTilt(tilt3D);
-  }, [map, heading, tilt3D]);
+  // Safely update heading and tilt without resetting camera center position!
+  const setCameraHeadingAndTilt = (newHeading: number, newTilt: number) => {
+    setHeading(newHeading);
+    setTilt3D(newTilt);
+    if (map) {
+      const currentCenter = map.getCenter();
+      map.setHeading(newHeading);
+      map.setTilt(newTilt);
+      if (currentCenter) {
+        map.setCenter(currentCenter);
+      }
+    }
+  };
 
   // Fetch turn-by-turn road route via OSRM (Open Source Routing Machine) when Google Directions API is restricted
   const fetchOsrmRoadRoute = React.useCallback(async (origin: { lat: number; lng: number }, dest: { lat: number; lng: number }) => {
@@ -715,10 +722,9 @@ export const LiveMap: React.FC<LiveMapProps> = ({
           <button
             onClick={() => {
               if (is3DActive) {
-                setTilt3D(0);
-                setHeading(0);
+                setCameraHeadingAndTilt(0, 0);
               } else {
-                setTilt3D(60);
+                setCameraHeadingAndTilt(0, 60);
               }
             }}
             title="Toggle 3D Mode"
@@ -730,18 +736,16 @@ export const LiveMap: React.FC<LiveMapProps> = ({
             🏙️ 3D {is3DActive ? "ON" : "OFF"}
           </button>
           <button
-            onClick={() => setHeading(prev => (prev + 45) % 360)}
-            disabled={!is3DActive}
+            onClick={() => setCameraHeadingAndTilt((heading + 45) % 360, tilt3D > 0 ? tilt3D : 60)}
             title="Rotate Camera 45°"
-            className="flex-1 py-1.5 px-2 text-xs font-medium bg-card border-border hover:bg-accent text-foreground rounded-lg border transition-all flex items-center justify-center gap-1 disabled:opacity-40 cursor-pointer"
+            className="flex-1 py-1.5 px-2 text-xs font-medium bg-card border-border hover:bg-accent text-foreground rounded-lg border transition-all flex items-center justify-center gap-1 cursor-pointer"
           >
             🔄 Rotate
           </button>
           <button
-            onClick={() => { setTilt3D(0); setHeading(0); }}
-            disabled={!is3DActive}
+            onClick={() => setCameraHeadingAndTilt(0, 0)}
             title="Flatten Camera to 2D"
-            className="flex-1 py-1.5 px-2 text-xs font-medium bg-card border-border hover:bg-accent text-foreground rounded-lg border transition-all flex items-center justify-center gap-1 disabled:opacity-40 cursor-pointer"
+            className="flex-1 py-1.5 px-2 text-xs font-medium bg-card border-border hover:bg-accent text-foreground rounded-lg border transition-all flex items-center justify-center gap-1 cursor-pointer"
           >
             ⬆️ Flat
           </button>
