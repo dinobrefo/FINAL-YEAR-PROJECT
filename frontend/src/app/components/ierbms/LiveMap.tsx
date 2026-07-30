@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { GoogleMap, useJsApiLoader, MarkerF, DirectionsRenderer, InfoWindowF, TrafficLayer, HeatmapLayerF, PolylineF } from '@react-google-maps/api';
+import { GoogleMap, useJsApiLoader, MarkerF, DirectionsRenderer, InfoWindowF, TrafficLayer, PolylineF, CircleF } from '@react-google-maps/api';
 import { Emergency, Ambulance, Hospital } from '../../utils/mockData';
 import { StatusBadge } from './StatusBadge';
 import { cn } from '../ui/utils';
@@ -90,7 +90,7 @@ export const LiveMap: React.FC<LiveMapProps> = ({
   const { isLoaded, loadError } = useJsApiLoader({
     id: 'google-map-script',
     googleMapsApiKey: googleMapsApiKey,
-    libraries: ['places', 'visualization']
+    libraries: ['places']
   });
 
   const [map, setMap] = React.useState<google.maps.Map | null>(null);
@@ -124,10 +124,8 @@ export const LiveMap: React.FC<LiveMapProps> = ({
   // Active Popup to Display (Clicked/Searched marker > Hovered marker)
   const displayedMarker = activeMarker || hoveredMarker;
 
-  // Historic Ghana Emergency Incident Hotspots
-  const heatmapData = React.useMemo(() => {
-    if (!isLoaded || typeof window === 'undefined' || !window.google) return [];
-    
+  // Historic Ghana Emergency Incident Hotspots (Circle, Accra Central, Kaneshie, KNUST, Tema)
+  const heatmapPoints = React.useMemo(() => {
     const points = [
       { lat: 5.556, lng: -0.205, weight: 8 }, // Circle Interchange
       { lat: 5.548, lng: -0.201, weight: 7 }, // Accra Central
@@ -147,11 +145,8 @@ export const LiveMap: React.FC<LiveMapProps> = ({
       }
     });
 
-    return points.map(p => ({
-      location: new window.google.maps.LatLng(p.lat, p.lng),
-      weight: p.weight
-    }));
-  }, [isLoaded, emergencies]);
+    return points;
+  }, [emergencies]);
 
   // Close search dropdown on click outside
   React.useEffect(() => {
@@ -718,15 +713,25 @@ export const LiveMap: React.FC<LiveMapProps> = ({
       >
         {showTraffic && <TrafficLayer />}
 
-        {showHeatmap && heatmapData.length > 0 && (
-          <HeatmapLayerF
-            data={heatmapData}
-            options={{
-              radius: 40,
-              opacity: 0.75
-            }}
-          />
-        )}
+        {/* Custom 3D Density Gradient Circles Overlay (Bypasses deprecated Google HeatmapLayer) */}
+        {showHeatmap && heatmapPoints.map((pt, idx) => {
+          const color = pt.weight >= 8 ? '#ef4444' : pt.weight >= 6 ? '#f97316' : '#eab308';
+          return (
+            <CircleF
+              key={`heatmap-circle-${idx}`}
+              center={{ lat: pt.lat, lng: pt.lng }}
+              radius={pt.weight * 50}
+              options={{
+                fillColor: color,
+                fillOpacity: 0.3,
+                strokeColor: color,
+                strokeOpacity: 0.7,
+                strokeWeight: 2,
+                clickable: false
+              }}
+            />
+          );
+        })}
 
         {/* Directions API Turn-by-Turn Route Renderer */}
         {directionsResponse && (
