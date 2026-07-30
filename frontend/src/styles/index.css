@@ -1,3 +1,69 @@
 @import './fonts.css';
 @import './tailwind.css';
 @import './theme.css';
+
+/* ==========================================================================
+   Google Maps InfoWindow Theme Overrides (Dark & Light Mode)
+   ========================================================================== */
+
+/* Dark Mode Google Maps InfoWindow Popup Styling */
+.dark .gm-style .gm-style-iw-c {
+  background-color: #1e1e2d !important;
+  color: #f1f5f9 !important;
+  border: 1px solid #334155 !important;
+  border-radius: 12px !important;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.6), 0 8px 10px -6px rgba(0, 0, 0, 0.6) !important;
+  padding: 12px !important;
+}
+
+.dark .gm-style .gm-style-iw-d {
+  overflow: hidden !important;
+  max-height: none !important;
+  color: #f1f5f9 !important;
+}
+
+.dark .gm-style .gm-style-iw-tc::after {
+  background-color: #1e1e2d !important;
+}
+
+.dark .gm-style .gm-ui-hover-effect {
+  top: 4px !important;
+  right: 4px !important;
+  border-radius: 50% !important;
+  background-color: rgba(255, 255, 255, 0.15) !important;
+}
+
+.dark .gm-style .gm-ui-hover-effect span {
+  background-color: #ffffff !important;
+}
+
+/* Light Mode Google Maps InfoWindow Popup Styling */
+html:not(.dark) .gm-style .gm-style-iw-c {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 12px !important;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1) !important;
+  padding: 12px !important;
+}
+
+html:not(.dark) .gm-style .gm-style-iw-d {
+  overflow: hidden !important;
+  max-height: none !important;
+  color: #0f172a !important;
+}
+
+html:not(.dark) .gm-style .gm-style-iw-tc::after {
+  background-color: #ffffff !important;
+}
+
+html:not(.dark) .gm-style .gm-ui-hover-effect {
+  top: 4px !important;
+  right: 4px !important;
+  border-radius: 50% !important;
+  background-color: rgba(0, 0, 0, 0.05) !important;
+}
+
+html:not(.dark) .gm-style .gm-ui-hover-effect span {
+  background-color: #0f172a !important;
+}

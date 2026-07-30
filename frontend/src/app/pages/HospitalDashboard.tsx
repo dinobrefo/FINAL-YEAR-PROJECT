@@ -4,16 +4,46 @@ import { StatCard } from "../components/ierbms/StatCard";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ierbms/Card";
 import { Button } from "../components/ierbms/Button";
 import { StatusBadge } from "../components/ierbms/StatusBadge";
-import { BedDouble, Activity, Ambulance, Users, AlertTriangle, CheckCircle } from "lucide-react";
+import { BedDouble, Activity, Ambulance, Users, AlertTriangle, CheckCircle, Box, Map } from "lucide-react";
 import { useRealTime } from "../components/ierbms/RealTimeProvider";
 import { useNavigate, useLocation, useParams } from "react-router";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { LiveMap } from "../components/ierbms/LiveMap";
+
+const Analytics3D = React.lazy(() => import("../components/ierbms/Analytics3D"));
+const GlobeView = React.lazy(() => import("../components/ierbms/GlobeView"));
+
+class WebGLErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean }> {
+  constructor(props: { children: React.ReactNode }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+  componentDidCatch(error: any, errorInfo: any) {
+    console.warn("WebGL Context lost in HospitalDashboard:", error, errorInfo);
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="h-64 w-full flex items-center justify-center bg-card border rounded-xl p-4 text-center">
+          <p className="text-sm text-muted-foreground">3D hardware acceleration fallback mode active.</p>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 export const HospitalDashboard: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { hospitalId } = useParams<{ hospitalId: string }>();
-  const { emergencies, hospitals, updateEmergencyLocally } = useRealTime();
+  const { emergencies, hospitals, ambulances, updateEmergencyLocally } = useRealTime();
+
+  const [vizMode, setVizMode] = React.useState<"3d" | "2d">("3d");
+
   const hospital = hospitals.find(h => h.id === hospitalId) || hospitals[0] || {
     id: "h1",
     name: "Ridge Hospital",
@@ -23,6 +53,7 @@ export const HospitalDashboard: React.FC = () => {
     specialists: ["Cardiologist", "Neurologist", "Orthopedic Surgeon"],
     equipment: { ventilators: 10, ctScanners: 2, mriMachines: 1, oxygenUnits: 25 }
   };
+
   const incomingEmergencies = emergencies.filter(e => 
     e.assignedHospital === hospital.id && e.status === "in-transit"
   );
@@ -49,42 +80,77 @@ export const HospitalDashboard: React.FC = () => {
     }
   };
 
-
   const bedData = [
     { name: "General", total: hospital.totalBeds - hospital.icuBeds.total, occupied: (hospital.totalBeds - hospital.icuBeds.total) - hospital.availableBeds, available: hospital.availableBeds },
     { name: "ICU", total: hospital.icuBeds.total, occupied: hospital.icuBeds.total - hospital.icuBeds.available, available: hospital.icuBeds.available },
-    { name: "ER", total: 40, occupied: 28, available: 12 },
+    { name: "ER Queue", total: 40, occupied: 28, available: 12 },
     { name: "Maternity", total: 30, occupied: 22, available: 8 },
   ];
 
   const occupancyRate = Math.round((hospital.totalBeds - hospital.availableBeds) / hospital.totalBeds * 100);
-  const currentPath = location.pathname;
 
   const renderBeds = () => (
-    <Card>
+    <Card className="relative overflow-hidden border-2 border-primary/20">
       <CardHeader className="flex flex-row items-center justify-between pb-2">
         <div className="space-y-1">
-          <CardTitle>Bed Capacity & Department Allocation</CardTitle>
-          <CardDescription>Real-time occupancy across major departments</CardDescription>
+          <div className="flex items-center gap-2">
+            <CardTitle>Bed Capacity & Department Allocation</CardTitle>
+            <span className="text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-500 border border-blue-500/30">
+              Interactive 3D Viz
+            </span>
+          </div>
+          <CardDescription>Real-time occupancy rendering across major hospital wards</CardDescription>
+        </div>
+        <div className="flex items-center gap-1 bg-muted p-1 rounded-lg">
+          <button
+            onClick={() => setVizMode("3d")}
+            className={`px-3 py-1 text-xs font-bold rounded-md transition-all cursor-pointer ${
+              vizMode === "3d" ? "bg-primary text-white shadow-sm" : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            🏙️ 3D Bars
+          </button>
+          <button
+            onClick={() => setVizMode("2d")}
+            className={`px-3 py-1 text-xs font-bold rounded-md transition-all cursor-pointer ${
+              vizMode === "2d" ? "bg-primary text-white shadow-sm" : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            📊 Flat 2D
+          </button>
         </div>
       </CardHeader>
       <CardContent>
-        <ResponsiveContainer width="100%" height={300}>
-          <BarChart data={bedData}>
-            <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-            <XAxis dataKey="name" stroke="var(--muted-foreground)" />
-            <YAxis stroke="var(--muted-foreground)" />
-            <Tooltip
-              contentStyle={{
-                backgroundColor: "var(--card)",
-                border: "1px solid var(--border)",
-                borderRadius: "8px",
-              }}
-            />
-            <Bar dataKey="occupied" stackId="a" fill="var(--chart-1)" />
-            <Bar dataKey="available" stackId="a" fill="var(--chart-2)" />
-          </BarChart>
-        </ResponsiveContainer>
+        {vizMode === "3d" ? (
+          <WebGLErrorBoundary>
+            <React.Suspense fallback={
+              <div className="h-72 w-full flex items-center justify-center text-xs text-muted-foreground animate-pulse">
+                Loading 3D Department Bed Mesh...
+              </div>
+            }>
+              <div className="h-[320px] w-full rounded-xl overflow-hidden border border-border bg-slate-950">
+                <Analytics3D hospitals={hospitals} />
+              </div>
+            </React.Suspense>
+          </WebGLErrorBoundary>
+        ) : (
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart data={bedData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+              <XAxis dataKey="name" stroke="var(--muted-foreground)" />
+              <YAxis stroke="var(--muted-foreground)" />
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: "var(--card)",
+                  border: "1px solid var(--border)",
+                  borderRadius: "8px",
+                }}
+              />
+              <Bar dataKey="occupied" stackId="a" fill="var(--chart-1)" />
+              <Bar dataKey="available" stackId="a" fill="var(--chart-2)" />
+            </BarChart>
+          </ResponsiveContainer>
+        )}
       </CardContent>
     </Card>
   );
@@ -120,47 +186,39 @@ export const HospitalDashboard: React.FC = () => {
                 </div>
 
                 {emergency.vitalSigns && (
-                  <div className="grid grid-cols-4 gap-3 p-3 bg-background rounded-lg mb-3">
+                  <div className="grid grid-cols-4 gap-2 p-2 bg-background rounded-lg mb-3 text-xs">
                     <div>
-                      <p className="text-xs text-muted-foreground">Heart Rate</p>
-                      <p className="text-sm font-semibold">{emergency.vitalSigns.heartRate} bpm</p>
+                      <span className="text-muted-foreground">HR:</span> <span className="font-semibold">{emergency.vitalSigns.heartRate}</span>
                     </div>
                     <div>
-                      <p className="text-xs text-muted-foreground">Blood Pressure</p>
-                      <p className="text-sm font-semibold">{emergency.vitalSigns.bloodPressure}</p>
+                      <span className="text-muted-foreground">BP:</span> <span className="font-semibold">{emergency.vitalSigns.bloodPressure}</span>
                     </div>
                     <div>
-                      <p className="text-xs text-muted-foreground">SpO2</p>
-                      <p className="text-sm font-semibold">{emergency.vitalSigns.oxygenSaturation}%</p>
+                      <span className="text-muted-foreground">SpO2:</span> <span className="font-semibold">{emergency.vitalSigns.oxygenSaturation}%</span>
                     </div>
                     <div>
-                      <p className="text-xs text-muted-foreground">Temperature</p>
-                      <p className="text-sm font-semibold">{emergency.vitalSigns.temperature}°C</p>
+                      <span className="text-muted-foreground">Temp:</span> <span className="font-semibold">{emergency.vitalSigns.temperature}°C</span>
                     </div>
                   </div>
                 )}
 
                 <div className="flex gap-2">
-                  <Button 
-                    variant="primary" 
-                    size="sm" 
+                  <Button
+                    variant="success"
+                    size="sm"
                     className="flex-1"
-                    onClick={() => updateEmergencyStatus(emergency.id, 'arrived')}
                     disabled={loadingId === emergency.id}
+                    onClick={() => updateEmergencyStatus(emergency.id, "arrived")}
                   >
                     <CheckCircle className="h-4 w-4" />
                     {loadingId === emergency.id ? "Updating..." : "Mark Arrived"}
                   </Button>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="flex-1"
-                    onClick={() => {
-                      alert(`Trauma Team assigned to Case ${emergency.id.substring(0, 8)}`);
-                      if (updateEmergencyLocally) updateEmergencyLocally(emergency.id, "team-assigned");
-                    }}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => navigate(`/hospital/er`)}
                   >
-                    Assign Team
+                    Triage Notes
                   </Button>
                 </div>
               </div>
@@ -169,177 +227,94 @@ export const HospitalDashboard: React.FC = () => {
         ) : (
           <div className="text-center py-8 text-muted-foreground">
             <Ambulance className="h-12 w-12 mx-auto mb-3 opacity-50" />
-            <p>No incoming ambulances at the moment</p>
+            <p>No incoming ambulances currently</p>
           </div>
         )}
-      </CardContent>
-    </Card>
-  );
-
-  const renderStaff = () => (
-    <Card>
-      <CardHeader>
-        <CardTitle>Specialists On Duty</CardTitle>
-        <CardDescription>Available medical specialists in-house</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {hospital.specialists.map((specialist, idx) => (
-            <div
-              key={idx}
-              className="p-4 border rounded-lg flex items-center gap-3"
-            >
-              <div className="h-10 w-10 rounded-full bg-[var(--primary)] flex items-center justify-center text-white font-semibold">
-                {specialist.charAt(0)}
-              </div>
-              <div className="flex-1">
-                <p className="font-medium">{specialist}</p>
-                <p className="text-xs text-[var(--success)]">● Available</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </CardContent>
-    </Card>
-  );
-
-  const renderICU = () => (
-    <Card>
-      <CardHeader>
-        <CardTitle>ICU Wards & Mechanical Ventilation</CardTitle>
-        <CardDescription>Emergency critical care stats</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        <div className="grid grid-cols-2 gap-4">
-          <div className="p-4 border rounded-lg bg-accent text-center">
-            <h3 className="text-3xl font-bold text-[var(--danger)]">{hospital.icuBeds.total - hospital.icuBeds.available}</h3>
-            <p className="text-xs text-muted-foreground">Occupied ICU Beds</p>
-          </div>
-          <div className="p-4 border rounded-lg bg-accent text-center">
-            <h3 className="text-3xl font-bold text-[var(--success)]">{hospital.icuBeds.available}</h3>
-            <p className="text-xs text-muted-foreground">Available ICU Beds</p>
-          </div>
-        </div>
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium">Mechanical Ventilators</span>
-              <span className="text-sm text-muted-foreground">{hospital.equipment.ventilators}/20 available</span>
-            </div>
-            <div className="h-2 bg-muted rounded-full overflow-hidden">
-              <div className="h-full bg-[var(--success)]" style={{ width: `${(hospital.equipment.ventilators/20)*100}%` }} />
-            </div>
-          </div>
-        </div>
       </CardContent>
     </Card>
   );
 
   return (
-    <AppShell role="hospital" userName="Dr. Akosua Mensah">
-      <div className="space-y-8">
+    <AppShell role="hospital" userName={hospital.name}>
+      <div className="space-[#space-y-6] space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">{hospital.name} Management</h1>
+            <p className="text-muted-foreground">Real-time facility telemetry & 3D bed capacity</p>
+          </div>
+          <div className="flex gap-2">
+            <Button onClick={() => navigate("/hospital/beds")} variant="outline">
+              <BedDouble className="h-4 w-4" />
+              Manage Beds
+            </Button>
+            <Button onClick={() => navigate("/hospital/er")}>
+              <Activity className="h-4 w-4" />
+              ER Queue
+            </Button>
+          </div>
+        </div>
+
         {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <StatCard
             title="Available Beds"
             value={hospital.availableBeds}
             icon={BedDouble}
-            variant="success"
-            onClick={() => navigate(`/hospital/${hospital.id}/beds`)}
+            trend={{ value: `${occupancyRate}% occupied`, isPositive: occupancyRate < 85 }}
           />
           <StatCard
-            title="ICU Capacity"
-            value={`${hospital.icuBeds.available}/${hospital.icuBeds.total}`}
+            title="ICU Beds"
+            value={`${hospital.icuBeds.available} / ${hospital.icuBeds.total}`}
             icon={Activity}
-            variant={hospital.icuBeds.available < 5 ? "danger" : "default"}
-            onClick={() => navigate(`/hospital/${hospital.id}/icu`)}
+            description="Critical Care Capacity"
           />
           <StatCard
             title="Incoming Ambulances"
             value={incomingEmergencies.length}
             icon={Ambulance}
-            variant="warning"
-            onClick={() => navigate(`/hospital/${hospital.id}/incoming`)}
+            description="En-route to Emergency Dept"
           />
           <StatCard
-            title="Occupancy Rate"
+            title="ER Occupancy Rate"
             value={`${occupancyRate}%`}
             icon={Users}
-            variant={occupancyRate > 85 ? "danger" : "default"}
-            onClick={() => navigate(`/hospital/${hospital.id}/staff`)}
+            trend={{ value: occupancyRate > 90 ? "Critical Level" : "Optimal Level", isPositive: occupancyRate <= 85 }}
           />
         </div>
 
-        {/* Alerts */}
-        {hospital.icuBeds.available < 5 && (
-          <Card className="border-[var(--warning)] bg-[var(--warning)]/10">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <AlertTriangle className="h-5 w-5 text-[var(--warning)]" />
-                <div className="flex-1">
-                  <h4 className="font-semibold">Low ICU Capacity Alert</h4>
-                  <p className="text-sm text-muted-foreground">
-                    Only {hospital.icuBeds.available} ICU beds remaining. Consider preparing for transfers.
-                  </p>
-                </div>
-                <Button variant="outline" size="sm">View Details</Button>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Conditional Layout Routing */}
-        {currentPath === `/hospital/${hospital.id}/beds` && (
-          <div className="space-y-6">{renderBeds()}</div>
-        )}
-
-        {currentPath === `/hospital/${hospital.id}/icu` && (
-          <div className="space-y-6">{renderICU()}</div>
-        )}
-
-        {currentPath === `/hospital/${hospital.id}/incoming` && (
-          <div className="space-y-6">{renderIncoming()}</div>
-        )}
-
-        {currentPath === `/hospital/${hospital.id}/staff` && (
-          <div className="space-y-6">{renderStaff()}</div>
-        )}
-
-        {(currentPath === `/hospital/${hospital.id}` || currentPath === `/hospital/${hospital.id}/`) && (
-          <>
+        {/* Interactive 3D Bed Mesh & Incoming */}
+        <div className="grid gap-6 lg:grid-cols-3">
+          <div className="lg:col-span-2">
+            {renderBeds()}
+          </div>
+          <div>
             {renderIncoming()}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {renderBeds()}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Equipment Status</CardTitle>
-                  <CardDescription>Critical medical equipment availability</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {[
-                      { name: "Ventilators", count: hospital.equipment.ventilators, total: 20 },
-                      { name: "CT Scanners", count: hospital.equipment.ctScanners, total: 3 },
-                      { name: "MRI Machines", count: hospital.equipment.mriMachines, total: 2 },
-                      { name: "Oxygen Units", count: hospital.equipment.oxygenUnits, total: 50 },
-                    ].map((equipment) => (
-                      <div key={equipment.name} className="space-y-2">
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm font-medium">{equipment.name}</span>
-                          <span className="text-sm text-muted-foreground">{equipment.count}/{equipment.total}</span>
-                        </div>
-                        <div className="h-2 bg-muted rounded-full overflow-hidden">
-                          <div className="h-full bg-[var(--success)]" style={{ width: `${(equipment.count/equipment.total)*100}%` }} />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
+          </div>
+        </div>
+
+        {/* 3D Dispatch Map View */}
+        <Card className="overflow-hidden border-2 border-primary/20">
+          <CardHeader className="flex flex-row items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <Map className="h-5 w-5 text-blue-500" />
+                Live 3D Dispatch Map
+              </CardTitle>
+              <CardDescription>3D building extrusions & ambulance telemetry en-route to {hospital.name}</CardDescription>
             </div>
-            {renderStaff()}
-          </>
-        )}
+          </CardHeader>
+          <CardContent className="p-0">
+            <div className="h-[380px] w-full">
+              <LiveMap
+                emergencies={emergencies}
+                ambulances={ambulances}
+                hospitals={hospitals}
+                center={[hospital.location?.lat || 5.556, hospital.location?.lng || -0.196]}
+                zoom={15}
+              />
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </AppShell>
   );

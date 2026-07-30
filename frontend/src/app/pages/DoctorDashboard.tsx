@@ -4,12 +4,13 @@ import { StatCard } from "../components/ierbms/StatCard";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ierbms/Card";
 import { Button } from "../components/ierbms/Button";
 import { StatusBadge } from "../components/ierbms/StatusBadge";
-import { Users, Activity, Clock, FileText, Stethoscope } from "lucide-react";
+import { Users, Activity, Clock, FileText, Stethoscope, Map, Heart, Thermometer, ShieldAlert } from "lucide-react";
 import { useRealTime } from "../components/ierbms/RealTimeProvider";
 import { useNavigate, useLocation } from "react-router";
+import { LiveMap } from "../components/ierbms/LiveMap";
 
 export const DoctorDashboard: React.FC = () => {
-  const { emergencies } = useRealTime();
+  const { emergencies, ambulances, hospitals } = useRealTime();
   const navigate = useNavigate();
   const location = useLocation();
   const incomingPatients = emergencies.filter(e => e.status === "in-transit");
@@ -37,8 +38,13 @@ export const DoctorDashboard: React.FC = () => {
   const renderIncoming = () => (
     <Card>
       <CardHeader>
-        <CardTitle>Incoming Emergency Patients</CardTitle>
-        <CardDescription>Prepare for arriving critical cases</CardDescription>
+        <CardTitle className="flex items-center justify-between">
+          <span>Incoming Emergency Patients</span>
+          <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-red-500/15 text-red-500 border border-red-500/20">
+            {incomingPatients.length} En-Route
+          </span>
+        </CardTitle>
+        <CardDescription>Prepare trauma bay & vitals for arriving critical cases</CardDescription>
       </CardHeader>
       <CardContent>
         {incomingPatients.length > 0 ? (
@@ -65,29 +71,37 @@ export const DoctorDashboard: React.FC = () => {
                 </div>
 
                 {patient.vitalSigns && (
-                  <div className="grid grid-cols-4 gap-3 p-3 bg-background rounded-lg mb-3">
+                  <div className="grid grid-cols-4 gap-3 p-3 bg-background rounded-lg mb-3 border border-border/40">
                     <div>
-                      <p className="text-xs text-muted-foreground">Heart Rate</p>
-                      <p className="text-sm font-semibold">{patient.vitalSigns.heartRate} bpm</p>
+                      <p className="text-[10px] text-muted-foreground uppercase font-bold flex items-center gap-1">
+                        <Heart className="h-3 w-3 text-red-500" /> HR
+                      </p>
+                      <p className="text-sm font-bold text-foreground">{patient.vitalSigns.heartRate} bpm</p>
                     </div>
                     <div>
-                      <p className="text-xs text-muted-foreground">Blood Pressure</p>
-                      <p className="text-sm font-semibold">{patient.vitalSigns.bloodPressure}</p>
+                      <p className="text-[10px] text-muted-foreground uppercase font-bold flex items-center gap-1">
+                        <Activity className="h-3 w-3 text-blue-500" /> BP
+                      </p>
+                      <p className="text-sm font-bold text-foreground">{patient.vitalSigns.bloodPressure}</p>
                     </div>
                     <div>
-                      <p className="text-xs text-muted-foreground">SpO2</p>
-                      <p className="text-sm font-semibold">{patient.vitalSigns.oxygenSaturation}%</p>
+                      <p className="text-[10px] text-muted-foreground uppercase font-bold flex items-center gap-1">
+                        <ShieldAlert className="h-3 w-3 text-emerald-500" /> SpO2
+                      </p>
+                      <p className="text-sm font-bold text-foreground">{patient.vitalSigns.oxygenSaturation}%</p>
                     </div>
                     <div>
-                      <p className="text-xs text-muted-foreground">Temperature</p>
-                      <p className="text-sm font-semibold">{patient.vitalSigns.temperature}°C</p>
+                      <p className="text-[10px] text-muted-foreground uppercase font-bold flex items-center gap-1">
+                        <Thermometer className="h-3 w-3 text-amber-500" /> Temp
+                      </p>
+                      <p className="text-sm font-bold text-foreground">{patient.vitalSigns.temperature}°C</p>
                     </div>
                   </div>
                 )}
 
                 <Button variant="primary" size="sm" className="w-full">
                   <FileText className="h-4 w-4" />
-                  Review Case Details
+                  Review Case & Pre-Assign Bed
                 </Button>
               </div>
             ))}
@@ -95,177 +109,83 @@ export const DoctorDashboard: React.FC = () => {
         ) : (
           <div className="text-center py-8 text-muted-foreground">
             <Activity className="h-12 w-12 mx-auto mb-3 opacity-50" />
-            <p>No incoming emergency patients</p>
+            <p>No incoming emergency patients currently</p>
           </div>
         )}
       </CardContent>
     </Card>
   );
 
-  const renderPatients = () => (
-    <Card>
-      <CardHeader>
-        <CardTitle>Your Assigned Patients</CardTitle>
-        <CardDescription>Currently under your care in the ER</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-4">
-          {activePatients.length > 0 ? activePatients.map((patient) => (
-            <div
-              key={patient.id}
-              className="p-4 border rounded-lg hover:bg-accent transition-colors"
-            >
-              <div className="flex items-start justify-between mb-3">
-                <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-2">
-                    <h4 className="font-semibold">{patient.patientName}</h4>
-                    <StatusBadge status={patient.severity}>
-                      {patient.severity.toUpperCase()}
-                    </StatusBadge>
-                  </div>
-                  <p className="text-sm text-muted-foreground">{patient.emergencyType}</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-sm font-medium">ER Ward</p>
-                  <p className="text-xs text-muted-foreground">{patient.id.substring(0, 8)}...</p>
-                </div>
-              </div>
-
-              <div className="flex gap-2">
-                <Button 
-                  variant="success" 
-                  size="sm" 
-                  className="flex-1"
-                  onClick={() => updateEmergencyStatus(patient.id, 'resolved')}
-                  disabled={loadingId === patient.id}
-                >
-                  {loadingId === patient.id ? "Updating..." : "Resolve Case"}
-                </Button>
-                <Button variant="outline" size="sm" className="flex-1">
-                  Add Notes
-                </Button>
-              </div>
-            </div>
-          )) : (
-            <div className="text-center py-8 text-muted-foreground">
-              <p>No active cases assigned</p>
-            </div>
-          )}
-        </div>
-      </CardContent>
-    </Card>
-  );
-
-  const renderQueue = () => (
-    <Card>
-      <CardHeader>
-        <CardTitle>Treatment Queue</CardTitle>
-        <CardDescription>Pending consultations and procedures</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-3">
-          {[
-            { patient: "James Wilson", procedure: "Post-op Checkup", time: "10:30 AM", priority: "moderate" as const },
-            { patient: "Emma Davis", procedure: "Blood Test Review", time: "11:00 AM", priority: "stable" as const },
-            { patient: "Robert Taylor", procedure: "X-Ray Consultation", time: "11:30 AM", priority: "stable" as const },
-          ].map((item, idx) => (
-            <div
-              key={idx}
-              className="p-4 border rounded-lg flex items-center justify-between hover:bg-accent transition-colors"
-            >
-              <div className="flex items-center gap-4">
-                <div className="h-10 w-10 rounded-full bg-[var(--primary)] flex items-center justify-center text-white font-semibold">
-                  {item.patient.charAt(0)}
-                </div>
-                <div>
-                  <p className="font-medium">{item.patient}</p>
-                  <p className="text-sm text-muted-foreground">{item.procedure}</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-3">
-                <StatusBadge status={item.priority}>
-                  {item.priority.toUpperCase()}
-                </StatusBadge>
-                <p className="text-sm font-medium">{item.time}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </CardContent>
-    </Card>
-  );
-
   return (
-    <AppShell role="doctor" userName="Dr. Kwame Boateng">
-      <div className="space-y-8">
+    <AppShell role="doctor" userName="Dr. Kwabena Brefo (Physician)">
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">Doctor Portal & ER Triage</h1>
+            <p className="text-muted-foreground">Real-time vital signs, trauma bay prep, and 3D dispatch tracking</p>
+          </div>
+          <div className="flex gap-2">
+            <Button onClick={() => navigate("/doctor/triage")}>
+              <Stethoscope className="h-4 w-4" />
+              Triage Queue
+            </Button>
+          </div>
+        </div>
+
         {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <StatCard
-            title="Assigned Patients"
-            value={activePatients.length}
-            icon={Users}
-            variant="default"
-            onClick={() => navigate("/doctor/patients")}
-          />
-          <StatCard
-            title="Incoming Cases"
+            title="Incoming Patients"
             value={incomingPatients.length}
+            icon={Users}
+            description="En-route in Ambulances"
+          />
+          <StatCard
+            title="In ER Triage"
+            value={activePatients.length}
             icon={Activity}
-            variant="warning"
-            onClick={() => navigate("/doctor/incoming")}
+            description="Arrived & Under Evaluation"
           />
           <StatCard
-            title="Consultations Today"
-            value={8}
-            icon={Stethoscope}
-            variant="success"
-            onClick={() => navigate("/doctor/queue")}
-          />
-          <StatCard
-            title="Avg Treatment Time"
-            value="45 min"
+            title="Avg Triage Time"
+            value="4 mins"
             icon={Clock}
-            variant="default"
-            onClick={() => navigate("/doctor/records")}
+            trend={{ value: "Target < 5 mins", isPositive: true }}
+          />
+          <StatCard
+            title="Critical Case Ratio"
+            value="15%"
+            icon={FileText}
+            description="Red Flag Severity Cases"
           />
         </div>
 
-        {/* Conditional Layout Routing */}
-        {currentPath === "/doctor/patients" && (
-          <div className="space-y-6">{renderPatients()}</div>
-        )}
-
-        {currentPath === "/doctor/incoming" && (
-          <div className="space-y-6">{renderIncoming()}</div>
-        )}
-
-        {currentPath === "/doctor/queue" && (
-          <div className="space-y-6">{renderQueue()}</div>
-        )}
-
-        {currentPath === "/doctor/records" && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Medical Records & Case Archive</CardTitle>
-              <CardDescription>View historical patients and diagnoses reports</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center py-12 text-muted-foreground border-2 border-dashed rounded-lg">
-                <Stethoscope className="h-12 w-12 mx-auto mb-3 opacity-50 text-[var(--primary)]" />
-                <p className="font-semibold text-foreground">Archive Loaded Successfully</p>
-                <p className="text-sm mt-1">Accessing secure digital medical records library...</p>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {currentPath === "/doctor" && (
-          <>
+        {/* Incoming Patients & 3D Telemetry Map */}
+        <div className="grid gap-6 lg:grid-cols-2">
+          <div>
             {renderIncoming()}
-            {renderPatients()}
-            {renderQueue()}
-          </>
-        )}
+          </div>
+          <div>
+            <Card className="overflow-hidden border-2 border-primary/20 h-full flex flex-col">
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2">
+                  <Map className="h-5 w-5 text-blue-500" />
+                  Live 3D Patient Route Tracking
+                </CardTitle>
+                <CardDescription>3D building camera & telemetry of arriving ambulances</CardDescription>
+              </CardHeader>
+              <CardContent className="p-0 flex-1 min-h-[360px]">
+                <LiveMap
+                  emergencies={emergencies}
+                  ambulances={ambulances}
+                  hospitals={hospitals}
+                  center={[5.556, -0.196]}
+                  zoom={15}
+                />
+              </CardContent>
+            </Card>
+          </div>
+        </div>
       </div>
     </AppShell>
   );

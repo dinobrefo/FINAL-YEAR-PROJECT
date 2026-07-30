@@ -9,6 +9,35 @@ import { LiveMap } from "../components/ierbms/LiveMap";
 import { useLocation, useNavigate } from "react-router";
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from "recharts";
 
+// Lazy load 3D components for performance and WebGL safety
+const GlobeView = React.lazy(() => import("../components/ierbms/GlobeView"));
+const Analytics3D = React.lazy(() => import("../components/ierbms/Analytics3D"));
+
+// Simple Error Boundary for WebGL fallback
+class WebGLErrorBoundary extends React.Component<{ children: React.ReactNode, fallbackText?: string }, { hasError: boolean }> {
+  constructor(props: any) {
+    super(props);
+    this.state = { hasError: false };
+  }
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+  componentDidCatch(error: any, errorInfo: any) {
+    console.error("3D View Error Boundary caught error:", error, errorInfo);
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="h-[400px] w-full flex flex-col items-center justify-center bg-card border rounded-lg p-6 text-center text-muted-foreground">
+          <p className="font-semibold text-foreground mb-1">3D Graphics Fallback Active</p>
+          <p className="text-sm">{this.props.fallbackText || "Your device or browser is displaying standard dashboard telemetry."}</p>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 export const CommandCenterDashboard: React.FC = () => {
   const { emergencies, hospitals, ambulances } = useRealTime();
   const location = useLocation();
@@ -282,6 +311,35 @@ export const CommandCenterDashboard: React.FC = () => {
     );
   };
 
+  const renderGlobe = () => (
+    <Card>
+      <CardHeader>
+        <CardTitle>3D Global Emergency View</CardTitle>
+        <CardDescription>Interactive 3D globe showing real-time emergency dispatch across Ghana</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="relative h-[600px] bg-[#0a0a14] rounded-lg overflow-hidden border">
+          <WebGLErrorBoundary fallbackText="Interactive 3D Globe telemetry requires WebGL support.">
+            <React.Suspense fallback={
+              <div className="w-full h-full flex items-center justify-center text-muted-foreground">
+                <div className="flex flex-col items-center gap-2">
+                  <div className="h-8 w-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+                  <p className="text-xs">Initializing 3D WebGL Globe Engine...</p>
+                </div>
+              </div>
+            }>
+              <GlobeView
+                emergencies={emergencies}
+                ambulances={ambulances}
+                hospitals={hospitals}
+              />
+            </React.Suspense>
+          </WebGLErrorBoundary>
+        </div>
+      </CardContent>
+    </Card>
+  );
+
   return (
     <AppShell role="command" userName="Chief Commander Agyeman">
       <div className="space-y-8">
@@ -333,7 +391,31 @@ export const CommandCenterDashboard: React.FC = () => {
         )}
 
         {currentPath === "/command/analytics" && (
-          <div className="space-y-6">{renderAnalytics()}</div>
+          <div className="space-y-6">
+            {renderAnalytics()}
+            {/* 3D Hospital Occupancy Visualization */}
+            <Card>
+              <CardHeader>
+                <CardTitle>3D Hospital Occupancy</CardTitle>
+                <CardDescription>Interactive 3D visualization of hospital bed occupancy rates</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <WebGLErrorBoundary fallbackText="3D Bar chart visualization requires WebGL support.">
+                  <React.Suspense fallback={
+                    <div className="h-[400px] flex items-center justify-center text-muted-foreground">
+                      <p className="animate-pulse text-xs">Loading 3D Analytics Canvas...</p>
+                    </div>
+                  }>
+                    <Analytics3D analyticsData={analyticsData} />
+                  </React.Suspense>
+                </WebGLErrorBoundary>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {currentPath === "/command/globe" && (
+          <div className="space-y-6">{renderGlobe()}</div>
         )}
 
         {currentPath === "/command" && (
@@ -347,3 +429,5 @@ export const CommandCenterDashboard: React.FC = () => {
     </AppShell>
   );
 };
+
+export default CommandCenterDashboard;

@@ -20,6 +20,7 @@ import {
   BedDouble,
   Moon,
   Sun,
+  Globe,
 } from "lucide-react";
 
 export interface NavItem {
@@ -28,28 +29,25 @@ export interface NavItem {
   icon: React.ComponentType<{ className?: string }>;
 }
 
-const roleNavigationMap: Record<string, NavItem[]> = {
+export const roleNavigationMap: Record<string, NavItem[]> = {
   ambulance: [
     { label: "Dashboard", href: "/ambulance", icon: LayoutDashboard },
     { label: "New Emergency", href: "/ambulance/new-emergency", icon: Activity },
-    { label: "Active Cases", href: "/ambulance/cases", icon: FileText },
-    { label: "Navigation", href: "/ambulance/navigation", icon: Map },
-    { label: "History", href: "/ambulance/history", icon: FileText },
+    { label: "Active Cases", href: "/ambulance/cases", icon: Ambulance },
+    { label: "Hospital Map", href: "/ambulance/map", icon: Map },
   ],
   hospital: [
-    { label: "Dashboard", href: "/hospital", icon: LayoutDashboard },
-    { label: "Bed Management", href: "/hospital/beds", icon: BedDouble },
-    { label: "ICU Dashboard", href: "/hospital/icu", icon: Activity },
-    { label: "Incoming", href: "/hospital/incoming", icon: Ambulance },
-    { label: "Staff", href: "/hospital/staff", icon: Users },
+    { label: "Overview", href: "/hospital", icon: LayoutDashboard },
+    { label: "ER Queue", href: "/hospital/er", icon: Activity },
+    { label: "Beds Management", href: "/hospital/beds", icon: BedDouble },
+    { label: "Ambulance Arrivals", href: "/hospital/arrivals", icon: Ambulance },
     { label: "Settings", href: "/hospital/settings", icon: Settings },
   ],
   doctor: [
     { label: "Dashboard", href: "/doctor", icon: LayoutDashboard },
-    { label: "Assigned Patients", href: "/doctor/patients", icon: Users },
-    { label: "Incoming", href: "/doctor/incoming", icon: Activity },
-    { label: "Treatment Queue", href: "/doctor/queue", icon: FileText },
-    { label: "Records", href: "/doctor/records", icon: Stethoscope },
+    { label: "Incoming Patients", href: "/doctor/patients", icon: Users },
+    { label: "Triage Queue", href: "/doctor/triage", icon: Stethoscope },
+    { label: "EHR Records", href: "/doctor/records", icon: FileText },
   ],
   nurse: [
     { label: "Dashboard", href: "/nurse", icon: LayoutDashboard },
@@ -92,7 +90,12 @@ export const Navigation: React.FC<NavigationProps> = ({ role, className }) => {
           href = item.href.replace("/hospital", `/hospital/${hospitalId}`);
         }
         
-        const isActive = location.pathname === href || (item.href !== "/hospital" && location.pathname.startsWith(href));
+        const isRootDashboard = href === "/command" || href === "/ambulance" || href === "/hospitals" || href === "/doctor" || href === "/nurse" || href === "/authority";
+        
+        const isActive = isRootDashboard
+          ? location.pathname === href
+          : location.pathname === href || location.pathname.startsWith(href);
+
         const Icon = item.icon;
 
         return (
@@ -102,12 +105,12 @@ export const Navigation: React.FC<NavigationProps> = ({ role, className }) => {
             className={cn(
               "flex items-center gap-3 px-4 py-3 rounded-lg transition-all",
               isActive
-                ? "bg-[var(--primary)] text-white shadow-sm"
-                : "text-foreground hover:bg-[var(--accent)] hover:text-[var(--accent-foreground)]"
+                ? "bg-[var(--primary)] text-white shadow-sm font-semibold"
+                : "text-foreground hover:bg-[var(--accent)] hover:text-[var(--accent-foreground)] font-medium"
             )}
           >
             <Icon className="h-5 w-5" />
-            <span className="font-medium">{item.label}</span>
+            <span>{item.label}</span>
           </Link>
         );
       })}
@@ -164,12 +167,12 @@ export const AppShell: React.FC<AppShellProps> = ({ role, userName, children }) 
         <div className="p-4 border-t space-y-2">
           <button
             onClick={toggleTheme}
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-foreground hover:bg-accent transition-all"
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-foreground hover:bg-accent transition-all cursor-pointer"
           >
             {effectiveTheme === "dark" ? (
-              <Sun className="h-5 w-5" />
+              <Sun className="h-5 w-5 text-amber-400" />
             ) : (
-              <Moon className="h-5 w-5" />
+              <Moon className="h-5 w-5 text-blue-500" />
             )}
             <span className="font-medium">
               {effectiveTheme === "dark" ? "Light Mode" : "Dark Mode"}
@@ -177,21 +180,24 @@ export const AppShell: React.FC<AppShellProps> = ({ role, userName, children }) 
           </button>
           <button 
             onClick={() => setShowNotifications(true)}
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-foreground hover:bg-accent transition-all cursor-pointer"
+            className="w-full flex items-center justify-between px-4 py-3 rounded-lg text-foreground hover:bg-accent transition-all cursor-pointer"
           >
-            <Bell className="h-5 w-5" />
-            <span className="font-medium">Notifications</span>
+            <div className="flex items-center gap-3">
+              <Bell className="h-5 w-5" />
+              <span className="font-medium">Notifications</span>
+            </div>
+            <span className="h-2 w-2 rounded-full bg-red-500 animate-pulse" />
           </button>
           <button 
             onClick={() => setShowSettings(true)}
             className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-foreground hover:bg-accent transition-all cursor-pointer"
           >
             <Settings className="h-5 w-5" />
-            <span className="font-medium">Preferences</span>
+            <span className="font-medium">Settings</span>
           </button>
-          <button 
+          <button
             onClick={handleLogout}
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-[var(--danger)] hover:bg-accent transition-all cursor-pointer"
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-red-500 hover:bg-red-500/10 transition-all cursor-pointer"
           >
             <LogOut className="h-5 w-5" />
             <span className="font-medium">Logout</span>
@@ -199,92 +205,77 @@ export const AppShell: React.FC<AppShellProps> = ({ role, userName, children }) 
         </div>
       </aside>
 
-      {/* Main content */}
-      <main className="flex-1 overflow-y-auto">
-        <header className="sticky top-0 z-10 bg-card border-b px-8 py-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-2xl font-semibold">Welcome back, {userName}</h2>
-              <p className="text-sm text-muted-foreground">
-                {new Date().toLocaleDateString("en-US", {
-                  weekday: "long",
-                  year: "numeric",
-                  month: "long",
-                  day: "numeric",
-                })}
-              </p>
-            </div>
-            <div className="flex items-center gap-4">
-              {showConnectionStatus && (
-                <div className="flex items-center gap-2 px-3 py-1.5 bg-[var(--success)]/10 border border-[var(--success)] rounded-lg">
-                  <div className="h-2 w-2 bg-[var(--success)] rounded-full animate-pulse" />
-                  <span className="text-xs font-medium text-[var(--success)]">Real-time Connected</span>
-                </div>
-              )}
-              <button className="relative p-2 rounded-lg hover:bg-accent transition-colors">
-                <Bell className="h-5 w-5" />
-                <span className="absolute top-1 right-1 h-2 w-2 bg-[var(--danger)] rounded-full"></span>
-              </button>
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-full bg-[var(--primary)] flex items-center justify-center text-white font-semibold">
-                  {userName.charAt(0)}
-                </div>
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Header */}
+        <header className="border-b bg-card px-6 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <h2 className="text-xl font-bold">Integrated Emergency Response</h2>
+          </div>
+
+          <div className="flex items-center gap-4">
+            {showConnectionStatus && (
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 text-emerald-500 text-xs font-semibold border border-emerald-500/20">
+                <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                Live Telemetry Synchronized
               </div>
+            )}
+            <div className="text-right">
+              <p className="font-semibold text-sm">{userName}</p>
+              <p className="text-xs text-muted-foreground capitalize">{role} Account</p>
             </div>
           </div>
         </header>
 
-        <div className="p-8">{children}</div>
-      </main>
+        {/* Content Area */}
+        <main className="flex-1 overflow-y-auto p-6 bg-background">
+          {children}
+        </main>
+      </div>
 
-      {/* Notifications Drawer/Modal */}
+      {/* Notifications Drawer Overlay */}
       {showNotifications && (
-        <div className="fixed inset-0 z-50 flex items-center justify-end bg-black/50 backdrop-blur-sm">
-          <div className="w-full max-w-md h-full bg-card shadow-2xl p-6 flex flex-col animate-slide-in">
-            <div className="flex items-center justify-between border-b pb-4 mb-4">
-              <h3 className="text-xl font-bold flex items-center gap-2">
-                <Bell className="h-5 w-5 text-[var(--primary)]" />
-                Live Notification Center
-              </h3>
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex justify-end">
+          <div className="w-96 bg-card h-full border-l shadow-2xl flex flex-col animate-in slide-in-from-right duration-300">
+            <div className="p-4 border-b flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Bell className="h-5 w-5 text-primary" />
+                <h3 className="font-bold">System Alerts</h3>
+              </div>
               <button 
                 onClick={() => setShowNotifications(false)}
-                className="p-1.5 hover:bg-accent rounded-lg transition-colors"
+                className="p-1 rounded-lg hover:bg-accent text-muted-foreground hover:text-foreground cursor-pointer"
               >
                 <X className="h-5 w-5" />
               </button>
             </div>
-            
-            <div className="flex-1 overflow-y-auto space-y-4">
-              {[
-                { title: "🚨 New Critical Trauma Dispatched", time: "2 mins ago", desc: "Case #2094 assigned to Ridge Hospital ICU Ward.", urgent: true },
-                { title: "⚡ Ambulance Unit 4 Status Update", time: "15 mins ago", desc: "Ambulance completed case and is now available.", urgent: false },
-                { title: "⚠️ Low Capacity Alert", time: "1 hour ago", desc: "Korle Bu Hospital general beds occupancy has exceeded 90%.", urgent: true },
-                { title: "🔄 ML Engine Retraining Complete", time: "2 hours ago", desc: "Routing algorithm successfully fit Random Forest Regressor on 145 resolved cases.", urgent: false },
-              ].map((item, idx) => (
-                <div 
-                  key={idx} 
-                  className={cn(
-                    "p-4 border rounded-lg transition-all",
-                    item.urgent ? "border-[var(--warning)]/50 bg-[var(--warning)]/5" : "bg-accent/40"
-                  )}
-                >
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="font-semibold text-sm">{item.title}</span>
-                    <span className="text-xs text-muted-foreground">{item.time}</span>
-                  </div>
-                  <p className="text-xs text-muted-foreground">{item.desc}</p>
+            <div className="flex-1 overflow-y-auto p-4 space-y-3">
+              <div className="p-3 border rounded-lg bg-red-500/10 border-red-500/20">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-xs font-bold text-red-500 uppercase">Critical Dispatch</span>
+                  <span className="text-[10px] text-muted-foreground">Just Now</span>
                 </div>
-              ))}
-            </div>
-            
-            <div className="border-t pt-4 mt-4">
-              <Button 
-                variant="outline" 
-                className="w-full text-xs font-semibold"
-                onClick={() => setShowNotifications(false)}
-              >
-                Dismiss All Notifications
-              </Button>
+                <p className="text-xs font-semibold">Trauma Incident at Circle Overhead</p>
+                <p className="text-[11px] text-muted-foreground mt-1">Ambulance GA-2041 assigned to Ridge Hospital ER.</p>
+              </div>
+
+              <div className="p-3 border rounded-lg bg-amber-500/10 border-amber-500/20">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-xs font-bold text-amber-500 uppercase">High Capacity Warning</span>
+                  <span className="text-[10px] text-muted-foreground">12m ago</span>
+                </div>
+                <p className="text-xs font-semibold">Korle Bu ER at 88% Capacity</p>
+                <p className="text-[11px] text-muted-foreground mt-1">2 ICU beds remaining. Automated rerouting active.</p>
+              </div>
+
+              <div className="p-3 border rounded-lg bg-emerald-500/10 border-emerald-500/20">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-xs font-bold text-emerald-500 uppercase">System Status</span>
+                  <span className="text-[10px] text-muted-foreground">1h ago</span>
+                </div>
+                <p className="text-xs font-semibold">WebSocket Synchronization Active</p>
+                <p className="text-[11px] text-muted-foreground mt-1">Telemetry node latency &lt; 45ms across 40 Ghanaian facilities.</p>
+              </div>
             </div>
           </div>
         </div>
@@ -292,77 +283,69 @@ export const AppShell: React.FC<AppShellProps> = ({ role, userName, children }) 
 
       {/* Settings Modal */}
       {showSettings && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-          <div className="w-full max-w-lg bg-card shadow-2xl rounded-xl p-6 flex flex-col mx-4 animate-scale-in">
-            <div className="flex items-center justify-between border-b pb-4 mb-4">
-              <h3 className="text-xl font-bold flex items-center gap-2">
-                <Settings className="h-5 w-5 text-[var(--primary)]" />
-                IERBMS System Preferences
-              </h3>
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="w-full max-w-md bg-card border rounded-xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="p-4 border-b flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Settings className="h-5 w-5 text-primary" />
+                <h3 className="font-bold">Portal Settings</h3>
+              </div>
               <button 
                 onClick={() => setShowSettings(false)}
-                className="p-1.5 hover:bg-accent rounded-lg transition-colors"
+                className="p-1 rounded-lg hover:bg-accent text-muted-foreground hover:text-foreground cursor-pointer"
               >
                 <X className="h-5 w-5" />
               </button>
             </div>
-            
-            <div className="space-y-6 flex-1 py-2">
+            <div className="p-6 space-y-5">
               <div className="flex items-center justify-between">
                 <div>
-                  <label className="font-medium text-sm block">Sound Alerts on Dispatch</label>
-                  <span className="text-xs text-muted-foreground">Play tone for critical vitals and incoming cases</span>
+                  <p className="text-sm font-semibold">Audio Emergency Alerts</p>
+                  <p className="text-xs text-muted-foreground">Play sound chime when critical incident triggers</p>
                 </div>
                 <input 
                   type="checkbox" 
                   checked={soundAlerts} 
                   onChange={(e) => setSoundAlerts(e.target.checked)}
-                  className="h-5 w-5 text-[var(--primary)] rounded focus:ring-[var(--primary)]"
+                  className="h-4 w-4 rounded accent-primary cursor-pointer"
                 />
               </div>
 
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between border-t pt-4">
                 <div>
-                  <label className="font-medium text-sm block">Auto-Center Map Navigation</label>
-                  <span className="text-xs text-muted-foreground">Keep the view focused on active vehicle route</span>
+                  <p className="text-sm font-semibold">Map Auto-Centering</p>
+                  <p className="text-xs text-muted-foreground">Auto-pan map when new ambulance dispatches</p>
                 </div>
                 <input 
                   type="checkbox" 
                   checked={mapAutocenter} 
                   onChange={(e) => setMapAutocenter(e.target.checked)}
-                  className="h-5 w-5 text-[var(--primary)] rounded focus:ring-[var(--primary)]"
+                  className="h-4 w-4 rounded accent-primary cursor-pointer"
                 />
               </div>
 
-              <div className="space-y-2">
-                <label className="font-medium text-sm block">Real-time Polling Interval</label>
-                <span className="text-xs text-muted-foreground block">Adjust telemetry ping frequencies for ambulances</span>
+              <div className="flex items-center justify-between border-t pt-4">
+                <div>
+                  <p className="text-sm font-semibold">Telemetry Refresh Rate</p>
+                  <p className="text-xs text-muted-foreground">Polling fallback frequency</p>
+                </div>
                 <select 
-                  value={refreshInterval} 
+                  value={refreshInterval}
                   onChange={(e) => setRefreshInterval(e.target.value)}
-                  className="w-full p-2 border rounded-lg bg-background text-sm"
+                  className="px-2.5 py-1 text-xs bg-background border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-primary cursor-pointer"
                 >
-                  <option value="2s">High Frequency (2s)</option>
-                  <option value="5s">Balanced (5s)</option>
-                  <option value="15s">Optimized (15s)</option>
+                  <option value="2s">2 seconds</option>
+                  <option value="5s">5 seconds</option>
+                  <option value="10s">10 seconds</option>
                 </select>
               </div>
             </div>
-            
-            <div className="border-t pt-4 mt-6 flex justify-end gap-2">
+            <div className="p-4 border-t bg-muted/30 flex justify-end">
               <Button 
-                variant="outline" 
                 onClick={() => setShowSettings(false)}
+                className="px-4 py-1.5 text-xs font-semibold"
               >
-                Cancel
-              </Button>
-              <Button 
-                variant="primary" 
-                onClick={() => setShowSettings(false)}
-                className="flex items-center gap-1.5"
-              >
-                <Check className="h-4 w-4" />
-                Save Changes
+                Save Preferences
               </Button>
             </div>
           </div>

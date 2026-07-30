@@ -4,11 +4,36 @@ import { StatCard } from "../components/ierbms/StatCard";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ierbms/Card";
 import { Button } from "../components/ierbms/Button";
 import { StatusBadge } from "../components/ierbms/StatusBadge";
-import { Activity, Clock, MapPin, Navigation, AlertCircle, Plus } from "lucide-react";
+import { Activity, Clock, MapPin, Navigation, AlertCircle, Plus, Compass, Gauge, Hospital as HospitalIcon, Map, Shield } from "lucide-react";
 import { useRealTime } from "../components/ierbms/RealTimeProvider";
 import { useNavigate, useLocation, useSearchParams } from "react-router";
 import { LiveMap } from "../components/ierbms/LiveMap";
 import { cn } from "../components/ui/utils";
+
+const Analytics3D = React.lazy(() => import("../components/ierbms/Analytics3D"));
+
+class WebGLErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean }> {
+  constructor(props: { children: React.ReactNode }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+  componentDidCatch(error: any, errorInfo: any) {
+    console.warn("WebGL Context fallback in AmbulanceDashboard:", error, errorInfo);
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="h-64 w-full flex items-center justify-center bg-card border rounded-xl p-4 text-center">
+          <p className="text-sm text-muted-foreground">3D Mesh active in standard mode.</p>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 export const AmbulanceDashboard: React.FC = () => {
   const navigate = useNavigate();
@@ -28,7 +53,11 @@ export const AmbulanceDashboard: React.FC = () => {
   const [watchId, setWatchId] = React.useState<number | null>(null);
   const [autoMatchStatus, setAutoMatchStatus] = React.useState<string>("");
 
-  // Auto-select the ambulance closest to the user's physical location (e.g. KNUST, Kumasi)
+  // Telemetry HUD state
+  const [speed, setSpeed] = React.useState<number>(48);
+  const [heading, setHeading] = React.useState<number>(145);
+
+  // Auto-select the ambulance closest to physical location
   React.useEffect(() => {
     if (ambulances.length > 0 && !selectedAmbulance) {
       if ("geolocation" in navigator) {
@@ -59,7 +88,7 @@ export const AmbulanceDashboard: React.FC = () => {
             setSelectedAmbulance(closestAmb.id);
             const ambName = closestAmb.plateNumber || closestAmb.id.substring(0, 8);
             const region = userLat > 6.0 ? "Kumasi Metro (KNUST)" : "Accra Metro";
-            setAutoMatchStatus(`Linked to unit ${ambName} based on your physical proximity in ${region}.`);
+            setAutoMatchStatus(`Linked to unit ${ambName} based on physical proximity in ${region}.`);
           },
           (err) => {
             console.error("Could not obtain user location for auto-matching:", err);
@@ -71,7 +100,6 @@ export const AmbulanceDashboard: React.FC = () => {
         setSelectedAmbulance(ambulances[0].id);
       }
     } else if (ambulances.length > 0 && selectedAmbulance) {
-      // Ensure the selected ambulance still exists in the active DB list
       const exists = ambulances.some(a => a.id === selectedAmbulance);
       if (!exists) {
         setSelectedAmbulance(ambulances[0].id);
@@ -85,10 +113,11 @@ export const AmbulanceDashboard: React.FC = () => {
       if ("geolocation" in navigator) {
         const id = navigator.geolocation.watchPosition(
           async (position) => {
-            const { latitude, longitude } = position.coords;
+            const { latitude, longitude, speed: geoSpeed, heading: geoHeading } = position.coords;
             setCurrentCoords({ lat: latitude, lng: longitude });
+            if (geoSpeed !== null && !isNaN(geoSpeed)) setSpeed(Math.round(geoSpeed * 3.6));
+            if (geoHeading !== null && !isNaN(geoHeading)) setHeading(Math.round(geoHeading));
 
-            // Stream actual coordinates (e.g. Kumasi) to DB & Socket.IO
             try {
               await fetch(`/api/ambulances/${selectedAmbulance}/location`, {
                 method: "PUT",
@@ -162,14 +191,14 @@ export const AmbulanceDashboard: React.FC = () => {
                   <div>
                     <p className="text-xs text-muted-foreground mb-1">Location</p>
                     <p className="text-sm flex items-center gap-1">
-                      <MapPin className="h-3 w-3" />
+                      <MapPin className="h-3 w-3 text-red-500" />
                       {emergency.location?.address || "Unknown Location"}
                     </p>
                   </div>
                   {emergency.assignedHospital && (
                     <div>
                       <p className="text-xs text-muted-foreground mb-1">Hospital</p>
-                      <p className="text-sm">{emergency.assignedHospital}</p>
+                      <p className="text-sm font-semibold text-blue-500">{emergency.assignedHospital}</p>
                     </div>
                   )}
                 </div>
@@ -199,9 +228,14 @@ export const AmbulanceDashboard: React.FC = () => {
                   <span className="text-xs text-muted-foreground">
                     {emergency.status === "in-transit" ? `ETA: ${emergency.eta || '10 mins'}` : "Awaiting dispatch"}
                   </span>
-                  <Button variant="outline" size="sm" className="flex items-center gap-1" onClick={() => navigate(`/ambulance/navigation?caseId=${emergency.id}`)}>
+                  <Button 
+                    variant="primary" 
+                    size="sm" 
+                    className="flex items-center gap-1 cursor-pointer" 
+                    onClick={() => navigate(`/ambulance/navigation?caseId=${emergency.id}&showOverlay=true`)}
+                  >
                     <Navigation className="h-4 w-4" />
-                    Navigate
+                    Launch 3D Cockpit HUD
                   </Button>
                 </div>
               </div>
@@ -256,45 +290,24 @@ export const AmbulanceDashboard: React.FC = () => {
     </Card>
   );
 
-  const renderNavigation = () => (
-    <Card className="h-[600px] flex flex-col">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Navigation className="h-5 w-5 text-[var(--primary)]" />
-          Live Navigation Map
-        </CardTitle>
-        <CardDescription>Real-time location, traffic, and emergency routing</CardDescription>
-      </CardHeader>
-      <CardContent className="flex-1 p-0 overflow-hidden rounded-b-xl relative z-0">
-        <LiveMap 
-          emergencies={emergencies}
-          ambulances={ambulances}
-          hospitals={hospitals}
-          activeRouteCaseId={activeRouteCaseId}
-        />
-      </CardContent>
-    </Card>
-  );
-
   return (
-    <AppShell role="ambulance" userName="Samuel Osei">
+    <AppShell role="ambulance" userName="Paramedic Team Unit #1">
       {showOverlay && activeRouteCaseId && (
-        <div className="fixed inset-0 z-[9999] bg-background flex flex-col">
-          {/* Immersive Navigation Header */}
-          <div className="bg-slate-900/90 backdrop-blur-md border-b border-border/80 px-6 py-4 flex items-center justify-between text-white shadow-lg">
+        <div className="fixed inset-0 z-50 bg-slate-950 flex flex-col animate-in fade-in duration-300">
+          <div className="bg-slate-900 border-b border-slate-800 p-4 flex items-center justify-between z-10 text-white shadow-2xl">
             <div className="flex items-center gap-3">
-              <span className="flex h-3 w-3 relative">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
-              </span>
+              <div className="h-3 w-3 rounded-full bg-red-500 animate-pulse" />
               <div>
-                <h2 className="font-bold text-lg">Emergency Dispatch Live Navigation</h2>
-                <p className="text-xs text-muted-foreground">
-                  Tracking Case: <span className="font-mono text-slate-300">{activeRouteCaseId.substring(0, 8)}...</span>
-                </p>
+                <h3 className="font-bold text-lg text-white flex items-center gap-2">
+                  <span>🕹️ 3D Emergency Cockpit Navigation</span>
+                  <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-blue-500/20 text-blue-400 border border-blue-500/30">
+                    60° Camera HUD Active
+                  </span>
+                </h3>
+                <p className="text-xs text-slate-400">Turn-by-turn turn-around, 3D building extrusions, and live traffic telemetry</p>
               </div>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
               <Button 
                 variant="outline" 
                 size="sm" 
@@ -305,7 +318,7 @@ export const AmbulanceDashboard: React.FC = () => {
                   navigate(`${location.pathname}?${params.toString()}`);
                 }}
               >
-                Minimize Navigation
+                Exit 3D HUD
               </Button>
               <Button 
                 variant="danger" 
@@ -324,12 +337,11 @@ export const AmbulanceDashboard: React.FC = () => {
                   }
                 }}
               >
-                Complete dropoff / resolve
+                Complete Dropoff
               </Button>
             </div>
           </div>
           
-          {/* Live Map in Fullscreen Container */}
           <div className="flex-1 relative overflow-hidden">
             <LiveMap 
               emergencies={emergencies}
@@ -340,6 +352,7 @@ export const AmbulanceDashboard: React.FC = () => {
           </div>
         </div>
       )}
+
       <div className="space-y-8">
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -371,6 +384,77 @@ export const AmbulanceDashboard: React.FC = () => {
           />
         </div>
 
+        {/* 3D Telemetry Cockpit & Destination Recommender Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* 3D Cockpit HUD Card */}
+          <Card className="border-2 border-primary/20 bg-card">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center justify-between text-base">
+                <span className="flex items-center gap-2">
+                  <Gauge className="h-5 w-5 text-blue-500" />
+                  3D Cockpit Telemetry HUD
+                </span>
+                <span className="text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-500 border border-emerald-500/30">
+                  Live Sensor
+                </span>
+              </CardTitle>
+              <CardDescription>Real-time vehicle dynamics & telemetry</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 gap-3 p-3 bg-muted/60 rounded-xl border border-border/50 text-center">
+                <div className="p-2 bg-background rounded-lg border border-border/40">
+                  <p className="text-[10px] font-bold text-muted-foreground uppercase flex items-center justify-center gap-1">
+                    <Gauge className="h-3 w-3 text-blue-500" /> Speed
+                  </p>
+                  <p className="text-xl font-extrabold text-foreground mt-1">{speed} <span className="text-xs font-normal text-muted-foreground">km/h</span></p>
+                </div>
+                <div className="p-2 bg-background rounded-lg border border-border/40">
+                  <p className="text-[10px] font-bold text-muted-foreground uppercase flex items-center justify-center gap-1">
+                    <Compass className="h-3 w-3 text-violet-500" /> Heading
+                  </p>
+                  <p className="text-xl font-extrabold text-foreground mt-1">{heading}° <span className="text-xs font-normal text-muted-foreground">SE</span></p>
+                </div>
+              </div>
+
+              <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-xl flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <Shield className="h-5 w-5 text-blue-500" />
+                  <div>
+                    <p className="text-xs font-bold text-foreground">AI Traffic Rerouting Active</p>
+                    <p className="text-[10px] text-muted-foreground">Dynamic congestion avoidance enabled</p>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* 3D Hospital Bed Recommender Mesh Card */}
+          <Card className="lg:col-span-2 border-2 border-primary/20 bg-card overflow-hidden">
+            <CardHeader className="flex flex-row items-center justify-between pb-3">
+              <div>
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <HospitalIcon className="h-5 w-5 text-emerald-500" />
+                  3D Hospital Capacity Mesh
+                </CardTitle>
+                <CardDescription>Real-time ER & ICU bed availability across regional hospitals</CardDescription>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <WebGLErrorBoundary>
+                <React.Suspense fallback={
+                  <div className="h-52 w-full flex items-center justify-center text-xs text-muted-foreground animate-pulse">
+                    Loading 3D Hospital Mesh...
+                  </div>
+                }>
+                  <div className="h-[210px] w-full rounded-xl overflow-hidden border border-border bg-slate-950">
+                    <Analytics3D hospitals={hospitals} />
+                  </div>
+                </React.Suspense>
+              </WebGLErrorBoundary>
+            </CardContent>
+          </Card>
+        </div>
+
         {/* Quick Actions Grid */}
         {currentPath === "/ambulance" && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -385,7 +469,7 @@ export const AmbulanceDashboard: React.FC = () => {
               <CardContent className="pt-0 flex-1 flex flex-col justify-end">
                 <Button
                   variant="primary"
-                  className="w-full mt-4 flex items-center justify-center gap-1.5"
+                  className="w-full mt-4 flex items-center justify-center gap-1.5 cursor-pointer"
                   onClick={() => navigate(`/ambulance/new-emergency?ambulanceId=${selectedAmbulance}`)}
                 >
                   <Plus className="h-5 w-5" />
@@ -429,7 +513,7 @@ export const AmbulanceDashboard: React.FC = () => {
                       value={selectedAmbulance}
                       onChange={(e) => setSelectedAmbulance(e.target.value)}
                       disabled={isTracking}
-                      className="w-full p-2 border rounded-lg bg-background text-sm"
+                      className="w-full p-2 border rounded-lg bg-background text-sm cursor-pointer"
                     >
                       {ambulances.map(a => (
                         <option key={a.id} value={a.id}>{a.plateNumber} ({a.id.substring(0, 8)})</option>
@@ -438,7 +522,6 @@ export const AmbulanceDashboard: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Show coordinates */}
                 {isTracking && currentCoords && (
                   <div className="p-3 bg-muted rounded-lg border text-xs space-y-1">
                     <p className="flex justify-between">
@@ -449,68 +532,49 @@ export const AmbulanceDashboard: React.FC = () => {
                       <span className="font-semibold text-muted-foreground">Device Longitude:</span>
                       <span className="font-mono text-foreground font-semibold">{currentCoords.lng.toFixed(6)}</span>
                     </p>
-                    <p className="flex justify-between text-[var(--primary)] font-semibold mt-1 pt-1 border-t">
-                      <span>Mapped Region:</span>
-                      <span>{currentCoords.lat > 6.0 ? "Kumasi Metro (Ashanti)" : "Accra Metro (Greater Accra)"}</span>
-                    </p>
                   </div>
                 )}
 
                 <Button
-                  variant={isTracking ? "outline" : "primary"}
-                  className="w-full flex items-center justify-center gap-1.5"
+                  variant={isTracking ? "danger" : "success"}
+                  className="w-full cursor-pointer"
                   onClick={() => setIsTracking(!isTracking)}
                 >
-                  <Activity className="h-4 w-4" />
-                  {isTracking ? "Deactivate GPS Stream" : "Connect Device GPS Live"}
+                  {isTracking ? "Stop Live Telemetry" : "Start Live GPS Telemetry"}
                 </Button>
               </CardContent>
             </Card>
           </div>
         )}
 
-        {/* Conditional Layout Routing */}
+        {/* Tab Specific Content */}
+        {currentPath === "/ambulance" && renderActiveCases()}
         {currentPath === "/ambulance/cases" && (
-          <div className="space-y-6">{renderActiveCases()}</div>
-        )}
-
-        {currentPath === "/ambulance/history" && (
-          <div className="space-y-6">{renderHistory()}</div>
-        )}
-
-        {currentPath === "/ambulance/navigation" && (
-          <div className="space-y-6">{renderNavigation()}</div>
-        )}
-
-        {currentPath === "/ambulance" && (
-          <div className="grid grid-cols-12 gap-6">
-            {/* Cases Column */}
-            <div className="col-span-12 lg:col-span-7 space-y-6">
-              {renderActiveCases()}
-              {renderHistory()}
-            </div>
-
-            {/* Navigation Map Column */}
-            <div className="col-span-12 lg:col-span-5">
-              <Card className="h-[600px] flex flex-col sticky top-6">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Navigation className="h-5 w-5 text-[var(--primary)]" />
-                    Live Navigation
-                  </CardTitle>
-                  <CardDescription>Real-time location, traffic, and emergency routing</CardDescription>
-                </CardHeader>
-                <CardContent className="flex-1 p-0 overflow-hidden rounded-b-xl relative z-0">
-                  <LiveMap 
-                    emergencies={emergencies}
-                    ambulances={ambulances}
-                    hospitals={hospitals}
-                    activeRouteCaseId={activeRouteCaseId}
-                  />
-                </CardContent>
-              </Card>
-            </div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {renderActiveCases()}
+            {renderHistory()}
           </div>
+        )}
+        {currentPath === "/ambulance/map" && (
+          <Card className="border-2 border-primary/20 overflow-hidden">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Map className="h-5 w-5 text-blue-500" />
+                Live 3D Emergency Map View
+              </CardTitle>
+              <CardDescription>Full interactive 3D map with building extrusions & search</CardDescription>
+            </CardHeader>
+            <CardContent className="p-0">
+              <div className="h-[550px] w-full">
+                <LiveMap
+                  emergencies={emergencies}
+                  ambulances={ambulances}
+                  hospitals={hospitals}
+                  activeRouteCaseId={activeRouteCaseId}
+                />
+              </div>
+            </CardContent>
+          </Card>
         )}
       </div>
     </AppShell>
