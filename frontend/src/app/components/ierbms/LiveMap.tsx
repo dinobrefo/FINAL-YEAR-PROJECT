@@ -139,12 +139,21 @@ export const LiveMap: React.FC<LiveMapProps> = ({
   const is3DActive = tilt3D > 0;
   const initialFitDoneRef = React.useRef<boolean>(false);
 
-  // Uncontrolled Initial Center Ref (Prevents map camera from resetting position when state updates!)
+  // Uncontrolled Initial Center & Zoom (Passed ONLY ONCE to map instance onLoad)
   const initialCenterRef = React.useRef({ lat: center[0], lng: center[1] });
   const initialZoomRef = React.useRef(zoom);
 
   // Active Popup to Display (Clicked/Searched marker > Hovered marker)
   const displayedMarker = activeMarker || hoveredMarker;
+
+  // Memoized Static Map Options WITHOUT center or zoom (Prevents map.setOptions from resetting center on re-renders!)
+  const googleMapOptions = React.useMemo<google.maps.MapOptions>(() => ({
+    disableDefaultUI: false,
+    zoomControl: true,
+    streetViewControl: false,
+    mapTypeControl: false,
+    fullscreenControl: false,
+  }), []);
 
   // Historic Ghana Emergency Incident Hotspots
   const heatmapPoints = React.useMemo(() => {
@@ -355,43 +364,35 @@ export const LiveMap: React.FC<LiveMapProps> = ({
     setHoveredMarker(null);
   };
 
-  // State Change Helper — Preserves Map Camera Center Exactly
-  const withCenterPreserved = (action: () => void) => {
-    const currentCenter = map?.getCenter();
-    action();
-    if (map && currentCenter) {
-      map.setCenter(currentCenter);
+  const toggleAudio = () => {
+    const muted = audioTelemetry.toggleMute();
+    setIsAudioMuted(muted);
+    if (!muted) {
+      audioTelemetry.playAlertBeep('success');
+      audioTelemetry.speak("Voice HUD telemetry active");
     }
   };
 
-  const toggleAudio = () => {
-    withCenterPreserved(() => {
-      const muted = audioTelemetry.toggleMute();
-      setIsAudioMuted(muted);
-      if (!muted) {
-        audioTelemetry.playAlertBeep('success');
-        audioTelemetry.speak("Voice HUD telemetry active");
-      }
-    });
-  };
-
   const toggleTrafficLayer = () => {
-    withCenterPreserved(() => {
-      setShowTraffic(prev => !prev);
-    });
+    setShowTraffic(prev => !prev);
   };
 
   const toggleHeatmapLayer = () => {
-    withCenterPreserved(() => {
-      setShowHeatmap(prev => !prev);
-    });
+    setShowHeatmap(prev => !prev);
   };
 
   const changeTheme = (theme: 'dark' | 'light' | 'hybrid') => {
-    withCenterPreserved(() => {
-      setMapTheme(theme);
-    });
+    setMapTheme(theme);
   };
+
+  // Dynamically apply Theme and Dark Styles to map instance without touching center or zoom!
+  React.useEffect(() => {
+    if (!map) return;
+    map.setOptions({
+      mapTypeId: mapTheme === 'hybrid' ? 'hybrid' : 'roadmap',
+      styles: mapTheme === 'dark' ? darkMapStyles : null
+    });
+  }, [map, mapTheme]);
 
   // Instant Repositioning Handler — Guarantees Instant Pan & Zoom
   const handleRepositionGPS = () => {
@@ -436,6 +437,9 @@ export const LiveMap: React.FC<LiveMapProps> = ({
   };
 
   const onLoad = React.useCallback((mapInstance: google.maps.Map) => {
+    mapInstance.setCenter(initialCenterRef.current);
+    mapInstance.setZoom(initialZoomRef.current);
+    mapInstance.setTilt(60);
     setMap(mapInstance);
   }, []);
 
@@ -817,17 +821,7 @@ export const LiveMap: React.FC<LiveMapProps> = ({
         mapContainerStyle={{ height: '100%', width: '100%', borderRadius: '0.5rem' }}
         onLoad={onLoad}
         onUnmount={onUnmount}
-        options={{
-          center: initialCenterRef.current,
-          zoom: initialZoomRef.current,
-          disableDefaultUI: false,
-          zoomControl: true,
-          streetViewControl: false,
-          mapTypeControl: false,
-          fullscreenControl: false,
-          mapTypeId: mapTheme === 'hybrid' ? 'hybrid' : 'roadmap',
-          styles: mapTheme === 'dark' ? darkMapStyles : undefined
-        }}
+        options={googleMapOptions}
       >
         {showTraffic && <TrafficLayer />}
 
