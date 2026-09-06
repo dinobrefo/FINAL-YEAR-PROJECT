@@ -1,6 +1,6 @@
 import { createBrowserRouter } from "react-router";
 import { Navigate } from "react-router";
-import { LandingPage } from "./pages/LandingPage";
+import { Home } from "./pages/Home";
 import { AmbulanceDashboard } from "./pages/AmbulanceDashboard";
 import { HospitalDashboard } from "./pages/HospitalDashboard";
 import { HospitalSelection } from "./pages/HospitalSelection";
@@ -41,7 +41,7 @@ export const AppWrapper = ({ children }: { children: React.ReactNode }) => {
 export const router = createBrowserRouter([
   {
     path: "/",
-    element: <LandingPage />,
+    element: <Home />,
   },
   {
     path: "/login",

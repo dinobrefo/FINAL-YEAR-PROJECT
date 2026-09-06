@@ -235,3 +235,132 @@
     line-height: 1.5;
   }
 }
+
+/* ==========================================================================
+   IERBMS Marketing Homepage Theme & Design Primitives
+   ========================================================================== */
+
+@theme {
+  --color-bg: #06111F;
+  --color-navy: #081827;
+  --color-card: #111C2D;
+  --color-primary: #EF4444;
+  --color-primary-glow: rgba(239, 68, 68, 0.35);
+  --color-ink: #F8FAFC;
+  --color-ink-muted: #94A3B8;
+  --color-ink-faint: #64748B;
+  --color-state-success: #22C55E;
+  --color-state-warning: #F59E0B;
+  --color-state-info: #3B82F6;
+  
+  --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
+  --shadow-glow: 0 0 40px -8px rgba(239, 68, 68, 0.45);
+  --shadow-card: 0 1px 0 0 rgba(148, 163, 184, 0.08), 0 12px 40px -12px rgba(0, 0, 0, 0.6);
+}
+
+:root {
+  color-scheme: dark;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto !important;
+  }
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+.bg-grid {
+  background-image: linear-gradient(rgba(148, 163, 184, 0.06) 1px, transparent 1px), linear-gradient(90deg, rgba(148, 163, 184, 0.06) 1px, transparent 1px);
+}
+
+@keyframes pulseRing {
+  0% { transform: scale(0.9); opacity: 0.7; }
+  70% { transform: scale(1.6); opacity: 0; }
+  100% { opacity: 0; }
+}
+
+.animate-pulseRing {
+  animation: pulseRing 2.4s cubic-bezier(0.2, 0.7, 0.3, 1) infinite;
+}
+
+.container-page {
+  margin-left: auto;
+  margin-right: auto;
+  width: 100%;
+  max-width: 80rem;
+  padding-left: 1.25rem;
+  padding-right: 1.25rem;
+}
+@media (min-width: 640px) {
+  .container-page {
+    padding-left: 2rem;
+    padding-right: 2rem;
+  }
+}
+
+.panel {
+  border-radius: 0.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background-color: #111C2D;
+  box-shadow: 0 1px 0 0 rgba(148, 163, 184, 0.08), 0 12px 40px -12px rgba(0, 0, 0, 0.6);
+}
+
+.eyebrow {
+  font-size: 0.75rem;
+  line-height: 1rem;
+  font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.22em;
+  color: #94A3B8;
+}
+
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.5rem;
+  background-color: #EF4444;
+  color: #F8FAFC;
+  font-weight: 500;
+  box-shadow: 0 0 40px -8px rgba(239, 68, 68, 0.45);
+  transition: filter 0.2s, background-color 0.2s, box-shadow 0.2s;
+  cursor: pointer;
+}
+.btn-primary:hover {
+  filter: brightness(1.1);
+}
+.btn-primary:focus-visible {
+  outline: 2px solid #EF4444;
+  outline-offset: 2px;
+}
+
+.btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #F8FAFC;
+  font-weight: 500;
+  background-color: transparent;
+  transition: border-color 0.2s, background-color 0.2s;
+  cursor: pointer;
+}
+.btn-ghost:hover {
+  border-color: rgba(255, 255, 255, 0.3);
+  background-color: rgba(255, 255, 255, 0.05);
+}
+.btn-ghost:focus-visible {
+  outline: 2px solid #EF4444;
+  outline-offset: 2px;
+}
