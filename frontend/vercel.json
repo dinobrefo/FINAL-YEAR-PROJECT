@@ -9,6 +9,10 @@
       "destination": "https://ierbms-backend.onrender.com/socket.io/$1"
     },
     {
+      "source": "/ml-api/(.*)",
+      "destination": "https://ierbms-ml-engine.onrender.com/$1"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }
