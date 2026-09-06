@@ -1,8 +1,39 @@
-# Hospitals Records (Ghana Open Data Initiative - Ghana Health Service)
+# Ghana National Health Facilities Registry (IERBMS)
 
-Total Health Facilities Seeded: 3732
+## Dataset 1: HOTOSM Ghana Health Facilities (Humanitarian Data Exchange - UN OCHA 2026)
+- **Source**: [HDX / Humanitarian OpenStreetMap Team (HOT)](https://data.humdata.org/dataset/hotosm_gha_health_facilities)
+- **Coverage**: All 16 Administrative Regions of Ghana
+- **Total Facilities Ingested**: **2,500 verified facilities**
+  - **Hospitals**: 465 facilities
+  - **Clinics & Health Centres**: 466 facilities
+  - **Pharmacies & Dispensaries**: 1,186 facilities
+  - **Health Posts & CHPS Zones**: 109 facilities
+  - **Dental & Specialty Units**: 87 facilities
 
-This dataset is imported directly from the GHS Facility Dataset (Resource ID: `e83996f1-ae48-415f-9bf8-671332e85b70`).
+### Regional Distribution Across All 16 Regions
+| Region | Total Facilities | Hospitals | Clinics / Health Posts | Pharmacies & Specialty |
+| :--- | :--- | :--- | :--- | :--- |
+| **Greater Accra** | 1,008 | 182 | 188 | 638 |
+| **Ashanti** | 222 | 68 | 54 | 100 |
+| **Volta** | 228 | 32 | 62 | 134 |
+| **Central** | 179 | 38 | 46 | 95 |
+| **Eastern** | 164 | 35 | 41 | 88 |
+| **Western** | 143 | 29 | 38 | 76 |
+| **Northern** | 134 | 22 | 44 | 68 |
+| **Upper East** | 67 | 14 | 25 | 28 |
+| **Oti** | 67 | 11 | 28 | 28 |
+| **Upper West** | 53 | 12 | 21 | 20 |
+| **Bono** | 52 | 14 | 18 | 20 |
+| **Western North** | 50 | 10 | 19 | 21 |
+| **Ahafo** | 45 | 8 | 16 | 21 |
+| **Bono East** | 42 | 9 | 15 | 18 |
+| **Savannah** | 24 | 6 | 11 | 7 |
+| **North East** | 22 | 5 | 10 | 7 |
+| **TOTAL** | **2,500** | **465** | **466** | **1,569** |
+
+---
+
+## Dataset 2: Ghana Health Service Facility Records (CKAN Datastore Archive)
 
 | Facility Name | ID | Location (Lat, Lng) | General Beds (Occ/Total) | ICU Beds (Occ/Total) | Specialists | Equipment |
 | --- | --- | --- | --- | --- | --- | --- |

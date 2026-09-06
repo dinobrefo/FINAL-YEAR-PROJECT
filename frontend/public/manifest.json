@@ -1,16 +1,40 @@
 {
-  "short_name": "IERBMS",
-  "name": "Integrated Emergency Response & Bed Management System",
+  "name": "IERBMS - Integrated Emergency Resource & Bed Management System",
+  "short_name": "IERBMS Ghana",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0b1320",
+  "theme_color": "#0d9488",
+  "description": "Ghana National Emergency Medical Services (NEMS) Real-Time Hospital Bed Management & AI Dispatch System",
+  "categories": [
+    "medical",
+    "health",
+    "navigation",
+    "productivity"
+  ],
   "icons": [
     {
-      "src": "/favicon.ico",
-      "sizes": "64x64 32x32 24x24 16x16",
-      "type": "image/x-icon"
+      "src": "/vite.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
     }
   ],
-  "start_url": "/",
-  "background_color": "#1e1e2d",
-  "theme_color": "#1e1e2d",
-  "display": "standalone",
-  "orientation": "portrait"
+  "shortcuts": [
+    {
+      "name": "New Emergency Intake",
+      "short_name": "Intake",
+      "description": "Quick Paramedic Emergency Registration",
+      "url": "/ambulance/new-emergency",
+      "icons": [{ "src": "/vite.svg", "sizes": "96x96" }]
+    },
+    {
+      "name": "Live Tactical Map",
+      "short_name": "Map",
+      "description": "Real-time Ambulance & Hospital Navigation",
+      "url": "/ambulance/map",
+      "icons": [{ "src": "/vite.svg", "sizes": "96x96" }]
+    }
+  ]
 }

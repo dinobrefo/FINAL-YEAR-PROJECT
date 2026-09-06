@@ -7,6 +7,8 @@ from fastapi import FastAPI, BackgroundTasks
 from pydantic import BaseModel
 from typing import List, Optional
 from models.routing_model import recommend_hospitals
+from models.bed_prediction_model import predict_bed_occupancy
+from models.demand_forecast_model import forecast_emergency_demand
 
 app = FastAPI(title="IERBMS ML Engine")
 
@@ -29,6 +31,15 @@ class EmergencyCaseRequest(BaseModel):
     emergency_type: str = ""
     hospitals: List[HospitalData]
 
+class BedPredictionRequest(BaseModel):
+    target_region: Optional[str] = "Greater Accra & Ashanti"
+    forecast_hours: Optional[int] = 24
+    hospitals: List[dict] = []
+
+class DemandForecastRequest(BaseModel):
+    target_region: Optional[str] = "Greater Accra & Ashanti"
+    forecast_hours: Optional[int] = 12
+
 @app.get("/health")
 def health_check():
     return {"status": "ok", "message": "ML Engine is running"}
@@ -36,7 +47,7 @@ def health_check():
 @app.post("/predict/route")
 def predict_route(request: EmergencyCaseRequest):
     """
-    Predict optimal hospital routing based on variables like distance, bed capacity, trauma level, and clinical capabilities.
+    AI Model 1: Predict optimal hospital routing based on distance, bed capacity, trauma level, and capabilities.
     """
     recommended = recommend_hospitals(
         amb_lat=request.latitude,
@@ -47,59 +58,44 @@ def predict_route(request: EmergencyCaseRequest):
     )
     return {"recommended_hospitals": recommended}
 
+@app.post("/predict/bed-occupancy")
+def predict_beds(request: BedPredictionRequest):
+    """
+    AI Model 2: Predict 24-hour future bed and ICU availability & saturation risk across hospitals.
+    """
+    return predict_bed_occupancy(
+        hospitals=request.hospitals, 
+        forecast_hours=request.forecast_hours or 24
+    )
+
+@app.post("/predict/demand-forecast")
+def predict_demand(request: DemandForecastRequest):
+    """
+    AI Model 3: Forecast accident hotspots, surge frequency, and ambulance standby strategies.
+    """
+    return forecast_emergency_demand(
+        target_region=request.target_region or "Greater Accra & Ashanti", 
+        hours_ahead=request.forecast_hours or 12
+    )
+
 def train_model_job():
     try:
-        # Connect to DB
-        conn = psycopg2.connect(
-            dbname=os.getenv("POSTGRES_DB", "ierbms"),
-            user=os.getenv("POSTGRES_USER", "ierbms_user"),
-            password=os.getenv("POSTGRES_PASSWORD", "ierbms_password"),
-            host=os.getenv("POSTGRES_HOST", "localhost"),
-            port=os.getenv("POSTGRES_PORT", "5433")
-        )
-        
-        query = """
-            SELECT 
-                c.trauma_level, 
-                h.occupied_general_beds,
-                h.total_general_beds,
-                EXTRACT(EPOCH FROM (c.resolved_at - c.created_at))/60 as resolution_time_mins
-            FROM emergency_cases c
-            JOIN hospitals h ON c.assigned_hospital_id = h.id
-            WHERE c.status = 'resolved' AND c.resolved_at IS NOT NULL
-        """
-        
-        df = pd.read_sql(query, conn)
-        conn.close()
-        
-        if len(df) < 10:
-            print("Not enough data to train (need at least 10 resolved cases)")
-            return
-            
-        df = df.dropna()
-        
-        # Features: trauma_level, bed_occupancy_rate
-        df['occupancy_rate'] = df['occupied_general_beds'] / df['total_general_beds'].replace(0, 1)
-        X = df[['trauma_level', 'occupancy_rate']]
-        y = df['resolution_time_mins']
-        
-        model = RandomForestRegressor(n_estimators=50, random_state=42)
-        model.fit(X, y)
-        
-        os.makedirs("weights", exist_ok=True)
-        joblib.dump(model, "weights/routing_model.pkl")
-        print(f"Model successfully retrained on {len(df)} records and saved!")
-        
+        from train_models import train_routing_model, train_bed_occupancy_model, train_demand_forecast_model
+        print("Triggering comprehensive retraining for all 3 AI models...")
+        train_routing_model()
+        train_bed_occupancy_model()
+        train_demand_forecast_model()
+        print("All 3 models successfully retrained and saved to weights/!")
     except Exception as e:
         print("Training failed:", e)
 
 @app.post("/train")
 def trigger_training(background_tasks: BackgroundTasks):
     """
-    Triggers a background job to retrain the ML model based on resolved emergency cases in the database.
+    Triggers a background job to retrain all 3 ML models (Routing, Bed Occupancy, Demand Forecasting).
     """
     background_tasks.add_task(train_model_job)
-    return {"status": "ok", "message": "Training job started in the background"}
+    return {"status": "ok", "message": "Training job for all 3 AI models started in the background"}
 
 if __name__ == "__main__":
     import uvicorn

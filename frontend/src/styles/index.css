@@ -3,67 +3,74 @@
 @import './theme.css';
 
 /* ==========================================================================
-   Google Maps InfoWindow Theme Overrides (Dark & Light Mode)
+   Leaflet Map & Custom Markers Theme Styling
    ========================================================================== */
 
-/* Dark Mode Google Maps InfoWindow Popup Styling */
-.dark .gm-style .gm-style-iw-c {
-  background-color: #1e1e2d !important;
-  color: #f1f5f9 !important;
+@keyframes leaflet-pulse {
+  0% {
+    transform: scale(0.95);
+    opacity: 0.6;
+  }
+  50% {
+    transform: scale(1.35);
+    opacity: 0.15;
+  }
+  100% {
+    transform: scale(0.95);
+    opacity: 0.6;
+  }
+}
+
+.leaflet-popup-content-wrapper {
+  background: #0f172a !important;
+  color: #ffffff !important;
+  border-radius: 14px !important;
+  padding: 6px !important;
   border: 1px solid #334155 !important;
-  border-radius: 12px !important;
   box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.6), 0 8px 10px -6px rgba(0, 0, 0, 0.6) !important;
-  padding: 12px !important;
 }
 
-.dark .gm-style .gm-style-iw-d {
-  overflow: hidden !important;
-  max-height: none !important;
-  color: #f1f5f9 !important;
+.leaflet-popup-tip {
+  background: #0f172a !important;
 }
 
-.dark .gm-style .gm-style-iw-tc::after {
-  background-color: #1e1e2d !important;
+.leaflet-popup-content {
+  color: #ffffff !important;
+  margin: 8px 12px !important;
+  line-height: 1.4 !important;
 }
 
-.dark .gm-style .gm-ui-hover-effect {
-  top: 4px !important;
-  right: 4px !important;
-  border-radius: 50% !important;
-  background-color: rgba(255, 255, 255, 0.15) !important;
+.leaflet-popup-content h1,
+.leaflet-popup-content h2,
+.leaflet-popup-content h3,
+.leaflet-popup-content h4,
+.leaflet-popup-content h5,
+.leaflet-popup-content h6,
+.leaflet-popup-content strong,
+.leaflet-popup-content b {
+  color: #ffffff !important;
 }
 
-.dark .gm-style .gm-ui-hover-effect span {
-  background-color: #ffffff !important;
+.leaflet-popup-close-button {
+  color: #94a3b8 !important;
+  top: 10px !important;
+  right: 10px !important;
 }
 
-/* Light Mode Google Maps InfoWindow Popup Styling */
-html:not(.dark) .gm-style .gm-style-iw-c {
-  background-color: #ffffff !important;
-  color: #0f172a !important;
-  border: 1px solid #e2e8f0 !important;
-  border-radius: 12px !important;
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1) !important;
-  padding: 12px !important;
+.leaflet-popup-close-button:hover {
+  color: #ffffff !important;
 }
 
-html:not(.dark) .gm-style .gm-style-iw-d {
-  overflow: hidden !important;
-  max-height: none !important;
-  color: #0f172a !important;
+.leaflet-container {
+  font-family: inherit !important;
 }
 
-html:not(.dark) .gm-style .gm-style-iw-tc::after {
-  background-color: #ffffff !important;
+.custom-leaflet-marker {
+  cursor: pointer !important;
+  pointer-events: auto !important;
 }
 
-html:not(.dark) .gm-style .gm-ui-hover-effect {
-  top: 4px !important;
-  right: 4px !important;
-  border-radius: 50% !important;
-  background-color: rgba(0, 0, 0, 0.05) !important;
+.custom-leaflet-marker * {
+  pointer-events: none;
 }
 
-html:not(.dark) .gm-style .gm-ui-hover-effect span {
-  background-color: #0f172a !important;
-}

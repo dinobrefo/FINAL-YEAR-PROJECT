@@ -8,6 +8,10 @@ CREATE TABLE IF NOT EXISTS hospitals (
     name VARCHAR(255) NOT NULL,
     latitude DECIMAL(10, 8) NOT NULL,
     longitude DECIMAL(11, 8) NOT NULL,
+    region VARCHAR(100) DEFAULT 'Greater Accra',
+    district VARCHAR(150) DEFAULT '',
+    amenity_type VARCHAR(100) DEFAULT 'hospital',
+    address TEXT DEFAULT '',
     total_general_beds INTEGER NOT NULL DEFAULT 0,
     occupied_general_beds INTEGER NOT NULL DEFAULT 0,
     total_icu_beds INTEGER NOT NULL DEFAULT 0,
@@ -17,6 +21,8 @@ CREATE TABLE IF NOT EXISTS hospitals (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
+CREATE INDEX IF NOT EXISTS idx_hospitals_region ON hospitals(region);
+CREATE INDEX IF NOT EXISTS idx_hospitals_amenity_type ON hospitals(amenity_type);
 
 -- Equipment Availability
 CREATE TABLE IF NOT EXISTS hospital_equipment (
@@ -45,20 +51,26 @@ CREATE TABLE IF NOT EXISTS emergency_cases (
     assigned_hospital_id UUID REFERENCES hospitals(id) ON DELETE SET NULL,
     patient_identifier VARCHAR(100), -- randomized identifier
     trauma_level INTEGER,
+    emergency_type VARCHAR(100) DEFAULT 'General Emergency',
+    triage_notes TEXT,
+    bed_type_assigned VARCHAR(50) DEFAULT 'general', -- 'general', 'icu'
     patient_vitals JSONB,
-    status VARCHAR(50) DEFAULT 'active', -- 'active', 'resolved'
+    status VARCHAR(50) DEFAULT 'active', -- 'active', 'in-transit', 'arrived', 'resolved'
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     resolved_at TIMESTAMP WITH TIME ZONE
 );
 CREATE INDEX idx_emergency_cases_hospital_id ON emergency_cases(assigned_hospital_id);
 CREATE INDEX idx_emergency_cases_ambulance_id ON emergency_cases(ambulance_id);
 
--- Users Table (Authentication)
+-- Users Table (Authentication & RBAC)
 CREATE TABLE IF NOT EXISTS users (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     hospital_id UUID REFERENCES hospitals(id) ON DELETE CASCADE,
+    full_name VARCHAR(255),
     email VARCHAR(255) UNIQUE NOT NULL,
+    phone VARCHAR(50),
     password_hash VARCHAR(255) NOT NULL,
-    role VARCHAR(50) NOT NULL, -- 'admin', 'hospital', 'doctor', 'ambulance'
+    role VARCHAR(50) NOT NULL, -- 'admin', 'hospital', 'doctor', 'nurse', 'ambulance', 'authority'
+    approval_status VARCHAR(50) DEFAULT 'approved', -- 'approved', 'pending'
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );

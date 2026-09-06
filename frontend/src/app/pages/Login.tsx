@@ -53,6 +53,9 @@ export const Login: React.FC = () => {
         case 'doctor':
           navigate('/doctor');
           break;
+        case 'nurse':
+          navigate('/nurse');
+          break;
         case 'hospital':
           if (data.user.hospital_id) {
             navigate(`/hospital/${data.user.hospital_id}`);
@@ -62,6 +65,9 @@ export const Login: React.FC = () => {
           break;
         case 'ambulance':
           navigate('/ambulance');
+          break;
+        case 'authority':
+          navigate('/authority');
           break;
         case 'admin':
           navigate('/command');
@@ -125,6 +131,12 @@ export const Login: React.FC = () => {
             <Button type="submit" variant="primary" className="w-full" disabled={loading}>
               {loading ? 'Authenticating...' : 'Sign In'}
             </Button>
+            <p className="text-center text-xs text-muted-foreground pt-1">
+              New staff member?{' '}
+              <a href="/register" className="text-[var(--primary)] font-bold hover:underline">
+                Create an account
+              </a>
+            </p>
           </form>
         </CardContent>
       </Card>

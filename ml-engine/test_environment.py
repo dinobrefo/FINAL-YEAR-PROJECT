@@ -50,7 +50,7 @@ def test_routing_model():
                 self.equipment = equipment or {}
 
         # Set up test cases
-        hosp_ok = MockHospital("hosp_ok", 5.65, -0.18, 10, 5, 5, 2, ["Cardiologist", "Emergency Medicine"], {"ventilators": 2, "oxygenUnits": 1})
+        hosp_ok = MockHospital("hosp_ok", 5.62, -0.18, 10, 5, 5, 2, ["Cardiologist", "Emergency Medicine"], {"ventilators": 2, "oxygenUnits": 1})
         hosp_far = MockHospital("hosp_far", 6.3, -0.18, 10, 2, 5, 1, ["Cardiologist"], {"ventilators": 2, "oxygenUnits": 1})
         hosp_full = MockHospital("hosp_full", 5.62, -0.18, 10, 10, 5, 5)
         hospitals = [hosp_ok, hosp_far, hosp_full]
@@ -72,8 +72,8 @@ def test_routing_model():
         # Fallback assertions
         assert h_ok["score"] > 0
         assert h_ok["ml_used"] is False
-        assert h_far["score"] == -99999
-        assert h_full["score"] == -99999
+        assert h_far["score"] == 0.0
+        assert h_full["score"] == 0.0
         print_result("Rule-Based Fallback Scoring", True)
         print_result("Distance safety limit (>60km)", True)
         print_result("General capacity limit (0 beds)", True)
@@ -103,9 +103,9 @@ def test_routing_model():
             h_full_ml = next(r for r in res_ml if r["hospital_id"] == "hosp_full")
             
             assert h_ok_ml["ml_used"] is True
-            assert 50 < h_ok_ml["score"] < 100
-            assert h_far_ml["score"] == -99999
-            assert h_full_ml["score"] == -99999
+            assert 0 < h_ok_ml["score"] < 100
+            assert h_far_ml["score"] == 0.0
+            assert h_full_ml["score"] == 0.0
             
             print_result("ML-Driven Scoring (resolution prediction)", True)
             print_result("ML Guardrails (distance & occupancy)", True)

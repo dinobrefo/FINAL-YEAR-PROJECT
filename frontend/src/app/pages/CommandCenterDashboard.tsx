@@ -9,34 +9,7 @@ import { LiveMap } from "../components/ierbms/LiveMap";
 import { useLocation, useNavigate } from "react-router";
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from "recharts";
 
-// Lazy load 3D components for performance and WebGL safety
-const GlobeView = React.lazy(() => import("../components/ierbms/GlobeView"));
-const Analytics3D = React.lazy(() => import("../components/ierbms/Analytics3D"));
-
-// Simple Error Boundary for WebGL fallback
-class WebGLErrorBoundary extends React.Component<{ children: React.ReactNode, fallbackText?: string }, { hasError: boolean }> {
-  constructor(props: any) {
-    super(props);
-    this.state = { hasError: false };
-  }
-  static getDerivedStateFromError() {
-    return { hasError: true };
-  }
-  componentDidCatch(error: any, errorInfo: any) {
-    console.error("3D View Error Boundary caught error:", error, errorInfo);
-  }
-  render() {
-    if (this.state.hasError) {
-      return (
-        <div className="h-[400px] w-full flex flex-col items-center justify-center bg-card border rounded-lg p-6 text-center text-muted-foreground">
-          <p className="font-semibold text-foreground mb-1">3D Graphics Fallback Active</p>
-          <p className="text-sm">{this.props.fallbackText || "Your device or browser is displaying standard dashboard telemetry."}</p>
-        </div>
-      );
-    }
-    return this.props.children;
-  }
-}
+import { HospitalCapacityMesh } from "../components/ierbms/HospitalCapacityMesh";
 
 export const CommandCenterDashboard: React.FC = () => {
   const { emergencies, hospitals, ambulances } = useRealTime();
@@ -49,6 +22,11 @@ export const CommandCenterDashboard: React.FC = () => {
   const COLORS = ["#0d9488", "#06b6d4", "#3b82f6", "#f59e0b", "#ec4899"];
 
   const [analyticsData, setAnalyticsData] = React.useState<any>(null);
+  const [rerouteCase, setRerouteCase] = React.useState<any | null>(null);
+  const [targetHospitalId, setTargetHospitalId] = React.useState("");
+  const [assignAmbulanceCase, setAssignAmbulanceCase] = React.useState<any | null>(null);
+  const [targetAmbulanceId, setTargetAmbulanceId] = React.useState("");
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
 
   React.useEffect(() => {
     fetch('/api/command-center/analytics')
@@ -56,6 +34,127 @@ export const CommandCenterDashboard: React.FC = () => {
       .then(data => setAnalyticsData(data))
       .catch(err => console.error("Error fetching analytics data:", err));
   }, []);
+
+  const handleReroute = async () => {
+    if (!rerouteCase || !targetHospitalId) return;
+    setIsSubmitting(true);
+    try {
+      await fetch(`/api/ambulances/cases/${rerouteCase.id}/reroute`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ hospital_id: targetHospitalId })
+      });
+      setRerouteCase(null);
+    } catch (err) {
+      console.error("Failed to reroute case:", err);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleAssignAmbulance = async () => {
+    if (!assignAmbulanceCase || !targetAmbulanceId) return;
+    setIsSubmitting(true);
+    try {
+      await fetch(`/api/ambulances/cases/${assignAmbulanceCase.id}/assign-ambulance`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ambulance_id: targetAmbulanceId })
+      });
+      setAssignAmbulanceCase(null);
+    } catch (err) {
+      console.error("Failed to assign ambulance:", err);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleResolve = async (caseId: string) => {
+    try {
+      await fetch(`/api/ambulances/cases/${caseId}/status`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'resolved' })
+      });
+    } catch (err) {
+      console.error("Failed to resolve case:", err);
+    }
+  };
+
+  const renderActiveIncidents = () => (
+    <Card className="rounded-[28px] border border-border/50 shadow-xl">
+      <CardHeader className="p-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle className="text-lg font-bold">Active Incidents & Dispatch Control</CardTitle>
+            <CardDescription>Direct ambulance rerouting, diversion management, and load balancing</CardDescription>
+          </div>
+          <span className="px-3 py-1 bg-teal-500/15 text-teal-600 dark:text-teal-400 font-bold rounded-full text-xs">
+            {activeEmergencies.length} Active Emergencies
+          </span>
+        </div>
+      </CardHeader>
+      <CardContent className="p-6 pt-0">
+        {activeEmergencies.length > 0 ? (
+          <div className="divide-y divide-border/50">
+            {activeEmergencies.map((emg) => {
+              const assignedHosp = hospitals.find(h => h.id === emg.assignedHospital);
+              const assignedAmb = ambulances.find(a => a.id === emg.ambulanceId);
+              return (
+                <div key={emg.id} className="py-4 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-foreground text-sm">{emg.patientName}</span>
+                      <StatusBadge status={emg.severity}>{emg.severity.toUpperCase()}</StatusBadge>
+                      <span className="text-xs px-2 py-0.5 rounded bg-blue-500/10 text-blue-500 font-semibold">
+                        {emg.emergencyType}
+                      </span>
+                      <span className="text-xs font-mono text-muted-foreground">
+                        [{emg.status.toUpperCase()}]
+                      </span>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Destination: <strong className="text-foreground">{assignedHosp?.name || "Unassigned"}</strong> • Unit: <strong className="text-foreground">{assignedAmb?.plateNumber || "Pending"}</strong>
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => {
+                        setRerouteCase(emg);
+                        setTargetHospitalId(emg.assignedHospital || (hospitals[0]?.id || ""));
+                      }}
+                      className="px-3 py-1.5 text-xs font-bold rounded-xl border border-border hover:bg-muted text-foreground cursor-pointer transition-colors"
+                    >
+                      Divert / Reroute
+                    </button>
+                    {!emg.ambulanceId && (
+                      <button
+                        onClick={() => {
+                          setAssignAmbulanceCase(emg);
+                          setTargetAmbulanceId(availableAmbulances[0]?.id || "");
+                        }}
+                        className="px-3 py-1.5 text-xs font-bold rounded-xl bg-teal-600 hover:bg-teal-700 text-white cursor-pointer transition-colors"
+                      >
+                        Dispatch Unit
+                      </button>
+                    )}
+                    <button
+                      onClick={() => handleResolve(emg.id)}
+                      className="px-3 py-1.5 text-xs font-bold rounded-xl bg-emerald-600/10 hover:bg-emerald-600/20 text-emerald-600 cursor-pointer transition-colors"
+                    >
+                      Resolve Case
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <p className="text-center py-8 text-muted-foreground text-sm">No active emergency dispatches currently in progress.</p>
+        )}
+      </CardContent>
+    </Card>
+  );
 
   const currentPath = location.pathname;
 
@@ -497,15 +596,7 @@ export const CommandCenterDashboard: React.FC = () => {
                 <CardDescription>Interactive 3D visualization of hospital bed occupancy rates</CardDescription>
               </CardHeader>
               <CardContent className="p-6 pt-0">
-                <WebGLErrorBoundary fallbackText="3D Bar chart visualization requires WebGL support.">
-                  <React.Suspense fallback={
-                    <div className="h-[400px] flex items-center justify-center text-muted-foreground">
-                      <p className="animate-pulse text-xs">Loading 3D Analytics Canvas...</p>
-                    </div>
-                  }>
-                    <Analytics3D analyticsData={analyticsData} />
-                  </React.Suspense>
-                </WebGLErrorBoundary>
+                <HospitalCapacityMesh analyticsData={analyticsData} hospitals={hospitals} height={400} />
               </CardContent>
             </Card>
           </div>
@@ -514,8 +605,71 @@ export const CommandCenterDashboard: React.FC = () => {
         {currentPath === "/command" && (
           <>
             {renderCoachProDashboard()}
+            {renderActiveIncidents()}
             {renderMap()}
           </>
+        )}
+
+        {/* Reroute Hospital Modal */}
+        {rerouteCase && (
+          <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+            <div className="bg-card border rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+              <div className="flex items-center justify-between border-b pb-3">
+                <h3 className="text-lg font-bold">Divert / Reroute Emergency Case</h3>
+                <button onClick={() => setRerouteCase(null)} className="text-muted-foreground hover:text-foreground font-bold">✕</button>
+              </div>
+              <p className="text-sm">Reroute patient <strong>{rerouteCase.patientName}</strong> to alternative healthcare facility:</p>
+              <div className="space-y-2">
+                <label className="text-xs font-bold uppercase text-muted-foreground block">Select New Destination Hospital</label>
+                <select
+                  value={targetHospitalId}
+                  onChange={(e) => setTargetHospitalId(e.target.value)}
+                  className="w-full p-2.5 border rounded-lg bg-background text-sm cursor-pointer"
+                >
+                  {hospitals.map(h => (
+                    <option key={h.id} value={h.id}>{h.name} ({h.availableBeds} beds free)</option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex justify-end gap-2 pt-2">
+                <button onClick={() => setRerouteCase(null)} className="px-4 py-2 border rounded-lg text-sm cursor-pointer">Cancel</button>
+                <button onClick={handleReroute} disabled={isSubmitting} className="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg text-sm font-bold cursor-pointer">
+                  {isSubmitting ? "Rerouting..." : "Confirm Diversion"}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Assign Ambulance Modal */}
+        {assignAmbulanceCase && (
+          <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+            <div className="bg-card border rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+              <div className="flex items-center justify-between border-b pb-3">
+                <h3 className="text-lg font-bold">Dispatch Ambulance Unit</h3>
+                <button onClick={() => setAssignAmbulanceCase(null)} className="text-muted-foreground hover:text-foreground font-bold">✕</button>
+              </div>
+              <p className="text-sm">Assign available ambulance unit to incident <strong>{assignAmbulanceCase.patientName}</strong>:</p>
+              <div className="space-y-2">
+                <label className="text-xs font-bold uppercase text-muted-foreground block">Select Available Unit</label>
+                <select
+                  value={targetAmbulanceId}
+                  onChange={(e) => setTargetAmbulanceId(e.target.value)}
+                  className="w-full p-2.5 border rounded-lg bg-background text-sm cursor-pointer"
+                >
+                  {availableAmbulances.map(a => (
+                    <option key={a.id} value={a.id}>{a.plateNumber} (Stationed)</option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex justify-end gap-2 pt-2">
+                <button onClick={() => setAssignAmbulanceCase(null)} className="px-4 py-2 border rounded-lg text-sm cursor-pointer">Cancel</button>
+                <button onClick={handleAssignAmbulance} disabled={isSubmitting} className="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg text-sm font-bold cursor-pointer">
+                  {isSubmitting ? "Dispatching..." : "Confirm Dispatch"}
+                </button>
+              </div>
+            </div>
+          </div>
         )}
       </div>
     </AppShell>

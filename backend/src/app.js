@@ -1,10 +1,15 @@
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const http = require('http');
 const { Server } = require('socket.io');
 const startSimulator = require('./simulator');
+const runMigrations = require('./db/migrate');
 
 require('express-async-errors');
+
+// Run safe non-destructive schema migrations
+runMigrations();
 
 const app = express();
 const server = http.createServer(app);
@@ -55,7 +60,7 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: 'Internal Server Error' });
 });
 
-const PORT = process.env.PORT || 4000;
+const PORT = process.env.PORT || 5001;
 
 server.listen(PORT, () => {
   console.log(`Backend server listening on port ${PORT}`);

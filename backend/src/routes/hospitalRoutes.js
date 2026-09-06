@@ -2,10 +2,80 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db');
 
-// Get all hospitals and capacities
+// Get regional breakdown and statistics across Ghana
+router.get('/regions', async (req, res) => {
+  try {
+    const result = await db.query(`
+      SELECT 
+        COALESCE(region, 'Greater Accra') AS region,
+        COUNT(*) AS facility_count,
+        SUM(total_general_beds) AS total_general_beds,
+        SUM(occupied_general_beds) AS occupied_general_beds,
+        SUM(total_icu_beds) AS total_icu_beds,
+        SUM(occupied_icu_beds) AS occupied_icu_beds,
+        ROUND(
+          CASE 
+            WHEN SUM(total_general_beds) > 0 
+            THEN (SUM(occupied_general_beds)::DECIMAL / SUM(total_general_beds)::DECIMAL) * 100 
+            ELSE 0 
+          END, 1
+        ) AS general_occupancy_rate
+      FROM hospitals
+      GROUP BY region
+      ORDER BY facility_count DESC;
+    `);
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Error fetching regional stats:', err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Get all hospitals with optional regional, amenity, and search filtering
 router.get('/', async (req, res) => {
-  const result = await db.query('SELECT * FROM hospitals');
-  res.json(result.rows);
+  try {
+    const { region, amenity_type, search, limit, offset } = req.query;
+    let query = 'SELECT * FROM hospitals WHERE 1=1';
+    const params = [];
+    let paramIndex = 1;
+
+    if (region && region !== 'all' && region !== 'All Regions') {
+      query += ` AND LOWER(region) = LOWER($${paramIndex})`;
+      params.push(region);
+      paramIndex++;
+    }
+
+    if (amenity_type && amenity_type !== 'all') {
+      query += ` AND LOWER(amenity_type) = LOWER($${paramIndex})`;
+      params.push(amenity_type);
+      paramIndex++;
+    }
+
+    if (search) {
+      query += ` AND (LOWER(name) LIKE LOWER($${paramIndex}) OR LOWER(district) LIKE LOWER($${paramIndex}))`;
+      params.push(`%${search}%`);
+      paramIndex++;
+    }
+
+    query += ' ORDER BY total_general_beds DESC, name ASC';
+
+    if (limit) {
+      query += ` LIMIT $${paramIndex}`;
+      params.push(parseInt(limit, 10));
+      paramIndex++;
+      if (offset) {
+        query += ` OFFSET $${paramIndex}`;
+        params.push(parseInt(offset, 10));
+        paramIndex++;
+      }
+    }
+
+    const result = await db.query(query, params);
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Error fetching hospitals:', err);
+    res.status(500).json({ error: 'Server error' });
+  }
 });
 
 // Add a new hospital

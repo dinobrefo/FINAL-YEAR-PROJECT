@@ -11,6 +11,10 @@ import { NewEmergency } from "./pages/NewEmergency";
 import { Login } from "./pages/Login";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 
+import { NurseDashboard } from "./pages/NurseDashboard";
+import { AuthorityDashboard } from "./pages/AuthorityDashboard";
+import { Register } from "./pages/Register";
+
 const ProtectedRoute = ({ children, allowedRoles }: { children: React.ReactNode, allowedRoles?: string[] }) => {
   const { user, token } = useAuth();
   
@@ -43,6 +47,10 @@ export const router = createBrowserRouter([
     path: "/login",
     element: <Login />,
   },
+  {
+    path: "/register",
+    element: <Register />,
+  },
   // Ambulance Dashboard & Sub-routes
   {
     path: "/ambulance/new-emergency",
@@ -65,23 +73,25 @@ export const router = createBrowserRouter([
     path: "/hospital/:hospitalId/*",
     element: <ProtectedRoute allowedRoles={['hospital', 'admin']}><HospitalDashboard /></ProtectedRoute>,
   },
+  // Nurse Dashboard & Sub-routes
   {
     path: "/nurse/*",
-    element: <ProtectedRoute allowedRoles={['hospital', 'admin']}><HospitalDashboard /></ProtectedRoute>,
+    element: <ProtectedRoute allowedRoles={['nurse', 'hospital', 'admin']}><NurseDashboard /></ProtectedRoute>,
   },
   // Doctor Dashboard & Sub-routes
   {
     path: "/doctor/*",
     element: <ProtectedRoute allowedRoles={['doctor', 'admin']}><DoctorDashboard /></ProtectedRoute>,
   },
-  // Command Center & Authority Sub-routes
+  // Command Center
   {
     path: "/command/*",
     element: <ProtectedRoute allowedRoles={['admin']}><CommandCenterDashboard /></ProtectedRoute>,
   },
+  // Health Authority
   {
     path: "/authority/*",
-    element: <ProtectedRoute allowedRoles={['admin']}><CommandCenterDashboard /></ProtectedRoute>,
+    element: <ProtectedRoute allowedRoles={['authority', 'admin']}><AuthorityDashboard /></ProtectedRoute>,
   },
   {
     path: "*",

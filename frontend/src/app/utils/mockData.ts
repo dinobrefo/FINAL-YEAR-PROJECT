@@ -122,6 +122,28 @@ export const mockEmergencies: Emergency[] = [
       temperature: 36.9,
     },
   },
+  {
+    id: "EMG-004",
+    patientName: "Kofi Mensah",
+    severity: "critical",
+    emergencyType: "Severe Trauma / RTA",
+    status: "in-transit",
+    location: {
+      lat: 6.6885,
+      lng: -1.6244,
+      address: "KNUST Commercial Area, Kumasi",
+    },
+    assignedHospital: "Komfo Anokye Teaching Hospital",
+    ambulanceId: "AMB-201",
+    eta: "4 minutes",
+    timestamp: new Date(Date.now() - 5 * 60000),
+    vitalSigns: {
+      heartRate: 128,
+      bloodPressure: "150/95",
+      oxygenSaturation: 92,
+      temperature: 37.4,
+    },
+  },
 ];
 
 export const mockHospitals: Hospital[] = [
@@ -221,6 +243,246 @@ export const mockHospitals: Hospital[] = [
     distance: 4.5,
     score: 85,
   },
+  {
+    id: "HOSP-005",
+    name: "Komfo Anokye Teaching Hospital",
+    location: {
+      lat: 6.6961,
+      lng: -1.6310,
+      address: "Bantama Road, Kumasi",
+    },
+    totalBeds: 1200,
+    availableBeds: 75,
+    icuBeds: {
+      total: 45,
+      available: 6,
+    },
+    specialists: ["Cardiologist", "Trauma Surgeon", "Neurologist", "Emergency Physician"],
+    equipment: {
+      ventilators: 25,
+      ctScanners: 4,
+      mriMachines: 2,
+      oxygenUnits: 80,
+    },
+    distance: 2.1,
+    score: 96,
+  },
+  {
+    id: "HOSP-006",
+    name: "KNUST Hospital",
+    location: {
+      lat: 6.6745,
+      lng: -1.5714,
+      address: "KNUST Campus, Kumasi",
+    },
+    totalBeds: 150,
+    availableBeds: 34,
+    icuBeds: {
+      total: 10,
+      available: 3,
+    },
+    specialists: ["Emergency Physician", "General Surgeon", "Pediatrician"],
+    equipment: {
+      ventilators: 6,
+      ctScanners: 1,
+      mriMachines: 1,
+      oxygenUnits: 25,
+    },
+    distance: 3.5,
+    score: 91,
+  },
+  {
+    id: "HOSP-007",
+    name: "Kumasi South Regional Hospital",
+    location: {
+      lat: 6.6621,
+      lng: -1.5991,
+      address: "Atonsu-Agogo, Kumasi",
+    },
+    totalBeds: 280,
+    availableBeds: 28,
+    icuBeds: {
+      total: 15,
+      available: 4,
+    },
+    specialists: ["Orthopedic Surgeon", "Emergency Physician"],
+    equipment: {
+      ventilators: 8,
+      ctScanners: 1,
+      mriMachines: 0,
+      oxygenUnits: 30,
+    },
+    distance: 4.2,
+    score: 88,
+  },
+  {
+    id: "HOSP-008",
+    name: "Suntreso Government Hospital",
+    location: {
+      lat: 6.7012,
+      lng: -1.6445,
+      address: "North Suntreso, Kumasi",
+    },
+    totalBeds: 180,
+    availableBeds: 20,
+    icuBeds: {
+      total: 8,
+      available: 2,
+    },
+    specialists: ["Emergency Physician", "General Surgeon"],
+    equipment: {
+      ventilators: 5,
+      ctScanners: 1,
+      mriMachines: 0,
+      oxygenUnits: 18,
+    },
+    distance: 4.8,
+    score: 82,
+  },
+  {
+    id: "HOSP-009",
+    name: "Cape Coast Teaching Hospital",
+    location: {
+      lat: 5.1315,
+      lng: -1.2795,
+      address: "Pedu Junction, Cape Coast",
+    },
+    totalBeds: 400,
+    availableBeds: 45,
+    icuBeds: {
+      total: 16,
+      available: 4,
+    },
+    specialists: ["Cardiologist", "Trauma Surgeon", "Emergency Physician"],
+    equipment: {
+      ventilators: 12,
+      ctScanners: 2,
+      mriMachines: 1,
+      oxygenUnits: 40,
+    },
+    distance: 5.0,
+    score: 88,
+  },
+  {
+    id: "HOSP-010",
+    name: "Effia Nkwanta Regional Hospital",
+    location: {
+      lat: 4.9125,
+      lng: -1.7615,
+      address: "Sekondi-Takoradi Highway, Sekondi",
+    },
+    totalBeds: 320,
+    availableBeds: 36,
+    icuBeds: {
+      total: 12,
+      available: 3,
+    },
+    specialists: ["Trauma Surgeon", "Orthopedic Surgeon", "General Surgeon"],
+    equipment: {
+      ventilators: 8,
+      ctScanners: 1,
+      mriMachines: 0,
+      oxygenUnits: 30,
+    },
+    distance: 6.2,
+    score: 84,
+  },
+  {
+    id: "HOSP-011",
+    name: "Tamale Teaching Hospital",
+    location: {
+      lat: 9.4008,
+      lng: -0.8393,
+      address: "Hospital Road, Tamale",
+    },
+    totalBeds: 800,
+    availableBeds: 68,
+    icuBeds: {
+      total: 24,
+      available: 5,
+    },
+    specialists: ["Cardiologist", "Neurologist", "Trauma Surgeon", "Emergency Physician"],
+    equipment: {
+      ventilators: 18,
+      ctScanners: 3,
+      mriMachines: 1,
+      oxygenUnits: 60,
+    },
+    distance: 4.5,
+    score: 92,
+  },
+  {
+    id: "HOSP-012",
+    name: "Ho Teaching Hospital",
+    location: {
+      lat: 6.6111,
+      lng: 0.4708,
+      address: "Trafalgar Area, Ho",
+    },
+    totalBeds: 350,
+    availableBeds: 38,
+    icuBeds: {
+      total: 14,
+      available: 4,
+    },
+    specialists: ["Emergency Physician", "General Surgeon", "Pediatrician"],
+    equipment: {
+      ventilators: 10,
+      ctScanners: 1,
+      mriMachines: 1,
+      oxygenUnits: 35,
+    },
+    distance: 3.8,
+    score: 86,
+  },
+  {
+    id: "HOSP-013",
+    name: "Sunyani Regional Hospital",
+    location: {
+      lat: 7.3399,
+      lng: -2.3268,
+      address: "Fiapre Road, Sunyani",
+    },
+    totalBeds: 300,
+    availableBeds: 32,
+    icuBeds: {
+      total: 10,
+      available: 3,
+    },
+    specialists: ["Emergency Physician", "Orthopedic Surgeon", "General Surgeon"],
+    equipment: {
+      ventilators: 8,
+      ctScanners: 1,
+      mriMachines: 0,
+      oxygenUnits: 28,
+    },
+    distance: 5.1,
+    score: 83,
+  },
+  {
+    id: "HOSP-014",
+    name: "Eastern Regional Hospital",
+    location: {
+      lat: 6.0945,
+      lng: -0.2608,
+      address: "Hospital Road, Koforidua",
+    },
+    totalBeds: 380,
+    availableBeds: 40,
+    icuBeds: {
+      total: 14,
+      available: 4,
+    },
+    specialists: ["Cardiologist", "General Surgeon", "Emergency Physician"],
+    equipment: {
+      ventilators: 10,
+      ctScanners: 2,
+      mriMachines: 1,
+      oxygenUnits: 35,
+    },
+    distance: 4.0,
+    score: 87,
+  },
 ];
 
 export const mockAmbulances: Ambulance[] = [
@@ -255,6 +517,25 @@ export const mockAmbulances: Ambulance[] = [
     plateNumber: "GR 5678-20",
     status: "maintenance",
     location: { lat: 5.5800, lng: -0.1950 },
+  },
+  {
+    id: "AMB-201",
+    plateNumber: "AS 112-21",
+    status: "available",
+    location: { lat: 6.6885, lng: -1.6244 }, // KNUST Metro Hub
+    assignedEmergency: "EMG-004",
+  },
+  {
+    id: "AMB-202",
+    plateNumber: "AS 540-21",
+    status: "available",
+    location: { lat: 6.6960, lng: -1.6300 }, // KATH Trauma Base
+  },
+  {
+    id: "AMB-203",
+    plateNumber: "AS 892-22",
+    status: "available",
+    location: { lat: 6.6745, lng: -1.5714 }, // KNUST Hospital Base
   },
 ];
 

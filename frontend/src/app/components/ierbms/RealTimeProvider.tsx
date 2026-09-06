@@ -60,7 +60,7 @@ export const RealTimeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             id: c.id,
             patientName: c.patient_identifier || "Unknown",
             severity: c.trauma_level >= 4 ? "critical" : c.trauma_level >= 2 ? "moderate" : "stable",
-            emergencyType: "General Emergency",
+            emergencyType: c.emergency_type || c.patient_vitals?.emergencyType || "General Emergency",
             status: c.status as any,
             location: {
               lat: parseFloat(c.patient_vitals?.latitude) || 5.5,
@@ -70,7 +70,9 @@ export const RealTimeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             timestamp: new Date(c.created_at),
             vitalSigns: c.patient_vitals,
             assignedHospital: c.assigned_hospital_id,
-            ambulanceId: c.ambulance_id
+            ambulanceId: c.ambulance_id,
+            triageNotes: c.triage_notes,
+            bedTypeAssigned: c.bed_type_assigned
           })));
         }
       })
@@ -87,7 +89,7 @@ export const RealTimeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         id: newCase.id,
         patientName: newCase.patient_identifier || "Unknown",
         severity: newCase.trauma_level >= 4 ? "critical" : newCase.trauma_level >= 2 ? "moderate" : "stable",
-        emergencyType: "General Emergency",
+        emergencyType: newCase.emergency_type || newCase.patient_vitals?.emergencyType || "General Emergency",
         status: newCase.status as any,
         location: {
           lat: parseFloat(newCase.patient_vitals?.latitude) || 5.5,
@@ -97,7 +99,9 @@ export const RealTimeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         timestamp: new Date(newCase.created_at),
         vitalSigns: newCase.patient_vitals,
         assignedHospital: newCase.assigned_hospital_id,
-        ambulanceId: newCase.ambulance_id
+        ambulanceId: newCase.ambulance_id,
+        triageNotes: newCase.triage_notes,
+        bedTypeAssigned: newCase.bed_type_assigned
       }]);
     });
 
@@ -118,7 +122,15 @@ export const RealTimeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     socket.on('emergency_status_update', (updatedCase: any) => {
       setEmergencies(prev => prev.map(e => 
         e.id === updatedCase.id 
-          ? { ...e, status: updatedCase.status as any, assignedHospital: updatedCase.assigned_hospital_id, ambulanceId: updatedCase.ambulance_id }
+          ? { 
+              ...e, 
+              status: updatedCase.status as any, 
+              assignedHospital: updatedCase.assigned_hospital_id, 
+              ambulanceId: updatedCase.ambulance_id,
+              emergencyType: updatedCase.emergency_type || e.emergencyType,
+              triageNotes: updatedCase.triage_notes || (e as any).triageNotes,
+              bedTypeAssigned: updatedCase.bed_type_assigned || (e as any).bedTypeAssigned
+            }
           : e
       ));
     });

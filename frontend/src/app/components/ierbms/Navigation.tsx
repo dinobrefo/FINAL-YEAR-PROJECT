@@ -21,7 +21,11 @@ import {
   Moon,
   Sun,
   Globe,
+  Wifi,
+  WifiOff
 } from "lucide-react";
+import { DefenseDemoBar } from "./DefenseDemoBar";
+import { offlineQueue } from "../../utils/offlineQueue";
 
 export interface NavItem {
   label: string;
@@ -86,8 +90,11 @@ export const Navigation: React.FC<NavigationProps> = ({ role, className }) => {
     <nav className={cn("flex flex-col gap-2 p-4", className)}>
       {navItems.map((item) => {
         let href = item.href;
-        if (role === "hospital" && hospitalId) {
-          href = item.href.replace("/hospital", `/hospital/${hospitalId}`);
+        if (role === "hospital") {
+          const pathHospId = hospitalId || (location.pathname.match(/\/hospital\/([a-zA-Z0-9_-]+)/)?.[1]);
+          if (pathHospId && pathHospId !== "settings") {
+            href = item.href.replace("/hospital", `/hospital/${pathHospId}`);
+          }
         }
         
         const isRootDashboard = href === "/command" || href === "/ambulance" || href === "/hospitals" || href === "/doctor" || href === "/nurse" || href === "/authority";
@@ -136,6 +143,40 @@ export const AppShell: React.FC<AppShellProps> = ({ role, userName, children }) 
   const [soundAlerts, setSoundAlerts] = React.useState(true);
   const [mapAutocenter, setMapAutocenter] = React.useState(true);
   const [refreshInterval, setRefreshInterval] = React.useState("5s");
+
+  // Real-time Field Network & Sync State
+  const [isOnline, setIsOnline] = React.useState<boolean>(typeof navigator !== 'undefined' ? navigator.onLine : true);
+  const [pendingSyncCount, setPendingSyncCount] = React.useState<number>(offlineQueue.getQueue().length);
+  const [isSyncing, setIsSyncing] = React.useState<boolean>(false);
+
+  React.useEffect(() => {
+    const handleOnline = async () => {
+      setIsOnline(true);
+      setIsSyncing(true);
+      try {
+        await offlineQueue.syncPendingItems();
+      } finally {
+        setPendingSyncCount(offlineQueue.getQueue().length);
+        setIsSyncing(false);
+      }
+    };
+    const handleOffline = () => {
+      setIsOnline(false);
+      setPendingSyncCount(offlineQueue.getQueue().length);
+    };
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    const interval = setInterval(() => {
+      setPendingSyncCount(offlineQueue.getQueue().length);
+    }, 4000);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+      clearInterval(interval);
+    };
+  }, []);
 
   const toggleTheme = () => {
     setTheme(effectiveTheme === "dark" ? "light" : "dark");
@@ -236,6 +277,32 @@ export const AppShell: React.FC<AppShellProps> = ({ role, userName, children }) 
             </div>
 
             <div className="flex items-center gap-3">
+              {/* Real-time Field Sync Status Badge */}
+              <div className={cn(
+                "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border transition-all",
+                !isOnline
+                  ? "bg-amber-500/10 text-amber-500 border-amber-500/30 animate-pulse"
+                  : isSyncing
+                  ? "bg-blue-500/10 text-blue-400 border-blue-500/30"
+                  : pendingSyncCount > 0
+                  ? "bg-amber-500/15 text-amber-400 border-amber-500/40"
+                  : "bg-emerald-500/10 text-emerald-500 border-emerald-500/30"
+              )}>
+                <span className={cn(
+                  "h-2 w-2 rounded-full",
+                  !isOnline ? "bg-amber-500" : isSyncing ? "bg-blue-400 animate-spin" : pendingSyncCount > 0 ? "bg-amber-400" : "bg-emerald-500"
+                )} />
+                <span>
+                  {!isOnline
+                    ? `Offline (${pendingSyncCount} queued)`
+                    : isSyncing
+                    ? "Syncing Queue..."
+                    : pendingSyncCount > 0
+                    ? `${pendingSyncCount} pending sync`
+                    : "Live Telemetry Online"}
+                </span>
+              </div>
+
               <button 
                 onClick={() => setShowSettings(true)}
                 className="h-10 w-10 rounded-2xl bg-card/80 border border-border/60 hover:bg-accent flex items-center justify-center text-muted-foreground hover:text-foreground transition-all cursor-pointer shadow-sm"
@@ -357,6 +424,9 @@ export const AppShell: React.FC<AppShellProps> = ({ role, userName, children }) 
           </div>
         </div>
       )}
+
+      {/* Global Examiner Defense Presentation Bar */}
+      <DefenseDemoBar />
     </div>
   );
 };

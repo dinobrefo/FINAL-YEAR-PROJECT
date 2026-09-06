@@ -53,3 +53,4 @@ venv.bak/
 # Agent local directory
 .agent/
 .gemini/
+.neon

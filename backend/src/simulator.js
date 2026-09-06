@@ -11,6 +11,9 @@ function startSimulator(io) {
         SELECT 
           c.id as case_id, 
           c.ambulance_id, 
+          c.assigned_hospital_id,
+          c.trauma_level,
+          c.bed_type_assigned,
           a.current_latitude, 
           a.current_longitude,
           h.latitude as target_lat,
@@ -33,18 +36,22 @@ function startSimulator(io) {
         
         let newLat = transit.target_lat;
         let newLng = transit.target_lng;
+        let hasArrived = false;
 
         if (dist > speed) {
           dLat = (dLat / dist) * speed;
           dLng = (dLng / dist) * speed;
           newLat = transit.current_latitude + dLat;
           newLng = transit.current_longitude + dLng;
+        } else {
+          hasArrived = true;
         }
         
-        // Update ambulance in DB
+        // Update ambulance coordinates in DB
+        const ambStatus = hasArrived ? 'at-hospital' : 'transporting';
         await db.query(
-          'UPDATE ambulances SET current_latitude = $1, current_longitude = $2 WHERE id = $3',
-          [newLat, newLng, transit.ambulance_id]
+          'UPDATE ambulances SET current_latitude = $1, current_longitude = $2, status = $3, last_ping = CURRENT_TIMESTAMP WHERE id = $4',
+          [newLat, newLng, ambStatus, transit.ambulance_id]
         );
         
         // Broadcast location update
@@ -52,8 +59,38 @@ function startSimulator(io) {
           id: transit.ambulance_id,
           current_latitude: newLat,
           current_longitude: newLng,
-          status: 'busy'
+          status: ambStatus
         });
+
+        // If ambulance reached destination, automatically transition case to arrived and occupy bed
+        if (hasArrived) {
+          const caseRes = await db.query(
+            'UPDATE emergency_cases SET status = \'arrived\' WHERE id = $1 RETURNING *',
+            [transit.case_id]
+          );
+
+          const bedType = transit.bed_type_assigned || (transit.trauma_level >= 4 ? 'icu' : 'general');
+          if (bedType === 'icu') {
+            await db.query(
+              'UPDATE hospitals SET occupied_icu_beds = LEAST(total_icu_beds, occupied_icu_beds + 1), updated_at = CURRENT_TIMESTAMP WHERE id = $1',
+              [transit.assigned_hospital_id]
+            );
+          } else {
+            await db.query(
+              'UPDATE hospitals SET occupied_general_beds = LEAST(total_general_beds, occupied_general_beds + 1), updated_at = CURRENT_TIMESTAMP WHERE id = $1',
+              [transit.assigned_hospital_id]
+            );
+          }
+
+          const hospRes = await db.query('SELECT * FROM hospitals WHERE id = $1', [transit.assigned_hospital_id]);
+          if (hospRes.rows.length > 0) {
+            io.emit('hospital_capacity_update', hospRes.rows[0]);
+          }
+
+          if (caseRes.rows.length > 0) {
+            io.emit('emergency_status_update', caseRes.rows[0]);
+          }
+        }
       }
     } catch (err) {
       console.error('Simulator error:', err);

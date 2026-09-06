@@ -195,7 +195,7 @@ export const GlobeView: React.FC<GlobeViewProps> = ({
             className={`px-2.5 py-1 text-xs font-semibold rounded-md transition-all cursor-pointer ${
               globeTexture === 'satellite' ? 'bg-primary text-primary-foreground shadow-sm' : 'hover:bg-accent text-muted-foreground'
             }`}
-            title="Google Satellite Terrain"
+            title="High-Resolution Satellite Terrain"
           >
             🛰️ Satellite
           </button>
@@ -231,12 +231,12 @@ export const GlobeView: React.FC<GlobeViewProps> = ({
           🇬🇭 Ghana
         </button>
 
-        {/* Switch to Google Maps 3D View */}
+        {/* Switch to Live Tactical Map */}
         <button
           onClick={() => navigate('/command/map')}
-          className="px-2.5 py-1 text-xs font-semibold bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition-all cursor-pointer shadow-sm flex items-center gap-1"
+          className="px-2.5 py-1 text-xs font-semibold bg-teal-600 hover:bg-teal-500 text-white rounded-lg transition-all cursor-pointer shadow-sm flex items-center gap-1"
         >
-          🌐 Google Maps 3D
+          🗺️ Live Tactical Map
         </button>
       </div>
 

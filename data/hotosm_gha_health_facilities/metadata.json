@@ -1,0 +1,452 @@
+{
+  "feature_count": 2500,
+  "geometry_types": {
+    "POINT": 1918,
+    "POLYGON": 581,
+    "MULTIPOLYGON": 1
+  },
+  "bbox": [
+    -3.1836373,
+    4.8660888,
+    1.1886932,
+    11.0623303
+  ],
+  "columns": [
+    {
+      "name": "id",
+      "type": "VARCHAR",
+      "null_count": 0,
+      "null_percent": 0.0,
+      "distinct_count": 2500,
+      "top_values": []
+    },
+    {
+      "name": "name",
+      "type": "VARCHAR",
+      "null_count": 353,
+      "null_percent": 14.12,
+      "distinct_count": 2018,
+      "top_values": []
+    },
+    {
+      "name": "name_en",
+      "type": "VARCHAR",
+      "null_count": 2468,
+      "null_percent": 98.72,
+      "distinct_count": 32,
+      "top_values": [
+        {
+          "value": "Wassa Akropong Government Hospital",
+          "count": 1
+        },
+        {
+          "value": "Tech Hospital",
+          "count": 1
+        },
+        {
+          "value": "Fernando Chemists Ltd",
+          "count": 1
+        },
+        {
+          "value": "St. Joseph's Hospital",
+          "count": 1
+        },
+        {
+          "value": "Manchala chip compound",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "name": "amenity",
+      "type": "VARCHAR",
+      "null_count": 186,
+      "null_percent": 7.44,
+      "distinct_count": 8,
+      "top_values": [
+        {
+          "value": "pharmacy",
+          "count": 1186
+        },
+        {
+          "value": "clinic",
+          "count": 466
+        },
+        {
+          "value": "hospital",
+          "count": 465
+        },
+        {
+          "value": "health_post",
+          "count": 108
+        },
+        {
+          "value": "doctors",
+          "count": 55
+        }
+      ]
+    },
+    {
+      "name": "building",
+      "type": "VARCHAR",
+      "null_count": 2266,
+      "null_percent": 90.64,
+      "distinct_count": 8,
+      "top_values": [
+        {
+          "value": "yes",
+          "count": 179
+        },
+        {
+          "value": "hospital",
+          "count": 39
+        },
+        {
+          "value": "commercial",
+          "count": 9
+        },
+        {
+          "value": "clinic",
+          "count": 2
+        },
+        {
+          "value": "residential",
+          "count": 2
+        }
+      ]
+    },
+    {
+      "name": "healthcare",
+      "type": "VARCHAR",
+      "null_count": 1066,
+      "null_percent": 42.64,
+      "distinct_count": 38,
+      "top_values": [
+        {
+          "value": "pharmacy",
+          "count": 514
+        },
+        {
+          "value": "hospital",
+          "count": 353
+        },
+        {
+          "value": "clinic",
+          "count": 214
+        },
+        {
+          "value": "yes",
+          "count": 195
+        },
+        {
+          "value": "laboratory",
+          "count": 34
+        }
+      ]
+    },
+    {
+      "name": "healthcare_speciality",
+      "type": "VARCHAR",
+      "null_count": 2415,
+      "null_percent": 96.6,
+      "distinct_count": 51,
+      "top_values": [
+        {
+          "value": "general",
+          "count": 26
+        },
+        {
+          "value": "ophthalmology",
+          "count": 5
+        },
+        {
+          "value": "community",
+          "count": 4
+        },
+        {
+          "value": "dentist",
+          "count": 2
+        },
+        {
+          "value": "general;clinic",
+          "count": 2
+        }
+      ]
+    },
+    {
+      "name": "operator_type",
+      "type": "VARCHAR",
+      "null_count": 2421,
+      "null_percent": 96.84,
+      "distinct_count": 8,
+      "top_values": [
+        {
+          "value": "private",
+          "count": 28
+        },
+        {
+          "value": "public",
+          "count": 23
+        },
+        {
+          "value": "government",
+          "count": 22
+        },
+        {
+          "value": "community",
+          "count": 2
+        },
+        {
+          "value": "Government",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "name": "capacity_persons",
+      "type": "VARCHAR",
+      "null_count": 2500,
+      "null_percent": 100.0,
+      "distinct_count": 0,
+      "top_values": []
+    },
+    {
+      "name": "addr_full",
+      "type": "VARCHAR",
+      "null_count": 2498,
+      "null_percent": 99.92,
+      "distinct_count": 2,
+      "top_values": [
+        {
+          "value": "P.O. BOX 19",
+          "count": 1
+        },
+        {
+          "value": "Asesewa",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "name": "addr_city",
+      "type": "VARCHAR",
+      "null_count": 2342,
+      "null_percent": 93.68,
+      "distinct_count": 56,
+      "top_values": [
+        {
+          "value": "Accra",
+          "count": 88
+        },
+        {
+          "value": "Sefwi Bekwai",
+          "count": 5
+        },
+        {
+          "value": "Bibiani",
+          "count": 2
+        },
+        {
+          "value": "Kpandai",
+          "count": 2
+        },
+        {
+          "value": "Addo Nkwanta",
+          "count": 2
+        }
+      ]
+    },
+    {
+      "name": "source",
+      "type": "VARCHAR",
+      "null_count": 2500,
+      "null_percent": 100.0,
+      "distinct_count": 0,
+      "top_values": []
+    },
+    {
+      "name": "adm0_pcode",
+      "type": "VARCHAR",
+      "null_count": 0,
+      "null_percent": 0.0,
+      "distinct_count": 1,
+      "top_values": [
+        {
+          "value": "GHA",
+          "count": 2500
+        }
+      ]
+    },
+    {
+      "name": "adm0_name",
+      "type": "VARCHAR",
+      "null_count": 0,
+      "null_percent": 0.0,
+      "distinct_count": 1,
+      "top_values": [
+        {
+          "value": "Ghana",
+          "count": 2500
+        }
+      ]
+    },
+    {
+      "name": "adm1_pcode",
+      "type": "VARCHAR",
+      "null_count": 0,
+      "null_percent": 0.0,
+      "distinct_count": 16,
+      "top_values": [
+        {
+          "value": "GH07",
+          "count": 1008
+        },
+        {
+          "value": "GH14",
+          "count": 228
+        },
+        {
+          "value": "GH02",
+          "count": 222
+        },
+        {
+          "value": "GH05",
+          "count": 179
+        },
+        {
+          "value": "GH06",
+          "count": 164
+        }
+      ]
+    },
+    {
+      "name": "adm1_name",
+      "type": "VARCHAR",
+      "null_count": 0,
+      "null_percent": 0.0,
+      "distinct_count": 16,
+      "top_values": [
+        {
+          "value": "Greater Accra",
+          "count": 1008
+        },
+        {
+          "value": "Volta",
+          "count": 228
+        },
+        {
+          "value": "Ashanti",
+          "count": 222
+        },
+        {
+          "value": "Central",
+          "count": 179
+        },
+        {
+          "value": "Eastern",
+          "count": 164
+        }
+      ]
+    },
+    {
+      "name": "adm2_pcode",
+      "type": "VARCHAR",
+      "null_count": 0,
+      "null_percent": 0.0,
+      "distinct_count": 213,
+      "top_values": [
+        {
+          "value": "GH0722",
+          "count": 84
+        },
+        {
+          "value": "GH0714",
+          "count": 76
+        },
+        {
+          "value": "GH0725",
+          "count": 71
+        },
+        {
+          "value": "GH0718",
+          "count": 67
+        },
+        {
+          "value": "GH0710",
+          "count": 65
+        }
+      ]
+    },
+    {
+      "name": "adm2_name",
+      "type": "VARCHAR",
+      "null_count": 0,
+      "null_percent": 0.0,
+      "distinct_count": 213,
+      "top_values": [
+        {
+          "value": "La-Nkwantanang-Madina",
+          "count": 84
+        },
+        {
+          "value": "Ga East",
+          "count": 76
+        },
+        {
+          "value": "Okaikwei North Municipal",
+          "count": 71
+        },
+        {
+          "value": "Korle Klottey Municipal",
+          "count": 67
+        },
+        {
+          "value": "Cape Coast Metropolitan",
+          "count": 65
+        }
+      ]
+    },
+    {
+      "name": "adm3_pcode",
+      "type": "VARCHAR",
+      "null_count": 2500,
+      "null_percent": 100.0,
+      "distinct_count": 0,
+      "top_values": []
+    },
+    {
+      "name": "adm3_name",
+      "type": "VARCHAR",
+      "null_count": 2500,
+      "null_percent": 100.0,
+      "distinct_count": 0,
+      "top_values": []
+    },
+    {
+      "name": "adm4_pcode",
+      "type": "VARCHAR",
+      "null_count": 2500,
+      "null_percent": 100.0,
+      "distinct_count": 0,
+      "top_values": []
+    },
+    {
+      "name": "adm4_name",
+      "type": "VARCHAR",
+      "null_count": 2500,
+      "null_percent": 100.0,
+      "distinct_count": 0,
+      "top_values": []
+    },
+    {
+      "name": "name_latin",
+      "type": "VARCHAR",
+      "null_count": 352,
+      "null_percent": 14.08,
+      "distinct_count": 2020,
+      "top_values": []
+    }
+  ],
+  "summary": "2,500 features. geometry types: 1,918 POINT, 581 POLYGON, 1 MULTIPOLYGON. 12 of 23 columns are >=50% null (name_en, building, healthcare_speciality, operator_type, capacity_persons, addr_full, addr_city, source, adm3_pcode, adm3_name, adm4_pcode, adm4_name).",
+  "temporal": null
+}
