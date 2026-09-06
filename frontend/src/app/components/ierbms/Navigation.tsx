@@ -97,11 +97,20 @@ export const Navigation: React.FC<NavigationProps> = ({ role, className }) => {
           }
         }
         
-        const isRootDashboard = href === "/command" || href === "/ambulance" || href === "/hospitals" || href === "/doctor" || href === "/nurse" || href === "/authority";
-        
+        const isRootDashboard =
+          item.href === "/ambulance" ||
+          item.href === "/hospital" ||
+          item.href === "/doctor" ||
+          item.href === "/nurse" ||
+          item.href === "/command" ||
+          item.href === "/authority";
+
+        const currentPath = location.pathname.replace(/\/$/, "");
+        const targetPath = href.replace(/\/$/, "");
+
         const isActive = isRootDashboard
-          ? location.pathname === href
-          : location.pathname === href || location.pathname.startsWith(href);
+          ? currentPath === targetPath
+          : currentPath === targetPath || currentPath.startsWith(`${targetPath}/`);
 
         const Icon = item.icon;
 
@@ -194,6 +203,19 @@ export const AppShell: React.FC<AppShellProps> = ({ role, userName, children }) 
     if (p.includes("/analytics")) return "System Analytics";
     if (p.includes("/new-emergency")) return "Emergency Intake";
     if (p.includes("/cases")) return "Active Emergency Cases";
+    if (p.includes("/er")) return "Emergency Department & Triage Queue";
+    if (p.includes("/beds")) return "Bed Capacity & Allocation";
+    if (p.includes("/arrivals")) return "Ambulance Arrivals";
+    if (p.includes("/patients")) return "Incoming Emergency Patients";
+    if (p.includes("/triage")) return "Clinical Triage Queue";
+    if (p.includes("/records")) return "EHR Patient Records";
+    if (p.includes("/admissions")) return "Ward Admissions";
+    if (p.includes("/wards")) return "Ward Monitoring";
+    if (p.includes("/settings")) return "Facility Settings";
+    if (p.includes("/statistics")) return "National Health Statistics";
+    if (p.includes("/trends")) return "Epidemiological Trends";
+    if (p.includes("/forecasting")) return "Capacity Forecasting";
+    if (p.includes("/reports")) return "Policy & Audit Reports";
     return "Operations Dashboard";
   }, [location.pathname]);
 
