@@ -13,7 +13,7 @@ export const DoctorDashboard: React.FC = () => {
   const { emergencies, ambulances, hospitals } = useRealTime();
   const navigate = useNavigate();
   const location = useLocation();
-  const currentPath = location.pathname;
+  const cleanPath = location.pathname.replace(/\/$/, "");
 
   const incomingPatients = emergencies.filter(e => e.status === "in-transit");
   const activePatients = emergencies.filter(e => e.status === "arrived");
@@ -24,9 +24,10 @@ export const DoctorDashboard: React.FC = () => {
   const [triageNote, setTriageNote] = React.useState("");
   const [bedType, setBedType] = React.useState("icu");
 
-  const isTriageView = currentPath.endsWith("/triage");
-  const isPatientsView = currentPath.endsWith("/patients");
-  const isRecordsView = currentPath.endsWith("/records");
+  const isTriageView = cleanPath.endsWith("/triage");
+  const isPatientsView = cleanPath.endsWith("/patients");
+  const isRecordsView = cleanPath.endsWith("/records");
+  const isOverview = cleanPath === "/doctor" || (!isTriageView && !isPatientsView && !isRecordsView);
 
   const openTriageModal = (patient: any) => {
     setSelectedCase(patient);
@@ -259,7 +260,10 @@ export const DoctorDashboard: React.FC = () => {
             <h1 className="text-3xl font-bold tracking-tight">Doctor Portal & ER Triage</h1>
             <p className="text-muted-foreground">Real-time vital signs, trauma bay prep, and clinical bed assignments</p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
+            <Button onClick={() => navigate("/doctor")} variant={isOverview ? "primary" : "outline"}>
+              Overview
+            </Button>
             <Button onClick={() => navigate("/doctor/triage")} variant={isTriageView ? "primary" : "outline"}>
               <Stethoscope className="h-4 w-4" />
               Triage Queue

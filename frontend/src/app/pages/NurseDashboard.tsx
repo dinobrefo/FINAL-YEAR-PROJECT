@@ -12,7 +12,7 @@ export const NurseDashboard: React.FC = () => {
   const { emergencies, hospitals, updateEmergencyLocally } = useRealTime();
   const navigate = useNavigate();
   const location = useLocation();
-  const currentPath = location.pathname;
+  const cleanPath = location.pathname.replace(/\/$/, "");
 
   const [loadingId, setLoadingId] = React.useState<string | null>(null);
   const [selectedCase, setSelectedCase] = React.useState<any | null>(null);
@@ -32,10 +32,11 @@ export const NurseDashboard: React.FC = () => {
   const activeAdmittedPatients = emergencies.filter(e => e.status === "arrived");
   const dischargedPatients = emergencies.filter(e => e.status === "resolved");
 
-  const isAdmissionsView = currentPath.endsWith("/admissions");
-  const isBedsView = currentPath.endsWith("/beds");
-  const isWardsView = currentPath.endsWith("/wards");
-  const isPatientsView = currentPath.endsWith("/patients");
+  const isAdmissionsView = cleanPath.endsWith("/admissions");
+  const isBedsView = cleanPath.endsWith("/beds");
+  const isWardsView = cleanPath.endsWith("/wards");
+  const isPatientsView = cleanPath.endsWith("/patients");
+  const isOverview = cleanPath === "/nurse" || (!isAdmissionsView && !isBedsView && !isWardsView && !isPatientsView);
 
   const updateStatus = async (id: string, status: string, bedType?: string) => {
     setLoadingId(id);
@@ -225,7 +226,10 @@ export const NurseDashboard: React.FC = () => {
             <h1 className="text-3xl font-bold tracking-tight">Nurse Portal & Ward Management</h1>
             <p className="text-muted-foreground">Patient admissions, bed census allocations, and ward monitoring</p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
+            <Button onClick={() => navigate("/nurse")} variant={isOverview ? "primary" : "outline"}>
+              Overview
+            </Button>
             <Button onClick={() => navigate("/nurse/admissions")} variant={isAdmissionsView ? "primary" : "outline"}>
               <FileText className="h-4 w-4" />
               Admissions

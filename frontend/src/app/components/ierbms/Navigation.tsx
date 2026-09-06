@@ -109,7 +109,7 @@ export const Navigation: React.FC<NavigationProps> = ({ role, className }) => {
         const targetPath = href.replace(/\/$/, "");
 
         const isActive = isRootDashboard
-          ? currentPath === targetPath
+          ? currentPath === targetPath || (currentPath === "/hospitals" && item.href === "/hospital")
           : currentPath === targetPath || currentPath.startsWith(`${targetPath}/`);
 
         const Icon = item.icon;

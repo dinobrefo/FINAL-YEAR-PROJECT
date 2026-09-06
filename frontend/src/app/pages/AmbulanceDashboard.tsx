@@ -26,9 +26,9 @@ export const AmbulanceDashboard: React.FC = () => {
   const activeEmergencies = emergencies.filter(e => e.status === "active" || e.status === "in-transit" || e.status === "arrived");
   const historyEmergencies = emergencies.filter(e => e.status === "resolved");
 
-  const currentPath = location.pathname;
-  const isCasesPage = currentPath.includes("/ambulance/cases");
-  const isMapPage = currentPath.includes("/ambulance/map");
+  const cleanPath = location.pathname.replace(/\/$/, "");
+  const isCasesPage = cleanPath.includes("/ambulance/cases");
+  const isMapPage = cleanPath.includes("/ambulance/map") || cleanPath.includes("/ambulance/navigation");
   const isDashboardPage = !isCasesPage && !isMapPage;
 
   const [caseFilter, setCaseFilter] = React.useState<"all" | "critical" | "in-transit" | "history">("all");

@@ -195,7 +195,7 @@ export const HospitalDashboard: React.FC = () => {
     </Card>
   );
 
-  const currentPath = location.pathname;
+  const currentPath = location.pathname.replace(/\/$/, "");
   const isBedsView = currentPath.endsWith("/beds");
   const isErView = currentPath.endsWith("/er");
   const isArrivalsView = currentPath.endsWith("/arrivals");

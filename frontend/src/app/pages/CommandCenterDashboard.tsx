@@ -156,7 +156,7 @@ export const CommandCenterDashboard: React.FC = () => {
     </Card>
   );
 
-  const currentPath = location.pathname;
+  const currentPath = location.pathname.replace(/\/$/, "");
 
   const renderMap = () => (
     <Card className="rounded-[28px] border border-border/50 shadow-xl overflow-hidden">
@@ -602,7 +602,7 @@ export const CommandCenterDashboard: React.FC = () => {
           </div>
         )}
 
-        {currentPath === "/command" && (
+        {(currentPath === "/command" || !["/command/map", "/command/ambulances", "/command/hospitals", "/command/analytics"].includes(currentPath)) && (
           <>
             {renderCoachProDashboard()}
             {renderActiveIncidents()}

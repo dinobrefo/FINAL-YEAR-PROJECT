@@ -127,6 +127,47 @@ export const router = createBrowserRouter([
     path: "/authority/*",
     element: <ProtectedRoute allowedRoles={['authority', 'admin']}><AuthorityDashboard /></ProtectedRoute>,
   },
+  // Seamless Aliases & Redirects
+  {
+    path: "/hospital",
+    element: <Navigate to="/hospitals" replace />,
+  },
+  {
+    path: "/hospital/settings",
+    element: <Navigate to="/hospitals" replace />,
+  },
+  {
+    path: "/command-center",
+    element: <Navigate to="/command" replace />,
+  },
+  {
+    path: "/command-center/*",
+    element: <Navigate to="/command" replace />,
+  },
+  {
+    path: "/dashboard/ambulance",
+    element: <Navigate to="/ambulance" replace />,
+  },
+  {
+    path: "/dashboard/hospital",
+    element: <Navigate to="/hospitals" replace />,
+  },
+  {
+    path: "/dashboard/doctor",
+    element: <Navigate to="/doctor" replace />,
+  },
+  {
+    path: "/dashboard/nurse",
+    element: <Navigate to="/nurse" replace />,
+  },
+  {
+    path: "/dashboard/command",
+    element: <Navigate to="/command" replace />,
+  },
+  {
+    path: "/dashboard/authority",
+    element: <Navigate to="/authority" replace />,
+  },
   {
     path: "*",
     element: (

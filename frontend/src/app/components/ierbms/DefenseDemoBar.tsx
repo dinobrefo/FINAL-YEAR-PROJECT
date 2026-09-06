@@ -41,9 +41,9 @@ export const DefenseDemoBar: React.FC = () => {
     { label: "Paramedic", path: "/ambulance", icon: Ambulance, color: "text-amber-400" },
     { label: "Doctor", path: "/doctor", icon: Stethoscope, color: "text-blue-400" },
     { label: "Nurse", path: "/nurse", icon: Activity, color: "text-pink-400" },
-    { label: "Hospital", path: "/hospital", icon: Building2, color: "text-emerald-400" },
+    { label: "Hospital", path: "/hospitals", icon: Building2, color: "text-emerald-400" },
     { label: "Authority", path: "/authority", icon: Layers, color: "text-purple-400" },
-    { label: "Command", path: "/command-center", icon: Radio, color: "text-teal-400" },
+    { label: "Command", path: "/command", icon: Radio, color: "text-teal-400" },
   ];
 
   const scenarios: ScenarioDef[] = [
@@ -63,12 +63,12 @@ export const DefenseDemoBar: React.FC = () => {
       id: "bed-diversion",
       title: "2. Mass Casualty & ER Diversion",
       role: "Command Center Dispatcher",
-      route: "/command-center",
+      route: "/command",
       badge: "SATURATION DIVERSION",
       description: "Simulates Korle Bu ER hitting 100% saturation and triggers live hospital diversion to Ridge Regional Hospital.",
       execute: () => {
         audioTelemetry.speak("Defense Scenario 2 activated. Korle Bu ER capacity saturated. Dispatching diversion alert to Ridge Regional Hospital.");
-        navigate("/command-center");
+        navigate("/command");
       }
     },
     {
@@ -165,8 +165,10 @@ export const DefenseDemoBar: React.FC = () => {
             </p>
             <div className="grid grid-cols-3 gap-1.5">
               {roles.map((r) => {
-                const Icon = r.icon;
-                const isActive = location.pathname.startsWith(r.path);
+                const cleanPath = location.pathname.replace(/\/$/, "");
+                const isActive = r.path === "/hospitals"
+                  ? cleanPath.startsWith("/hospital")
+                  : cleanPath === r.path || cleanPath.startsWith(`${r.path}/`);
                 return (
                   <button
                     key={r.path}

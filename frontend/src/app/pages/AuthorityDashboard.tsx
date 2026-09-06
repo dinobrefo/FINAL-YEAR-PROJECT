@@ -30,7 +30,7 @@ export const AuthorityDashboard: React.FC = () => {
   const { emergencies, hospitals, ambulances } = useRealTime();
   const navigate = useNavigate();
   const location = useLocation();
-  const currentPath = location.pathname;
+  const currentPath = location.pathname.replace(/\/$/, "");
 
   const isStatsView = currentPath.endsWith("/statistics");
   const isTrendsView = currentPath.endsWith("/trends");
@@ -312,6 +312,10 @@ export const AuthorityDashboard: React.FC = () => {
               <BarChart3 className="h-4 w-4" />
               Regional Census
             </Button>
+            <Button onClick={() => navigate("/authority/trends")} variant={isTrendsView ? "primary" : "outline"}>
+              <TrendingUp className="h-4 w-4" />
+              ER Trends
+            </Button>
             <Button onClick={() => navigate("/authority/forecasting")} variant={isForecastView ? "primary" : "outline"}>
               <Sparkles className="h-4 w-4" />
               AI Forecasting
@@ -385,7 +389,7 @@ export const AuthorityDashboard: React.FC = () => {
           </CardContent>
         </Card>
 
-        {isForecastView && renderForecastSection()}
+        {(isForecastView || isTrendsView) && renderForecastSection()}
         {isReportsView && renderPolicyReports()}
 
         {isStatsView && (
@@ -411,7 +415,7 @@ export const AuthorityDashboard: React.FC = () => {
           </Card>
         )}
 
-        {!isForecastView && !isReportsView && !isStatsView && (
+        {!isForecastView && !isTrendsView && !isReportsView && !isStatsView && (
           <>
             {renderForecastSection()}
             {renderPolicyReports()}
