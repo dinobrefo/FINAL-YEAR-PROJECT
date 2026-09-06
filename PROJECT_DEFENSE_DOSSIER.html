@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IERBMS Project Defense & Academic Examination Dossier - Kwabena Brefo</title>
+<style>
+  :root {
+    --bg: #06111F;
+    --surface: #0E1A2B;
+    --surface-elevated: #132238;
+    --border: #1E314B;
+    --text-primary: #F8FAFC;
+    --text-secondary: #94A3B8;
+    --crimson: #EF4444;
+    --teal: #14B8A6;
+    --blue: #3B82F6;
+    --emerald: #10B981;
+    --gold: #F59E0B;
+  }
+  @media print {
+    body { background: #FFFFFF !important; color: #000000 !important; }
+    .page-break { page-break-before: always; }
+    .no-print { display: none !important; }
+    .figure-box { box-shadow: none !important; border: 1px solid #CCC !important; }
+    h2 { border-bottom: 2px solid #000 !important; }
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text-primary);
+    line-height: 1.65;
+    padding: 40px 20px;
+  }
+  .container { max-width: 1100px; margin: 0 auto; }
+  header.dossier-header {
+    border-bottom: 2px solid var(--crimson);
+    padding-bottom: 24px;
+    margin-bottom: 36px;
+  }
+  .badge {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 9999px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    background: rgba(239, 68, 68, 0.15);
+    color: var(--crimson);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    margin-bottom: 12px;
+  }
+  h1 { font-size: 32px; font-weight: 900; margin-bottom: 8px; letter-spacing: -0.02em; }
+  .meta-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 12px;
+    margin-top: 16px;
+    font-size: 13px;
+    color: var(--text-secondary);
+  }
+  .meta-item strong { color: var(--text-primary); }
+  h2 {
+    font-size: 24px;
+    font-weight: 800;
+    margin-top: 48px;
+    margin-bottom: 16px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  h2::before {
+    content: "";
+    display: inline-block;
+    width: 6px;
+    height: 24px;
+    background: var(--crimson);
+    border-radius: 2px;
+  }
+  h3 { font-size: 18px; font-weight: 700; margin: 24px 0 12px; color: #E2E8F0; }
+  p { margin-bottom: 16px; color: #CBD5E1; font-size: 15px; }
+  ul, ol { margin: 0 0 20px 24px; color: #CBD5E1; font-size: 15px; }
+  li { margin-bottom: 8px; }
+  .figure-box {
+    margin: 28px 0;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 12px 32px rgba(0,0,0,0.5);
+  }
+  .figure-box img { width: 100%; height: auto; display: block; }
+  .figure-caption {
+    padding: 14px 20px;
+    font-size: 13px;
+    color: var(--text-secondary);
+    background: var(--surface-elevated);
+    border-top: 1px solid var(--border);
+    font-style: italic;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 24px 0;
+    font-size: 14px;
+    background: var(--surface);
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+  }
+  th, td {
+    padding: 12px 16px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+  th {
+    background: var(--surface-elevated);
+    color: var(--text-primary);
+    font-weight: 700;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  tr:hover td { background: rgba(255,255,255,0.02); }
+  .callout {
+    padding: 18px 22px;
+    background: rgba(20, 184, 166, 0.08);
+    border-left: 4px solid var(--teal);
+    border-radius: 0 12px 12px 0;
+    margin: 20px 0;
+    font-size: 14.5px;
+  }
+  .qa-block {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 22px;
+    margin-bottom: 20px;
+  }
+  .qa-block h4 {
+    font-size: 16px;
+    font-weight: 800;
+    color: var(--text-primary);
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .qa-block h4 .q-num {
+    background: var(--crimson);
+    color: white;
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-weight: 900;
+  }
+  .qa-block blockquote {
+    color: #E2E8F0;
+    font-size: 14.5px;
+    line-height: 1.6;
+    border-left: 3px solid var(--blue);
+    padding-left: 16px;
+    margin: 0;
+  }
+  .btn-print {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background: var(--crimson);
+    color: white;
+    padding: 12px 24px;
+    border-radius: 9999px;
+    font-weight: 700;
+    font-size: 14px;
+    border: none;
+    cursor: pointer;
+    box-shadow: 0 8px 24px rgba(239, 68, 68, 0.4);
+    z-index: 100;
+    transition: transform 0.2s, background 0.2s;
+  }
+  .btn-print:hover { transform: translateY(-2px); background: #DC2626; }
+</style>
+</head>
+<body>
+
+<button class="btn-print no-print" onclick="window.print()">🖨️ Print / Save as PDF</button>
+
+<div class="container">
+  <header class="dossier-header">
+    <span class="badge">Academic Capstone Defense Dossier • 2025/2026</span>
+    <h1>Integrated Emergency Resource &amp; Bed Management System (IERBMS)</h1>
+    <p style="font-size: 16px; color: var(--text-secondary); margin-bottom: 0;">
+      A 100% Free, Zero-API-Cost, Distributed Telemetry &amp; Clinical Bed Management Grid for the Ghana Health Service
+    </p>
+    
+    <div class="meta-grid">
+      <div class="meta-item">Candidate: <strong>Kwabena Brefo</strong></div>
+      <div class="meta-item">Institution: <strong>KNUST, Kumasi, Ghana</strong></div>
+      <div class="meta-item">Department: <strong>Computer Science &amp; Engineering</strong></div>
+      <div class="meta-item">Live Deployment: <strong><a href="https://final-year-project-frontend-fawn.vercel.app/" target="_blank" style="color: var(--teal); text-decoration: none;">Vercel Production ↗</a></strong></div>
+    </div>
+  </header>
+
+  <section>
+    <h2>1. Executive Summary &amp; Problem Motivation</h2>
+    <p>In Ghana and sub-Saharan Africa, the phenomenon known colloquially as the <strong>"No Bed Syndrome"</strong> is a critical public health crisis. Ambulances frequently arrive at major tertiary facilities—such as Korle Bu Teaching Hospital in Accra or Komfo Anokye Teaching Hospital (KATH) in Kumasi—only to find emergency wards and intensive care units completely saturated. Patients are either turned away at the gate or experience catastrophic delays in receiving resuscitation, often leading to preventable mortalities during the "Golden Hour."</p>
+    
+    <div class="callout">
+      <strong>The IERBMS Solution:</strong> IERBMS is a 100% free, zero-API-cost, open-source emergency logistics and telemetry platform designed specifically for the Ghana Health Service (GHS) and the National Ambulance Service (NAS). It coordinates real-time bed reservations, clinical SATS/TEWS triage classification, and turn-by-turn road navigation powered by Leaflet, OpenStreetMap, CartoDB, Esri Satellite, and OSRM.
+    </div>
+  </section>
+
+  <section>
+    <h2>2. National Healthcare Telemetry Grid (Ghana)</h2>
+    <p>The system establishes an interconnected digital telemetry corridor linking primary, secondary, and tertiary referral centres across Ghana.</p>
+    
+    <div class="figure-box">
+      <img src="docs/assets/fig1_ghana_emergency_grid.jpg" alt="National Healthcare Grid of Ghana">
+      <div class="figure-caption">Figure 1: High-Resolution Telemetry Map of Ghana showing tactical logistics corridors, regional teaching hospitals, and real-time connectivity between Accra, Kumasi, Tamale, Takoradi, Cape Coast, and Ho.</div>
+    </div>
+  </section>
+
+  <section>
+    <h2>3. System Architecture &amp; Distributed Dataflow</h2>
+    <p>IERBMS employs a 5-tier decoupled, reactive architecture designed for high throughput, sub-millisecond edge latency, and zero cloud lock-in.</p>
+    
+    <div class="figure-box">
+      <img src="docs/assets/fig5_system_architecture.svg" alt="IERBMS 5-Tier Distributed Architecture">
+      <div class="figure-caption">Figure 2: Complete Architectural Blueprint showing Client PWA Layer, Offline Resilience Bridge, Node.js Real-Time Cluster, Python FastAPI Predictive Engine, Open Cartography Stack, and PostgreSQL + PostGIS Persistence Tier.</div>
+    </div>
+  </section>
+
+  <section>
+    <h2>4. Paramedic Field Cockpit &amp; Offline Resilience</h2>
+    <p>Ambulance crews operate in high-stress, dynamic transit environments. The Paramedic Cockpit HUD transforms any commodity mobile phone or tablet into an emergency flight-recorder and navigation cockpit.</p>
+    
+    <div class="figure-box">
+      <img src="docs/assets/fig2_paramedic_cockpit_hud.jpg" alt="Paramedic Cockpit HUD Navigation">
+      <div class="figure-caption">Figure 3: Paramedic Cockpit HUD mounted on ambulance dashboard, displaying real-time 3D road navigation along Okomfo Anokye Avenue towards KATH, live SATS/TEWS vitals stream (HR 112, SpO2 96%), and verified ICU bed availability.</div>
+    </div>
+  </section>
+
+  <section>
+    <h2>5. Clinical SATS / TEWS Triage Protocol</h2>
+    <p>Rather than using an arbitrary heuristic, IERBMS strictly implements the South African Triage Scale (SATS) adapted by the Ghana Health Service (GHS), driven by the Triage Early Warning Score (TEWS).</p>
+    
+    <div class="figure-box">
+      <img src="docs/assets/fig8_sats_tews_clinical_matrix.svg" alt="South African Triage Scale Matrix">
+      <div class="figure-caption">Figure 4: Ghana Health Service Clinical Standard Triage Matrix categorizing emergencies into 5 priority levels with defined physiological criteria and automated bed-locking rules.</div>
+    </div>
+  </section>
+
+  <section>
+    <h2>6. Hospital Emergency Room &amp; Bed Management Console</h2>
+    <p>The Hospital Portal gives emergency physicians and charge nurses direct digital authority over their facility's clinical capacity.</p>
+    
+    <div class="figure-box">
+      <img src="docs/assets/fig3_hospital_er_dashboard.jpg" alt="Hospital ER Triage Console">
+      <div class="figure-caption">Figure 5: Hospital Emergency Department Triage Station showing the live ER queue, color-coded trauma triage tags, incoming ambulance telemetry countdowns, and the interactive Bed Census Grid.</div>
+    </div>
+  </section>
+
+  <section>
+    <h2>7. National Command &amp; Tactical Coordination Center</h2>
+    <p>The National Command Center console empowers dispatch supervisors and health authorities with macro-level situational awareness across Ghana.</p>
+    
+    <div class="figure-box">
+      <img src="docs/assets/fig4_command_center_tactical.jpg" alt="National Emergency Operations Command Center">
+      <div class="figure-caption">Figure 6: National Emergency Operations Command Center (Accra/Kumasi) featuring large-format tactical telemetry video wall, fleet tracking, regional bed saturation monitors, and active incident response matrices.</div>
+    </div>
+  </section>
+
+  <section>
+    <h2>8. Database Relational Schema &amp; Concurrency Control</h2>
+    <p>The data tier is deployed on PostgreSQL with PostGIS spatial extensions, providing rigorous relational integrity, foreign key cascades, and spatial queries.</p>
+    
+    <div class="figure-box">
+      <img src="docs/assets/fig6_database_erd.svg" alt="PostgreSQL Relational ERD">
+      <div class="figure-caption">Figure 7: Database Relational Schema showing the 5 primary core entities, data types, primary/foreign key relationships, and JSONB vitals payloads.</div>
+    </div>
+  </section>
+
+  <section>
+    <h2>9. Machine Learning &amp; Predictive Engine Benchmark</h2>
+    <p>To determine the most effective algorithmic foundation for emergency routing and ETA forecasting, an empirical 5-fold cross-validation benchmark was conducted across candidate models (benchmark_models.py).</p>
+    
+    <div class="figure-box">
+      <img src="docs/assets/fig7_ml_benchmark_comparison.svg" alt="Machine Learning Benchmark Comparison">
+      <div class="figure-caption">Figure 8: Rigorous 5-Fold Cross-Validation Performance Comparison evaluating R², RMSE, and Inference Latency across 4 candidate algorithms.</div>
+    </div>
+  </section>
+
+  <section>
+    <h2>10. Top 10 Oral Defense (Viva Voce) Questions &amp; Model Answers</h2>
+
+    <div class="qa-block">
+      <h4><span class="q-num">Q1</span> Why did you eliminate Google Maps, and does the open-source alternative match its capabilities?</h4>
+      <blockquote>Google Maps charges per API request ($5.00 to $10.00 per 1,000 requests for Directions and Dynamic Maps). In an active national deployment serving thousands of ambulance dispatches and continuous telemetry updates, commercial API billing would cost thousands of dollars per month, rendering the project unsustainable for public healthcare adoption in Ghana. We replaced it with a 100% free, enterprise-grade open-source stack: Leaflet for rendering, CartoDB Dark Matter &amp; Voyager for vector tiles, Esri World Imagery for high-resolution satellite views, and OSRM for road-snapped turn-by-turn routing, with a mathematical Haversine geodesic fallback.</blockquote>
+    </div>
+
+    <div class="qa-block">
+      <h4><span class="q-num">Q2</span> How does your system handle rural areas where mobile internet is lost?</h4>
+      <blockquote>We implemented a resilient two-tier offline architecture: (1) An IndexedDB Local Storage Queue that automatically enqueues emergency cases when cellular connectivity drops to zero, (2) Automated Background Sync listening for the online event and polling network recovery every 4 seconds to synchronize queued events with PostgreSQL, and (3) A PWA Standalone Cache ensuring the app loads instantly even in full airplane mode.</blockquote>
+    </div>
+
+    <div class="qa-block">
+      <h4><span class="q-num">Q3</span> Why did you choose a Random Forest Regressor over Deep Learning or simple Linear Regression?</h4>
+      <blockquote>Our empirical 5-fold cross-validation benchmark proved that Random Forest achieved R² = 0.9255 and RMSE = 7.12 mins with an inference latency of only 11.1 ms per 1,000 predictions (11.1 microseconds per sample). Simple Linear Regression failed to model non-linear bed saturation spikes above 90%, while Deep Learning MLP was 13× slower (145 ms) and consumed too much power on edge mobile devices.</blockquote>
+    </div>
+
+    <div class="qa-block">
+      <h4><span class="q-num">Q4</span> How does the system prevent a race condition where two ambulances claim the last available ICU bed?</h4>
+      <blockquote>Concurrency control is enforced using PostgreSQL pessimistic row-level locking (<code>SELECT ... FOR UPDATE</code>) inside ACID transactions. Assigning an ambulance places a provisional hold on the bed. If a hospital reaches zero ICU capacity, clinical guardrails score that facility as 0.0 (disqualified), instantly rerouting any subsequent dispatches to the next best facility.</blockquote>
+    </div>
+
+    <div class="qa-block">
+      <h4><span class="q-num">Q5</span> How was your triage algorithm clinically validated?</h4>
+      <blockquote>We implemented the official South African Triage Scale (SATS) adapted by the Ghana Health Service (GHS), evaluating Mobility, Heart Rate, Systolic BP, Respiratory Rate, Temperature, Neurological AVPU, and Trauma modifiers. Patients scoring ≥ 7 or exhibiting unresponsiveness/hypoxia are classified Priority Red (Immediate Resuscitation), triggering an automated ICU bed reservation lock.</blockquote>
+    </div>
+
+    <div class="qa-block">
+      <h4><span class="q-num">Q6</span> What is the source of your healthcare facility data across Ghana?</h4>
+      <blockquote>We integrated the official 2026 Humanitarian OpenStreetMap (HOTOSM) Health Facilities Dataset for Ghana from the UN OCHA Humanitarian Data Exchange (HDX). This dataset contains 2,500 verified healthcare points spanning all 16 administrative regions of Ghana with precise GPS coordinates.</blockquote>
+    </div>
+
+    <div class="qa-block">
+      <h4><span class="q-num">Q7</span> How does your system comply with the Ghana Data Protection Act 2012 (Act 843)?</h4>
+      <blockquote>The system enforces data minimization, pseudonymized patient identifiers, and strict Role-Based Access Control (RBAC). Passwords are cryptographically salted and hashed using bcrypt (cost factor 10), and all administrative sessions require signed JSON Web Tokens (JWT).</blockquote>
+    </div>
+
+    <div class="qa-block">
+      <h4><span class="q-num">Q8</span> Can the system scale to support all 16 regions of Ghana simultaneously?</h4>
+      <blockquote>Yes. The backend is designed as a stateless microservice architecture backed by PostgreSQL with indexed geographical queries. The algorithmic ranking runs in O(N log N) time, completing in under 25 ms even when searching across all 2,500 facilities in Ghana.</blockquote>
+    </div>
+
+    <div class="qa-block">
+      <h4><span class="q-num">Q9</span> What happens if a hospital administrator forgets to update bed numbers manually?</h4>
+      <blockquote>The system implements Automated Bed Inventory Allocation: (1) When an ambulance arrives at the emergency bay, the system automatically increments occupied beds and decrements available beds, (2) When the case is discharged, the bed is released, and (3) AI Model 2 continuously models diurnal cycles to project availability.</blockquote>
+    </div>
+
+    <div class="qa-block">
+      <h4><span class="q-num">Q10</span> What are the primary technical limitations and future research directions?</h4>
+      <blockquote>Current limitations include OSRM reliance on road graph data which in unpaved rural roads may lack seasonal flood status. Future directions include integrating computer-vision edge processing on ambulance dashcams to detect local traffic congestion directly, and establishing USSD/SMS gateway fallbacks for rural feature-phones.</blockquote>
+    </div>
+  </section>
+
+  <footer style="margin-top: 60px; padding-top: 24px; border-top: 1px solid var(--border); color: var(--text-secondary); font-size: 12px; text-align: center;">
+    IERBMS Academic Examination Dossier • Kwabena Brefo • KNUST Department of Computer Science &amp; Computer Engineering • 2025/2026
+  </footer>
+</div>
+
+</body>
+</html>
