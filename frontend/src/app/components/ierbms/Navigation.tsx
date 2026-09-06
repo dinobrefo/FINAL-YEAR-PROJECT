@@ -110,13 +110,13 @@ export const Navigation: React.FC<NavigationProps> = ({ role, className }) => {
             key={href}
             to={href}
             className={cn(
-              "flex items-center gap-3.5 px-4 py-3 rounded-2xl transition-all duration-300 group",
+              "flex items-center gap-3.5 px-4 py-3 rounded-xl transition-all duration-200 group font-mono text-sm",
               isActive
-                ? "bg-gradient-to-r from-teal-600 to-cyan-600 text-white shadow-lg shadow-teal-500/30 font-bold"
-                : "text-muted-foreground hover:bg-teal-500/10 hover:text-teal-600 dark:hover:text-teal-400 font-medium"
+                ? "bg-cyan-500/15 text-cyan-400 border border-cyan-500/40 shadow-lg shadow-cyan-500/10 font-bold"
+                : "text-slate-400 hover:bg-white/5 hover:text-white border border-transparent font-medium"
             )}
           >
-            <Icon className={cn("h-5 w-5 transition-transform group-hover:scale-110", isActive ? "text-white" : "text-teal-600/70 dark:text-teal-400/70")} />
+            <Icon className={cn("h-5 w-5 transition-transform group-hover:scale-110", isActive ? "text-cyan-400" : "text-slate-400 group-hover:text-cyan-400")} />
             <span className="text-sm">{item.label}</span>
           </Link>
         );
@@ -160,16 +160,14 @@ export const AppShell: React.FC<AppShellProps> = ({ role, userName, children }) 
         setIsSyncing(false);
       }
     };
-    const handleOffline = () => {
-      setIsOnline(false);
-      setPendingSyncCount(offlineQueue.getQueue().length);
-    };
+    const handleOffline = () => setIsOnline(false);
 
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
+
     const interval = setInterval(() => {
       setPendingSyncCount(offlineQueue.getQueue().length);
-    }, 4000);
+    }, 5000);
 
     return () => {
       window.removeEventListener('online', handleOnline);
@@ -187,7 +185,7 @@ export const AppShell: React.FC<AppShellProps> = ({ role, userName, children }) 
     navigate("/login");
   };
 
-  // Derive current page title for CoachPro header
+  // Derive current page title
   const pageTitle = React.useMemo(() => {
     const p = location.pathname;
     if (p.includes("/map")) return "Live Map Telemetry";
@@ -196,24 +194,26 @@ export const AppShell: React.FC<AppShellProps> = ({ role, userName, children }) 
     if (p.includes("/analytics")) return "System Analytics";
     if (p.includes("/new-emergency")) return "Emergency Intake";
     if (p.includes("/cases")) return "Active Emergency Cases";
-    return "Dashboard";
+    return "Operations Dashboard";
   }, [location.pathname]);
 
   return (
-    <div className="h-screen w-screen bg-gradient-to-br from-slate-100 via-teal-50/40 to-purple-50/30 dark:from-[#0b1320] dark:via-[#0c1a24] dark:to-[#140e28] text-foreground p-3 sm:p-6 transition-colors duration-500 overflow-hidden flex flex-col">
-      {/* Outer CoachPro Container Shell */}
-      <div className="max-w-[1600px] w-full mx-auto h-full flex flex-col md:flex-row gap-6 items-stretch overflow-hidden">
+    <div className="h-screen w-screen bg-[#06111F] text-[#F8FAFC] p-3 sm:p-6 transition-colors duration-300 overflow-hidden flex flex-col relative font-sans">
+      <div className="absolute inset-0 bg-grid [background-size:28px_28px] opacity-35 pointer-events-none" />
+
+      {/* Outer Container Shell */}
+      <div className="max-w-[1600px] w-full mx-auto h-full flex flex-col md:flex-row gap-6 items-stretch overflow-hidden relative z-10">
         
-        {/* Sticky Fixed Sidebar (Fits in window, never scrolls away) */}
-        <aside className="w-full md:w-64 bg-card/80 backdrop-blur-xl border border-white/60 dark:border-white/10 rounded-[32px] shadow-2xl shadow-teal-500/5 flex flex-col h-full overflow-hidden shrink-0">
-          <div className="p-6 border-b border-border/40">
+        {/* Sticky Fixed Sidebar */}
+        <aside className="w-full md:w-64 bg-[#081827]/95 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl shadow-cyan-500/5 flex flex-col h-full overflow-hidden shrink-0 z-10">
+          <div className="p-5 border-b border-white/10">
             <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-2xl bg-gradient-to-tr from-teal-600 to-cyan-500 flex items-center justify-center shadow-md shadow-teal-500/30 text-white font-black text-lg">
+              <div className="h-10 w-10 rounded-xl bg-gradient-to-tr from-cyan-500 to-cyan-300 flex items-center justify-center shadow-lg shadow-cyan-500/20 text-[#06111F] font-black text-lg font-mono">
                 I
               </div>
               <div>
-                <h1 className="text-lg font-black tracking-tight text-foreground">IERBMS</h1>
-                <p className="text-[11px] font-semibold text-teal-600 dark:text-teal-400 capitalize">{role} Portal</p>
+                <h1 className="text-lg font-black tracking-tight text-white font-mono">IERBMS</h1>
+                <p className="text-[11px] font-semibold text-cyan-400 capitalize font-mono">{role} Portal</p>
               </div>
             </div>
           </div>
@@ -222,25 +222,25 @@ export const AppShell: React.FC<AppShellProps> = ({ role, userName, children }) 
             <Navigation role={role} />
           </div>
 
-          <div className="p-4 border-t border-border/40 space-y-1.5">
+          <div className="p-4 border-t border-white/10 space-y-1.5 font-mono">
             <button
               onClick={toggleTheme}
-              className="w-full flex items-center gap-3 px-4 py-2.5 rounded-2xl text-muted-foreground hover:text-foreground hover:bg-teal-500/10 transition-all cursor-pointer text-xs font-semibold"
+              className="w-full flex items-center gap-3 px-4 py-2 rounded-xl text-slate-400 hover:text-white hover:bg-white/5 transition-all cursor-pointer text-xs font-semibold"
             >
               {effectiveTheme === "dark" ? (
                 <Sun className="h-4 w-4 text-amber-400" />
               ) : (
-                <Moon className="h-4 w-4 text-blue-500" />
+                <Moon className="h-4 w-4 text-cyan-400" />
               )}
               <span>{effectiveTheme === "dark" ? "Light Mode" : "Dark Mode"}</span>
             </button>
 
             <button 
               onClick={() => setShowNotifications(true)}
-              className="w-full flex items-center justify-between px-4 py-2.5 rounded-2xl text-muted-foreground hover:text-foreground hover:bg-teal-500/10 transition-all cursor-pointer text-xs font-semibold"
+              className="w-full flex items-center justify-between px-4 py-2 rounded-xl text-slate-400 hover:text-white hover:bg-white/5 transition-all cursor-pointer text-xs font-semibold"
             >
               <div className="flex items-center gap-3">
-                <Bell className="h-4 w-4 text-teal-500" />
+                <Bell className="h-4 w-4 text-cyan-400" />
                 <span>Notifications</span>
               </div>
               <span className="h-2 w-2 rounded-full bg-red-500 animate-pulse" />
@@ -248,15 +248,15 @@ export const AppShell: React.FC<AppShellProps> = ({ role, userName, children }) 
 
             <button 
               onClick={() => setShowSettings(true)}
-              className="w-full flex items-center gap-3 px-4 py-2.5 rounded-2xl text-muted-foreground hover:text-foreground hover:bg-teal-500/10 transition-all cursor-pointer text-xs font-semibold"
+              className="w-full flex items-center gap-3 px-4 py-2 rounded-xl text-slate-400 hover:text-white hover:bg-white/5 transition-all cursor-pointer text-xs font-semibold"
             >
-              <Settings className="h-4 w-4 text-teal-500" />
+              <Settings className="h-4 w-4 text-cyan-400" />
               <span>Settings</span>
             </button>
 
             <button
               onClick={handleLogout}
-              className="w-full flex items-center gap-3 px-4 py-2.5 rounded-2xl text-red-500 hover:bg-red-500/10 transition-all cursor-pointer text-xs font-semibold"
+              className="w-full flex items-center gap-3 px-4 py-2 rounded-xl text-red-400 hover:bg-red-500/10 transition-all cursor-pointer text-xs font-semibold"
             >
               <LogOut className="h-4 w-4" />
               <span>Sign Out</span>
@@ -265,32 +265,33 @@ export const AppShell: React.FC<AppShellProps> = ({ role, userName, children }) 
         </aside>
 
         {/* Main Content Workspace Panel */}
-        <main className="flex-1 bg-card/70 backdrop-blur-xl border border-white/60 dark:border-white/10 rounded-[32px] shadow-2xl shadow-teal-500/5 p-6 md:p-8 flex flex-col min-w-0 h-full overflow-hidden relative">
+        <main className="flex-1 bg-[#0B1B2B]/90 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl p-5 md:p-7 flex flex-col min-w-0 h-full overflow-hidden relative z-10">
           
-          {/* CoachPro Fixed Top Header Bar (STAYS FIXED AT TOP ALWAYS) */}
-          <header className="sticky top-0 bg-card/90 backdrop-blur-md z-30 pb-4 pt-1 mb-4 border-b border-border/40 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shrink-0">
+          {/* Top Header Bar */}
+          <header className="sticky top-0 bg-[#0B1B2B]/95 backdrop-blur-md z-30 pb-4 pt-1 mb-4 border-b border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shrink-0">
             <div>
-              <p className="text-xs font-semibold text-teal-600 dark:text-teal-400 flex items-center gap-1.5">
-                Welcome back, {userName || "Officer"} <span className="animate-bounce inline-block">👋</span>
+              <p className="text-xs font-mono font-semibold text-cyan-400 flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                TELEMETRY ACTIVE · {userName || "Officer"}
               </p>
-              <h2 className="text-3xl font-black text-foreground tracking-tight mt-0.5">{pageTitle}</h2>
+              <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight mt-0.5 font-mono">{pageTitle}</h2>
             </div>
 
             <div className="flex items-center gap-3">
               {/* Real-time Field Sync Status Badge */}
               <div className={cn(
-                "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border transition-all",
+                "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border font-mono transition-all",
                 !isOnline
                   ? "bg-amber-500/10 text-amber-500 border-amber-500/30 animate-pulse"
                   : isSyncing
-                  ? "bg-blue-500/10 text-blue-400 border-blue-500/30"
+                  ? "bg-cyan-500/10 text-cyan-400 border-cyan-500/30"
                   : pendingSyncCount > 0
                   ? "bg-amber-500/15 text-amber-400 border-amber-500/40"
-                  : "bg-emerald-500/10 text-emerald-500 border-emerald-500/30"
+                  : "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
               )}>
                 <span className={cn(
                   "h-2 w-2 rounded-full",
-                  !isOnline ? "bg-amber-500" : isSyncing ? "bg-blue-400 animate-spin" : pendingSyncCount > 0 ? "bg-amber-400" : "bg-emerald-500"
+                  !isOnline ? "bg-amber-500" : isSyncing ? "bg-cyan-400 animate-spin" : pendingSyncCount > 0 ? "bg-amber-400" : "bg-emerald-400"
                 )} />
                 <span>
                   {!isOnline
@@ -299,13 +300,13 @@ export const AppShell: React.FC<AppShellProps> = ({ role, userName, children }) 
                     ? "Syncing Queue..."
                     : pendingSyncCount > 0
                     ? `${pendingSyncCount} pending sync`
-                    : "Live Telemetry Online"}
+                    : "Grid Synced"}
                 </span>
               </div>
 
               <button 
                 onClick={() => setShowSettings(true)}
-                className="h-10 w-10 rounded-2xl bg-card/80 border border-border/60 hover:bg-accent flex items-center justify-center text-muted-foreground hover:text-foreground transition-all cursor-pointer shadow-sm"
+                className="h-10 w-10 rounded-xl bg-[#081827] border border-white/10 hover:bg-white/5 flex items-center justify-center text-slate-300 hover:text-white transition-all cursor-pointer shadow-sm"
                 title="Search Dashboard"
               >
                 <Search className="h-4 w-4" />
@@ -313,21 +314,21 @@ export const AppShell: React.FC<AppShellProps> = ({ role, userName, children }) 
 
               <button 
                 onClick={() => setShowNotifications(true)}
-                className="h-10 w-10 rounded-2xl bg-card/80 border border-border/60 hover:bg-accent flex items-center justify-center text-muted-foreground hover:text-foreground transition-all relative cursor-pointer shadow-sm"
+                className="h-10 w-10 rounded-xl bg-[#081827] border border-white/10 hover:bg-white/5 flex items-center justify-center text-slate-300 hover:text-white transition-all relative cursor-pointer shadow-sm"
                 title="Notifications"
               >
                 <Bell className="h-4 w-4" />
                 <span className="absolute top-2.5 right-2.5 h-2 w-2 rounded-full bg-red-500" />
               </button>
 
-              {/* User Profile Avatar Pill (Fixed in Header) */}
-              <div className="flex items-center gap-2.5 pl-2 py-1 pr-3 bg-card/90 border border-border/60 rounded-full shadow-sm">
+              {/* User Profile Avatar Pill */}
+              <div className="flex items-center gap-2.5 pl-2 py-1 pr-3 bg-[#081827] border border-white/10 rounded-full shadow-sm font-mono">
                 <img 
                   src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80" 
                   alt="Profile" 
-                  className="h-8 w-8 rounded-full object-cover ring-2 ring-teal-500/40"
+                  className="h-8 w-8 rounded-full object-cover ring-2 ring-cyan-500/40"
                 />
-                <span className="text-xs font-bold text-foreground hidden sm:inline-block">{userName || "Chief Commander"}</span>
+                <span className="text-xs font-bold text-white hidden sm:inline-block">{userName || "Chief Commander"}</span>
               </div>
             </div>
           </header>

@@ -21,12 +21,12 @@ export const useTheme = () => {
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [theme, setTheme] = React.useState<Theme>(() => {
     if (typeof window !== "undefined") {
-      return (localStorage.getItem("theme") as Theme) || "system";
+      return (localStorage.getItem("theme") as Theme) || "dark";
     }
-    return "system";
+    return "dark";
   });
 
-  const [effectiveTheme, setEffectiveTheme] = React.useState<"light" | "dark">("light");
+  const [effectiveTheme, setEffectiveTheme] = React.useState<"light" | "dark">("dark");
 
   React.useEffect(() => {
     const root = window.document.documentElement;

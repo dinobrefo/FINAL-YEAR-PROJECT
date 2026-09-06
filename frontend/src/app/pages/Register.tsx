@@ -78,75 +78,77 @@ export const Register: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
-      <div className="mb-6 flex items-center gap-3">
-        <div className="h-12 w-12 bg-[var(--primary)] rounded-xl flex items-center justify-center shadow-lg">
-          <Activity className="h-6 w-6 text-white" />
+    <div className="min-h-screen bg-[#06111F] text-[#F8FAFC] flex flex-col items-center justify-center p-4 relative overflow-hidden font-sans">
+      <div className="absolute inset-0 bg-grid [background-size:28px_28px] opacity-35 pointer-events-none" />
+
+      <div className="mb-6 flex items-center gap-3 relative z-10">
+        <div className="h-12 w-12 bg-gradient-to-tr from-cyan-500 to-cyan-300 text-[#06111F] rounded-xl flex items-center justify-center shadow-lg shadow-cyan-500/20 font-mono font-black text-xl">
+          <Activity className="h-6 w-6 text-[#06111F]" />
         </div>
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">IERBMS</h1>
-          <p className="text-sm text-muted-foreground font-medium">Healthcare Staff Registration</p>
+          <h1 className="text-2xl font-bold tracking-tight text-white font-mono">IERBMS</h1>
+          <p className="text-xs text-cyan-400 font-mono font-semibold">HEALTHCARE STAFF ENROLLMENT</p>
         </div>
       </div>
 
-      <Card className="w-full max-w-lg shadow-2xl">
+      <Card className="w-full max-w-lg shadow-2xl bg-[#0B1B2B]/95 border-white/10 rounded-2xl relative z-10 backdrop-blur-xl">
         <CardHeader className="text-center">
-          <CardTitle>Create Portal Account</CardTitle>
-          <CardDescription>Register for role-based emergency access & hospital coordination</CardDescription>
+          <CardTitle className="text-xl text-white font-mono">Create Portal Account</CardTitle>
+          <CardDescription className="text-slate-400">Register for role-based emergency access & hospital coordination</CardDescription>
         </CardHeader>
         <CardContent>
           {success ? (
-            <div className="p-6 text-center space-y-3">
-              <CheckCircle className="h-12 w-12 text-emerald-500 mx-auto animate-bounce" />
-              <h3 className="text-lg font-bold text-foreground">Registration Successful!</h3>
-              <p className="text-sm text-muted-foreground">Redirecting to login portal...</p>
+            <div className="p-6 text-center space-y-3 font-mono">
+              <CheckCircle className="h-12 w-12 text-emerald-400 mx-auto animate-bounce" />
+              <h3 className="text-lg font-bold text-white">Registration Successful!</h3>
+              <p className="text-xs text-slate-400">Redirecting to login portal...</p>
             </div>
           ) : (
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-4 font-mono text-xs">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <label className="text-xs font-bold uppercase text-muted-foreground">Full Name</label>
+                  <label className="text-xs font-bold uppercase text-slate-300">Full Name</label>
                   <input
                     type="text"
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
                     required
                     placeholder="Kwabena Brefo"
-                    className="w-full p-2.5 border rounded-lg bg-background text-sm focus:ring-2 focus:ring-[var(--primary)]"
+                    className="w-full p-2.5 border border-white/10 rounded-xl bg-[#081827] text-white text-sm font-sans focus:ring-2 focus:ring-cyan-400 focus:outline-none"
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-xs font-bold uppercase text-muted-foreground">Phone Number</label>
+                  <label className="text-xs font-bold uppercase text-slate-300">Phone Number</label>
                   <input
                     type="tel"
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
                     required
                     placeholder="+233 24 123 4567"
-                    className="w-full p-2.5 border rounded-lg bg-background text-sm focus:ring-2 focus:ring-[var(--primary)]"
+                    className="w-full p-2.5 border border-white/10 rounded-xl bg-[#081827] text-white text-sm font-sans focus:ring-2 focus:ring-cyan-400 focus:outline-none"
                   />
                 </div>
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-xs font-bold uppercase text-muted-foreground">Work Email Address</label>
+                <label className="text-xs font-bold uppercase text-slate-300">Work Email Address</label>
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
                   placeholder="name@hospital.gov.gh"
-                  className="w-full p-2.5 border rounded-lg bg-background text-sm focus:ring-2 focus:ring-[var(--primary)]"
+                  className="w-full p-2.5 border border-white/10 rounded-xl bg-[#081827] text-white text-sm font-sans focus:ring-2 focus:ring-cyan-400 focus:outline-none"
                 />
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <label className="text-xs font-bold uppercase text-muted-foreground">System Role</label>
+                  <label className="text-xs font-bold uppercase text-slate-300">System Role</label>
                   <select
                     value={role}
                     onChange={(e) => setRole(e.target.value)}
-                    className="w-full p-2.5 border rounded-lg bg-background text-sm cursor-pointer"
+                    className="w-full p-2.5 border border-white/10 rounded-xl bg-[#081827] text-white text-sm font-sans cursor-pointer focus:ring-2 focus:ring-cyan-400 focus:outline-none"
                   >
                     <option value="nurse">Nurse (Ward & Triage)</option>
                     <option value="doctor">On-Duty Doctor (Physician)</option>
@@ -158,11 +160,11 @@ export const Register: React.FC = () => {
 
                 {(role === 'hospital' || role === 'doctor' || role === 'nurse') && (
                   <div className="space-y-1.5">
-                    <label className="text-xs font-bold uppercase text-muted-foreground">Affiliated Facility</label>
+                    <label className="text-xs font-bold uppercase text-slate-300">Affiliated Facility</label>
                     <select
                       value={hospitalId}
                       onChange={(e) => setHospitalId(e.target.value)}
-                      className="w-full p-2.5 border rounded-lg bg-background text-sm cursor-pointer"
+                      className="w-full p-2.5 border border-white/10 rounded-xl bg-[#081827] text-white text-sm font-sans cursor-pointer focus:ring-2 focus:ring-cyan-400 focus:outline-none"
                     >
                       {hospitals.map(h => (
                         <option key={h.id} value={h.id}>{h.name}</option>
@@ -174,43 +176,43 @@ export const Register: React.FC = () => {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <label className="text-xs font-bold uppercase text-muted-foreground">Password</label>
+                  <label className="text-xs font-bold uppercase text-slate-300">Password</label>
                   <input
                     type="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
                     placeholder="••••••••"
-                    className="w-full p-2.5 border rounded-lg bg-background text-sm"
+                    className="w-full p-2.5 border border-white/10 rounded-xl bg-[#081827] text-white text-sm font-sans focus:ring-2 focus:ring-cyan-400 focus:outline-none"
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-xs font-bold uppercase text-muted-foreground">Confirm Password</label>
+                  <label className="text-xs font-bold uppercase text-slate-300">Confirm Password</label>
                   <input
                     type="password"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     required
                     placeholder="••••••••"
-                    className="w-full p-2.5 border rounded-lg bg-background text-sm"
+                    className="w-full p-2.5 border border-white/10 rounded-xl bg-[#081827] text-white text-sm font-sans focus:ring-2 focus:ring-cyan-400 focus:outline-none"
                   />
                 </div>
               </div>
 
               {error && (
-                <div className="p-3 text-xs text-[var(--danger)] bg-[var(--danger)]/10 rounded-lg">
+                <div className="p-3 text-xs text-[#FF2A4D] bg-[#FF2A4D]/10 border border-[#FF2A4D]/20 rounded-xl">
                   {error}
                 </div>
               )}
 
-              <Button type="submit" variant="primary" className="w-full cursor-pointer py-2.5" disabled={loading}>
+              <Button type="submit" variant="primary" className="w-full cursor-pointer py-3 rounded-xl font-bold font-mono text-sm bg-cyan-400 text-[#06111F] hover:bg-cyan-300 shadow-lg shadow-cyan-500/20" disabled={loading}>
                 <UserPlus className="h-4 w-4" />
-                {loading ? 'Creating Account...' : 'Register Account'}
+                {loading ? 'Creating Account...' : 'Enroll Portal Account'}
               </Button>
 
-              <p className="text-center text-xs text-muted-foreground pt-2">
+              <p className="text-center text-xs text-slate-400 pt-2 font-sans">
                 Already registered?{' '}
-                <Link to="/login" className="text-[var(--primary)] font-bold hover:underline">
+                <Link to="/login" className="text-cyan-400 font-bold hover:underline">
                   Sign in here
                 </Link>
               </p>

@@ -83,57 +83,59 @@ export const Login: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
-      <div className="mb-8 flex items-center gap-3">
-        <div className="h-12 w-12 bg-[var(--primary)] rounded-xl flex items-center justify-center shadow-lg">
-          <Activity className="h-6 w-6 text-white" />
+    <div className="min-h-screen bg-[#06111F] text-[#F8FAFC] flex flex-col items-center justify-center p-4 relative overflow-hidden font-sans">
+      <div className="absolute inset-0 bg-grid [background-size:28px_28px] opacity-35 pointer-events-none" />
+
+      <div className="mb-8 flex items-center gap-3 relative z-10">
+        <div className="h-12 w-12 bg-gradient-to-tr from-cyan-500 to-cyan-300 text-[#06111F] rounded-xl flex items-center justify-center shadow-lg shadow-cyan-500/20 font-mono font-black text-xl">
+          <Activity className="h-6 w-6 text-[#06111F]" />
         </div>
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">IERBMS</h1>
-          <p className="text-sm text-muted-foreground font-medium">Secured Portal</p>
+          <h1 className="text-2xl font-bold tracking-tight text-white font-mono">IERBMS</h1>
+          <p className="text-xs text-cyan-400 font-mono font-semibold">SECURED DISPATCH & HOSPITAL PORTAL</p>
         </div>
       </div>
 
-      <Card className="w-full max-w-md shadow-2xl">
+      <Card className="w-full max-w-md shadow-2xl bg-[#0B1B2B]/95 border-white/10 rounded-2xl relative z-10 backdrop-blur-xl">
         <CardHeader className="text-center">
-          <CardTitle>Welcome back</CardTitle>
-          <CardDescription>Enter your credentials to access your dashboard</CardDescription>
+          <CardTitle className="text-xl text-white font-mono">Operations Sign In</CardTitle>
+          <CardDescription className="text-slate-400">Enter authenticated credentials to access your dispatch view</CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4 font-mono text-xs">
             <div className="space-y-2">
-              <label className="text-sm font-medium">Email Address</label>
+              <label className="text-xs font-bold uppercase text-slate-300">Email Address</label>
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="w-full px-3 py-2 border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
-                placeholder="staff@ierbms.gov"
+                className="w-full px-3 py-2.5 border border-white/10 rounded-xl bg-[#081827] text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-400 text-sm font-sans"
+                placeholder="officer@ierbms.gov.gh"
               />
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium">Password</label>
+              <label className="text-xs font-bold uppercase text-slate-300">Password</label>
               <input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                className="w-full px-3 py-2 border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
+                className="w-full px-3 py-2.5 border border-white/10 rounded-xl bg-[#081827] text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-400 text-sm font-sans"
                 placeholder="••••••••"
               />
             </div>
             {error && (
-              <div className="p-3 text-sm text-[var(--danger)] bg-[var(--danger)]/10 rounded-md">
+              <div className="p-3 text-xs text-[#FF2A4D] bg-[#FF2A4D]/10 border border-[#FF2A4D]/20 rounded-xl">
                 {error}
               </div>
             )}
-            <Button type="submit" variant="primary" className="w-full" disabled={loading}>
-              {loading ? 'Authenticating...' : 'Sign In'}
+            <Button type="submit" variant="primary" className="w-full py-3 rounded-xl font-bold font-mono text-sm bg-cyan-400 text-[#06111F] hover:bg-cyan-300 shadow-lg shadow-cyan-500/20 cursor-pointer" disabled={loading}>
+              {loading ? 'Authenticating Security Grid...' : 'Authorize Session'}
             </Button>
-            <p className="text-center text-xs text-muted-foreground pt-1">
-              New staff member?{' '}
-              <a href="/register" className="text-[var(--primary)] font-bold hover:underline">
+            <p className="text-center text-xs text-slate-400 pt-1 font-sans">
+              New medical staff?{' '}
+              <a href="/register" className="text-cyan-400 font-bold hover:underline">
                 Create an account
               </a>
             </p>
@@ -142,26 +144,26 @@ export const Login: React.FC = () => {
       </Card>
 
       {/* Demo Credentials Section */}
-      <div className="w-full max-w-md mt-6 bg-accent rounded-lg p-4 border shadow-sm">
-        <h3 className="text-sm font-semibold mb-2 flex items-center gap-2">
-          <Building2 className="h-4 w-4" /> Available Hospital Portals (Demo)
+      <div className="w-full max-w-md mt-6 bg-[#081827]/90 rounded-2xl p-4 border border-white/10 shadow-xl relative z-10 font-mono text-xs">
+        <h3 className="text-xs font-bold text-cyan-400 mb-1 flex items-center gap-2">
+          <Building2 className="h-4 w-4" /> DEMO PORTAL CREDENTIALS
         </h3>
-        <p className="text-xs text-muted-foreground mb-3">
-          Password for all accounts is <strong>password123</strong>
+        <p className="text-[11px] text-slate-400 mb-3">
+          Universal verification password: <strong className="text-white">password123</strong>
         </p>
-        <div className="max-h-48 overflow-y-auto space-y-2 pr-2 custom-scrollbar">
+        <div className="max-h-44 overflow-y-auto space-y-2 pr-2 custom-scrollbar">
           {hospitalLogins.map((hl, idx) => (
             <div 
               key={idx} 
-              className="flex flex-col bg-background p-2 rounded border cursor-pointer hover:border-[var(--primary)] transition-colors"
+              className="flex flex-col bg-[#0B1B2B] p-2.5 rounded-xl border border-white/5 cursor-pointer hover:border-cyan-400/50 hover:bg-[#0F2B48] transition-colors"
               onClick={() => setEmail(hl.email)}
             >
-              <span className="text-xs font-semibold">{hl.hospital_name}</span>
-              <span className="text-xs text-muted-foreground">{hl.email}</span>
+              <span className="text-xs font-semibold text-white">{hl.hospital_name}</span>
+              <span className="text-[11px] text-cyan-300/80">{hl.email}</span>
             </div>
           ))}
           {hospitalLogins.length === 0 && (
-            <p className="text-xs text-muted-foreground">No hospitals seeded yet.</p>
+            <p className="text-xs text-slate-400">Loading seeded hospitals...</p>
           )}
         </div>
       </div>
