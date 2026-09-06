@@ -82,16 +82,16 @@ export const Register: React.FC = () => {
       <div className="absolute inset-0 bg-grid [background-size:28px_28px] opacity-35 pointer-events-none" />
 
       <div className="mb-6 flex items-center gap-3 relative z-10">
-        <div className="h-12 w-12 bg-gradient-to-tr from-cyan-500 to-cyan-300 text-[#06111F] rounded-xl flex items-center justify-center shadow-lg shadow-cyan-500/20 font-mono font-black text-xl">
-          <Activity className="h-6 w-6 text-[#06111F]" />
+        <div className="h-12 w-12 bg-red-500/15 border border-red-500/30 text-[#EF4444] rounded-xl flex items-center justify-center shadow-lg shadow-red-500/20 font-mono font-black text-xl">
+          <Activity className="h-6 w-6 text-[#EF4444]" />
         </div>
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-white font-mono">IERBMS</h1>
-          <p className="text-xs text-cyan-400 font-mono font-semibold">HEALTHCARE STAFF ENROLLMENT</p>
+          <p className="text-xs text-red-400 font-mono font-semibold">HEALTHCARE STAFF ENROLLMENT</p>
         </div>
       </div>
 
-      <Card className="w-full max-w-lg shadow-2xl bg-[#0B1B2B]/95 border-white/10 rounded-2xl relative z-10 backdrop-blur-xl">
+      <Card className="w-full max-w-lg shadow-2xl bg-[#111C2D]/95 border-white/10 rounded-2xl relative z-10 backdrop-blur-xl">
         <CardHeader className="text-center">
           <CardTitle className="text-xl text-white font-mono">Create Portal Account</CardTitle>
           <CardDescription className="text-slate-400">Register for role-based emergency access & hospital coordination</CardDescription>
@@ -114,7 +114,7 @@ export const Register: React.FC = () => {
                     onChange={(e) => setFullName(e.target.value)}
                     required
                     placeholder="Kwabena Brefo"
-                    className="w-full p-2.5 border border-white/10 rounded-xl bg-[#081827] text-white text-sm font-sans focus:ring-2 focus:ring-cyan-400 focus:outline-none"
+                    className="w-full p-2.5 border border-white/10 rounded-xl bg-[#081827] text-white text-sm font-sans focus:ring-2 focus:ring-red-500 focus:border-red-500/50 focus:outline-none"
                   />
                 </div>
                 <div className="space-y-1.5">
@@ -125,7 +125,7 @@ export const Register: React.FC = () => {
                     onChange={(e) => setPhone(e.target.value)}
                     required
                     placeholder="+233 24 123 4567"
-                    className="w-full p-2.5 border border-white/10 rounded-xl bg-[#081827] text-white text-sm font-sans focus:ring-2 focus:ring-cyan-400 focus:outline-none"
+                    className="w-full p-2.5 border border-white/10 rounded-xl bg-[#081827] text-white text-sm font-sans focus:ring-2 focus:ring-red-500 focus:border-red-500/50 focus:outline-none"
                   />
                 </div>
               </div>
@@ -138,7 +138,7 @@ export const Register: React.FC = () => {
                   onChange={(e) => setEmail(e.target.value)}
                   required
                   placeholder="name@hospital.gov.gh"
-                  className="w-full p-2.5 border border-white/10 rounded-xl bg-[#081827] text-white text-sm font-sans focus:ring-2 focus:ring-cyan-400 focus:outline-none"
+                  className="w-full p-2.5 border border-white/10 rounded-xl bg-[#081827] text-white text-sm font-sans focus:ring-2 focus:ring-red-500 focus:border-red-500/50 focus:outline-none"
                 />
               </div>
 
@@ -148,7 +148,7 @@ export const Register: React.FC = () => {
                   <select
                     value={role}
                     onChange={(e) => setRole(e.target.value)}
-                    className="w-full p-2.5 border border-white/10 rounded-xl bg-[#081827] text-white text-sm font-sans cursor-pointer focus:ring-2 focus:ring-cyan-400 focus:outline-none"
+                    className="w-full p-2.5 border border-white/10 rounded-xl bg-[#081827] text-white text-sm font-sans cursor-pointer focus:ring-2 focus:ring-red-500 focus:border-red-500/50 focus:outline-none"
                   >
                     <option value="nurse">Nurse (Ward & Triage)</option>
                     <option value="doctor">On-Duty Doctor (Physician)</option>
@@ -164,7 +164,7 @@ export const Register: React.FC = () => {
                     <select
                       value={hospitalId}
                       onChange={(e) => setHospitalId(e.target.value)}
-                      className="w-full p-2.5 border border-white/10 rounded-xl bg-[#081827] text-white text-sm font-sans cursor-pointer focus:ring-2 focus:ring-cyan-400 focus:outline-none"
+                      className="w-full p-2.5 border border-white/10 rounded-xl bg-[#081827] text-white text-sm font-sans cursor-pointer focus:ring-2 focus:ring-red-500 focus:border-red-500/50 focus:outline-none"
                     >
                       {hospitals.map(h => (
                         <option key={h.id} value={h.id}>{h.name}</option>
@@ -183,7 +183,7 @@ export const Register: React.FC = () => {
                     onChange={(e) => setPassword(e.target.value)}
                     required
                     placeholder="••••••••"
-                    className="w-full p-2.5 border border-white/10 rounded-xl bg-[#081827] text-white text-sm font-sans focus:ring-2 focus:ring-cyan-400 focus:outline-none"
+                    className="w-full p-2.5 border border-white/10 rounded-xl bg-[#081827] text-white text-sm font-sans focus:ring-2 focus:ring-red-500 focus:border-red-500/50 focus:outline-none"
                   />
                 </div>
                 <div className="space-y-1.5">
@@ -194,7 +194,7 @@ export const Register: React.FC = () => {
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     required
                     placeholder="••••••••"
-                    className="w-full p-2.5 border border-white/10 rounded-xl bg-[#081827] text-white text-sm font-sans focus:ring-2 focus:ring-cyan-400 focus:outline-none"
+                    className="w-full p-2.5 border border-white/10 rounded-xl bg-[#081827] text-white text-sm font-sans focus:ring-2 focus:ring-red-500 focus:border-red-500/50 focus:outline-none"
                   />
                 </div>
               </div>
@@ -205,14 +205,14 @@ export const Register: React.FC = () => {
                 </div>
               )}
 
-              <Button type="submit" variant="primary" className="w-full cursor-pointer py-3 rounded-xl font-bold font-mono text-sm bg-cyan-400 text-[#06111F] hover:bg-cyan-300 shadow-lg shadow-cyan-500/20" disabled={loading}>
+              <Button type="submit" variant="primary" className="w-full cursor-pointer py-3 rounded-xl font-bold font-mono text-sm bg-[#EF4444] text-white hover:bg-[#DC2626] shadow-[0_0_40px_-8px_rgba(239,68,68,0.45)]" disabled={loading}>
                 <UserPlus className="h-4 w-4" />
                 {loading ? 'Creating Account...' : 'Enroll Portal Account'}
               </Button>
 
               <p className="text-center text-xs text-slate-400 pt-2 font-sans">
                 Already registered?{' '}
-                <Link to="/login" className="text-cyan-400 font-bold hover:underline">
+                <Link to="/login" className="text-red-400 font-bold hover:underline">
                   Sign in here
                 </Link>
               </p>

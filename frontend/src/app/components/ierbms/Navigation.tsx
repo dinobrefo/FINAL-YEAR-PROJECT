@@ -112,11 +112,11 @@ export const Navigation: React.FC<NavigationProps> = ({ role, className }) => {
             className={cn(
               "flex items-center gap-3.5 px-4 py-3 rounded-xl transition-all duration-200 group font-mono text-sm",
               isActive
-                ? "bg-cyan-500/15 text-cyan-400 border border-cyan-500/40 shadow-lg shadow-cyan-500/10 font-bold"
+                ? "bg-red-500/15 text-red-400 border border-red-500/30 shadow-lg shadow-red-500/10 font-bold"
                 : "text-slate-400 hover:bg-white/5 hover:text-white border border-transparent font-medium"
             )}
           >
-            <Icon className={cn("h-5 w-5 transition-transform group-hover:scale-110", isActive ? "text-cyan-400" : "text-slate-400 group-hover:text-cyan-400")} />
+            <Icon className={cn("h-5 w-5 transition-transform group-hover:scale-110", isActive ? "text-red-400" : "text-slate-400 group-hover:text-red-400")} />
             <span className="text-sm">{item.label}</span>
           </Link>
         );
@@ -205,15 +205,15 @@ export const AppShell: React.FC<AppShellProps> = ({ role, userName, children }) 
       <div className="max-w-[1600px] w-full mx-auto h-full flex flex-col md:flex-row gap-6 items-stretch overflow-hidden relative z-10">
         
         {/* Sticky Fixed Sidebar */}
-        <aside className="w-full md:w-64 bg-[#081827]/95 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl shadow-cyan-500/5 flex flex-col h-full overflow-hidden shrink-0 z-10">
+        <aside className="w-full md:w-64 bg-[#081827]/95 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl shadow-black/40 flex flex-col h-full overflow-hidden shrink-0 z-10">
           <div className="p-5 border-b border-white/10">
             <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-xl bg-gradient-to-tr from-cyan-500 to-cyan-300 flex items-center justify-center shadow-lg shadow-cyan-500/20 text-[#06111F] font-black text-lg font-mono">
-                I
+              <div className="h-10 w-10 rounded-xl bg-red-500/15 border border-red-500/30 flex items-center justify-center shadow-lg shadow-red-500/20 text-[#EF4444]">
+                <Activity className="h-5 w-5 text-[#EF4444]" />
               </div>
               <div>
                 <h1 className="text-lg font-black tracking-tight text-white font-mono">IERBMS</h1>
-                <p className="text-[11px] font-semibold text-cyan-400 capitalize font-mono">{role} Portal</p>
+                <p className="text-[11px] font-semibold text-red-400 capitalize font-mono">{role} Portal</p>
               </div>
             </div>
           </div>
@@ -230,7 +230,7 @@ export const AppShell: React.FC<AppShellProps> = ({ role, userName, children }) 
               {effectiveTheme === "dark" ? (
                 <Sun className="h-4 w-4 text-amber-400" />
               ) : (
-                <Moon className="h-4 w-4 text-cyan-400" />
+                <Moon className="h-4 w-4 text-slate-400" />
               )}
               <span>{effectiveTheme === "dark" ? "Light Mode" : "Dark Mode"}</span>
             </button>
@@ -240,7 +240,7 @@ export const AppShell: React.FC<AppShellProps> = ({ role, userName, children }) 
               className="w-full flex items-center justify-between px-4 py-2 rounded-xl text-slate-400 hover:text-white hover:bg-white/5 transition-all cursor-pointer text-xs font-semibold"
             >
               <div className="flex items-center gap-3">
-                <Bell className="h-4 w-4 text-cyan-400" />
+                <Bell className="h-4 w-4 text-slate-400" />
                 <span>Notifications</span>
               </div>
               <span className="h-2 w-2 rounded-full bg-red-500 animate-pulse" />
@@ -250,7 +250,7 @@ export const AppShell: React.FC<AppShellProps> = ({ role, userName, children }) 
               onClick={() => setShowSettings(true)}
               className="w-full flex items-center gap-3 px-4 py-2 rounded-xl text-slate-400 hover:text-white hover:bg-white/5 transition-all cursor-pointer text-xs font-semibold"
             >
-              <Settings className="h-4 w-4 text-cyan-400" />
+              <Settings className="h-4 w-4 text-slate-400" />
               <span>Settings</span>
             </button>
 
@@ -265,12 +265,12 @@ export const AppShell: React.FC<AppShellProps> = ({ role, userName, children }) 
         </aside>
 
         {/* Main Content Workspace Panel */}
-        <main className="flex-1 bg-[#0B1B2B]/90 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl p-5 md:p-7 flex flex-col min-w-0 h-full overflow-hidden relative z-10">
+        <main className="flex-1 bg-[#111C2D]/90 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl p-5 md:p-7 flex flex-col min-w-0 h-full overflow-hidden relative z-10">
           
           {/* Top Header Bar */}
-          <header className="sticky top-0 bg-[#0B1B2B]/95 backdrop-blur-md z-30 pb-4 pt-1 mb-4 border-b border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shrink-0">
+          <header className="sticky top-0 bg-[#081827]/95 backdrop-blur-md z-30 pb-4 pt-1 mb-4 border-b border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shrink-0">
             <div>
-              <p className="text-xs font-mono font-semibold text-cyan-400 flex items-center gap-1.5">
+              <p className="text-xs font-mono font-semibold text-red-400 flex items-center gap-1.5">
                 <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
                 TELEMETRY ACTIVE · {userName || "Officer"}
               </p>
@@ -284,14 +284,14 @@ export const AppShell: React.FC<AppShellProps> = ({ role, userName, children }) 
                 !isOnline
                   ? "bg-amber-500/10 text-amber-500 border-amber-500/30 animate-pulse"
                   : isSyncing
-                  ? "bg-cyan-500/10 text-cyan-400 border-cyan-500/30"
+                  ? "bg-blue-500/10 text-blue-400 border-blue-500/30"
                   : pendingSyncCount > 0
                   ? "bg-amber-500/15 text-amber-400 border-amber-500/40"
                   : "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
               )}>
                 <span className={cn(
                   "h-2 w-2 rounded-full",
-                  !isOnline ? "bg-amber-500" : isSyncing ? "bg-cyan-400 animate-spin" : pendingSyncCount > 0 ? "bg-amber-400" : "bg-emerald-400"
+                  !isOnline ? "bg-amber-500" : isSyncing ? "bg-blue-400 animate-spin" : pendingSyncCount > 0 ? "bg-amber-400" : "bg-emerald-400"
                 )} />
                 <span>
                   {!isOnline
@@ -326,7 +326,7 @@ export const AppShell: React.FC<AppShellProps> = ({ role, userName, children }) 
                 <img 
                   src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80" 
                   alt="Profile" 
-                  className="h-8 w-8 rounded-full object-cover ring-2 ring-cyan-500/40"
+                  className="h-8 w-8 rounded-full object-cover ring-2 ring-red-500/40"
                 />
                 <span className="text-xs font-bold text-white hidden sm:inline-block">{userName || "Chief Commander"}</span>
               </div>

@@ -21,7 +21,13 @@ export const useTheme = () => {
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [theme, setTheme] = React.useState<Theme>(() => {
     if (typeof window !== "undefined") {
-      return (localStorage.getItem("theme") as Theme) || "dark";
+      const stored = localStorage.getItem("theme");
+      // If previously stored as light, reset to dark to match homepage
+      if (stored === "light") {
+        localStorage.setItem("theme", "dark");
+        return "dark";
+      }
+      return (stored as Theme) || "dark";
     }
     return "dark";
   });
@@ -31,20 +37,20 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   React.useEffect(() => {
     const root = window.document.documentElement;
     
-    let resolvedTheme: "light" | "dark";
+    let resolvedTheme: "light" | "dark" = "dark";
     
     if (theme === "system") {
-      const systemTheme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+      const systemTheme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "dark";
       resolvedTheme = systemTheme;
     } else {
-      resolvedTheme = theme as "light" | "dark";
+      resolvedTheme = theme === "light" ? "dark" : (theme as "light" | "dark");
     }
 
-    setEffectiveTheme(resolvedTheme);
-    root.classList.remove("light", "dark");
-    root.classList.add(resolvedTheme);
+    setEffectiveTheme("dark");
+    root.classList.remove("light");
+    root.classList.add("dark");
     
-    localStorage.setItem("theme", theme);
+    localStorage.setItem("theme", "dark");
   }, [theme]);
 
   return (
