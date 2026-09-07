@@ -19,6 +19,7 @@ import {
   Building2,
   Globe
 } from 'lucide-react';
+import { useTheme } from './ThemeProvider';
 import 'leaflet/dist/leaflet.css';
 
 /**
@@ -206,7 +207,17 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
   onExitEmergencyMode
 }) => {
   // Tile Layer options: dark (CartoDB Dark Matter), street (CartoDB Voyager), satellite (Esri World Imagery)
-  const [mapTheme, setMapTheme] = React.useState<'dark' | 'street' | 'satellite'>('dark');
+  const { effectiveTheme } = useTheme();
+  const [mapTheme, setMapTheme] = React.useState<'dark' | 'street' | 'satellite'>(
+    effectiveTheme === 'light' ? 'street' : 'dark'
+  );
+  const userManuallyChangedMapTheme = React.useRef(false);
+
+  React.useEffect(() => {
+    if (!userManuallyChangedMapTheme.current) {
+      setMapTheme(effectiveTheme === 'light' ? 'street' : 'dark');
+    }
+  }, [effectiveTheme]);
   const [showHotspots, setShowHotspots] = React.useState<boolean>(true);
   const [isAudioMuted, setIsAudioMuted] = React.useState<boolean>(audioTelemetry.getMuted());
   const [searchQuery, setSearchQuery] = React.useState<string>("");
@@ -703,7 +714,10 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
       <div className="absolute top-24 right-4 z-[1000] flex flex-col gap-2 bg-slate-900/90 backdrop-blur-md p-1.5 rounded-xl border border-slate-700 shadow-2xl">
         {/* Layer Switcher */}
         <button
-          onClick={() => setMapTheme(prev => prev === 'dark' ? 'street' : prev === 'street' ? 'satellite' : 'dark')}
+          onClick={() => {
+            userManuallyChangedMapTheme.current = true;
+            setMapTheme(prev => prev === 'dark' ? 'street' : prev === 'street' ? 'satellite' : 'dark');
+          }}
           className="p-2 rounded-lg hover:bg-slate-800 text-white transition-colors cursor-pointer flex items-center justify-center"
           title={`Current Layer: ${mapTheme.toUpperCase()} (Click to toggle)`}
         >
@@ -759,7 +773,7 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
       <MapContainer
         center={center}
         zoom={zoom}
-        style={{ height: '100%', width: '100%', background: '#0f0f16' }}
+        style={{ height: '100%', width: '100%', background: mapTheme === 'street' ? '#f8fafc' : '#0f0f16' }}
         zoomControl={false}
       >
         <TileLayer

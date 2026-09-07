@@ -14,7 +14,7 @@ import { Footer } from '../components/landing/Footer';
 
 export const Home: React.FC = () => {
   return (
-    <div className="min-h-screen bg-[#06111F] text-[#F8FAFC] font-sans antialiased selection:bg-primary/30 selection:text-white">
+    <div className="dark min-h-screen bg-[#06111F] text-[#F8FAFC] font-sans antialiased selection:bg-primary/30 selection:text-white">
       <Navbar />
       <main>
         <HeroSection />

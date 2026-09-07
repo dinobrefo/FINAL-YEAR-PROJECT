@@ -121,11 +121,11 @@ export const Navigation: React.FC<NavigationProps> = ({ role, className }) => {
             className={cn(
               "flex items-center gap-3.5 px-4 py-3 rounded-xl transition-all duration-200 group font-mono text-sm",
               isActive
-                ? "bg-red-500/15 text-red-400 border border-red-500/30 shadow-lg shadow-red-500/10 font-bold"
-                : "text-slate-400 hover:bg-white/5 hover:text-white border border-transparent font-medium"
+                ? "bg-red-500/15 text-red-600 dark:text-red-400 border border-red-500/30 shadow-lg shadow-red-500/10 font-bold"
+                : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5 hover:text-slate-900 dark:hover:text-white border border-transparent font-medium"
             )}
           >
-            <Icon className={cn("h-5 w-5 transition-transform group-hover:scale-110", isActive ? "text-red-400" : "text-slate-400 group-hover:text-red-400")} />
+            <Icon className={cn("h-5 w-5 transition-transform group-hover:scale-110", isActive ? "text-red-600 dark:text-red-400" : "text-slate-500 dark:text-slate-400 group-hover:text-red-600 dark:group-hover:text-red-400")} />
             <span className="text-sm">{item.label}</span>
           </Link>
         );
@@ -220,22 +220,22 @@ export const AppShell: React.FC<AppShellProps> = ({ role, userName, children }) 
   }, [location.pathname]);
 
   return (
-    <div className="h-screen w-screen bg-[#06111F] text-[#F8FAFC] p-3 sm:p-6 transition-colors duration-300 overflow-hidden flex flex-col relative font-sans">
-      <div className="absolute inset-0 bg-grid [background-size:28px_28px] opacity-35 pointer-events-none" />
+    <div className="h-screen w-screen bg-slate-100 dark:bg-[#06111F] text-slate-900 dark:text-[#F8FAFC] p-3 sm:p-6 transition-colors duration-300 overflow-hidden flex flex-col relative font-sans">
+      <div className="absolute inset-0 bg-grid [background-size:28px_28px] opacity-10 dark:opacity-35 pointer-events-none" />
 
       {/* Outer Container Shell */}
       <div className="max-w-[1600px] w-full mx-auto h-full flex flex-col md:flex-row gap-6 items-stretch overflow-hidden relative z-10">
         
         {/* Sticky Fixed Sidebar */}
-        <aside className="w-full md:w-64 bg-[#081827]/95 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl shadow-black/40 flex flex-col h-full overflow-hidden shrink-0 z-10">
-          <div className="p-5 border-b border-white/10">
+        <aside className="w-full md:w-64 bg-white/95 dark:bg-[#081827]/95 backdrop-blur-xl border border-slate-200 dark:border-white/10 rounded-2xl shadow-xl dark:shadow-2xl shadow-slate-200/50 dark:shadow-black/40 flex flex-col h-full overflow-hidden shrink-0 z-10 transition-colors duration-200">
+          <div className="p-5 border-b border-slate-200 dark:border-white/10">
             <div className="flex items-center gap-3">
               <div className="h-10 w-10 rounded-xl bg-red-500/15 border border-red-500/30 flex items-center justify-center shadow-lg shadow-red-500/20 text-[#EF4444]">
                 <Activity className="h-5 w-5 text-[#EF4444]" />
               </div>
               <div>
-                <h1 className="text-lg font-black tracking-tight text-white font-mono">IERBMS</h1>
-                <p className="text-[11px] font-semibold text-red-400 capitalize font-mono">{role} Portal</p>
+                <h1 className="text-lg font-black tracking-tight text-slate-900 dark:text-white font-mono">IERBMS</h1>
+                <p className="text-[11px] font-semibold text-red-600 dark:text-red-400 capitalize font-mono">{role} Portal</p>
               </div>
             </div>
           </div>
@@ -244,25 +244,25 @@ export const AppShell: React.FC<AppShellProps> = ({ role, userName, children }) 
             <Navigation role={role} />
           </div>
 
-          <div className="p-4 border-t border-white/10 space-y-1.5 font-mono">
+          <div className="p-4 border-t border-slate-200 dark:border-white/10 space-y-1.5 font-mono">
             <button
               onClick={toggleTheme}
-              className="w-full flex items-center gap-3 px-4 py-2 rounded-xl text-slate-400 hover:text-white hover:bg-white/5 transition-all cursor-pointer text-xs font-semibold"
+              className="w-full flex items-center gap-3 px-4 py-2 rounded-xl text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5 transition-all cursor-pointer text-xs font-semibold"
             >
               {effectiveTheme === "dark" ? (
-                <Sun className="h-4 w-4 text-amber-400" />
+                <Sun className="h-4 w-4 text-amber-500 dark:text-amber-400" />
               ) : (
-                <Moon className="h-4 w-4 text-slate-400" />
+                <Moon className="h-4 w-4 text-slate-600 dark:text-slate-400" />
               )}
               <span>{effectiveTheme === "dark" ? "Light Mode" : "Dark Mode"}</span>
             </button>
 
             <button 
               onClick={() => setShowNotifications(true)}
-              className="w-full flex items-center justify-between px-4 py-2 rounded-xl text-slate-400 hover:text-white hover:bg-white/5 transition-all cursor-pointer text-xs font-semibold"
+              className="w-full flex items-center justify-between px-4 py-2 rounded-xl text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5 transition-all cursor-pointer text-xs font-semibold"
             >
               <div className="flex items-center gap-3">
-                <Bell className="h-4 w-4 text-slate-400" />
+                <Bell className="h-4 w-4 text-slate-500 dark:text-slate-400" />
                 <span>Notifications</span>
               </div>
               <span className="h-2 w-2 rounded-full bg-red-500 animate-pulse" />
@@ -270,15 +270,15 @@ export const AppShell: React.FC<AppShellProps> = ({ role, userName, children }) 
 
             <button 
               onClick={() => setShowSettings(true)}
-              className="w-full flex items-center gap-3 px-4 py-2 rounded-xl text-slate-400 hover:text-white hover:bg-white/5 transition-all cursor-pointer text-xs font-semibold"
+              className="w-full flex items-center gap-3 px-4 py-2 rounded-xl text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5 transition-all cursor-pointer text-xs font-semibold"
             >
-              <Settings className="h-4 w-4 text-slate-400" />
+              <Settings className="h-4 w-4 text-slate-500 dark:text-slate-400" />
               <span>Settings</span>
             </button>
 
             <button
               onClick={handleLogout}
-              className="w-full flex items-center gap-3 px-4 py-2 rounded-xl text-red-400 hover:bg-red-500/10 transition-all cursor-pointer text-xs font-semibold"
+              className="w-full flex items-center gap-3 px-4 py-2 rounded-xl text-red-600 dark:text-red-400 hover:bg-red-500/10 transition-all cursor-pointer text-xs font-semibold"
             >
               <LogOut className="h-4 w-4" />
               <span>Sign Out</span>
@@ -287,16 +287,16 @@ export const AppShell: React.FC<AppShellProps> = ({ role, userName, children }) 
         </aside>
 
         {/* Main Content Workspace Panel */}
-        <main className="flex-1 bg-[#111C2D]/90 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl p-5 md:p-7 flex flex-col min-w-0 h-full overflow-hidden relative z-10">
+        <main className="flex-1 bg-white/95 dark:bg-[#111C2D]/90 backdrop-blur-xl border border-slate-200 dark:border-white/10 rounded-2xl shadow-xl dark:shadow-2xl shadow-slate-200/50 dark:shadow-black/40 p-5 md:p-7 flex flex-col min-w-0 h-full overflow-hidden relative z-10 transition-colors duration-200">
           
           {/* Top Header Bar */}
-          <header className="sticky top-0 bg-[#081827]/95 backdrop-blur-md z-30 pb-4 pt-1 mb-4 border-b border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shrink-0">
+          <header className="sticky top-0 bg-white/95 dark:bg-[#081827]/95 backdrop-blur-md z-30 pb-4 pt-1 mb-4 border-b border-slate-200 dark:border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shrink-0 transition-colors duration-200">
             <div>
-              <p className="text-xs font-mono font-semibold text-red-400 flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              <p className="text-xs font-mono font-semibold text-red-600 dark:text-red-400 flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 dark:bg-emerald-400 animate-pulse" />
                 TELEMETRY ACTIVE · {userName || "Officer"}
               </p>
-              <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight mt-0.5 font-mono">{pageTitle}</h2>
+              <h2 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight mt-0.5 font-mono">{pageTitle}</h2>
             </div>
 
             <div className="flex items-center gap-3">
@@ -304,16 +304,16 @@ export const AppShell: React.FC<AppShellProps> = ({ role, userName, children }) 
               <div className={cn(
                 "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border font-mono transition-all",
                 !isOnline
-                  ? "bg-amber-500/10 text-amber-500 border-amber-500/30 animate-pulse"
+                  ? "bg-amber-500/10 text-amber-600 dark:text-amber-500 border-amber-500/30 animate-pulse"
                   : isSyncing
-                  ? "bg-blue-500/10 text-blue-400 border-blue-500/30"
+                  ? "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/30"
                   : pendingSyncCount > 0
-                  ? "bg-amber-500/15 text-amber-400 border-amber-500/40"
-                  : "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
+                  ? "bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/40"
+                  : "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30"
               )}>
                 <span className={cn(
                   "h-2 w-2 rounded-full",
-                  !isOnline ? "bg-amber-500" : isSyncing ? "bg-blue-400 animate-spin" : pendingSyncCount > 0 ? "bg-amber-400" : "bg-emerald-400"
+                  !isOnline ? "bg-amber-500" : isSyncing ? "bg-blue-500 dark:bg-blue-400 animate-spin" : pendingSyncCount > 0 ? "bg-amber-500 dark:bg-amber-400" : "bg-emerald-500 dark:bg-emerald-400"
                 )} />
                 <span>
                   {!isOnline
@@ -328,7 +328,7 @@ export const AppShell: React.FC<AppShellProps> = ({ role, userName, children }) 
 
               <button 
                 onClick={() => setShowSettings(true)}
-                className="h-10 w-10 rounded-xl bg-[#081827] border border-white/10 hover:bg-white/5 flex items-center justify-center text-slate-300 hover:text-white transition-all cursor-pointer shadow-sm"
+                className="h-10 w-10 rounded-xl bg-slate-100 dark:bg-[#081827] border border-slate-200 dark:border-white/10 hover:bg-slate-200 dark:hover:bg-white/5 flex items-center justify-center text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-all cursor-pointer shadow-sm"
                 title="Search Dashboard"
               >
                 <Search className="h-4 w-4" />
@@ -336,7 +336,7 @@ export const AppShell: React.FC<AppShellProps> = ({ role, userName, children }) 
 
               <button 
                 onClick={() => setShowNotifications(true)}
-                className="h-10 w-10 rounded-xl bg-[#081827] border border-white/10 hover:bg-white/5 flex items-center justify-center text-slate-300 hover:text-white transition-all relative cursor-pointer shadow-sm"
+                className="h-10 w-10 rounded-xl bg-slate-100 dark:bg-[#081827] border border-slate-200 dark:border-white/10 hover:bg-slate-200 dark:hover:bg-white/5 flex items-center justify-center text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-all relative cursor-pointer shadow-sm"
                 title="Notifications"
               >
                 <Bell className="h-4 w-4" />
@@ -344,13 +344,13 @@ export const AppShell: React.FC<AppShellProps> = ({ role, userName, children }) 
               </button>
 
               {/* User Profile Avatar Pill */}
-              <div className="flex items-center gap-2.5 pl-2 py-1 pr-3 bg-[#081827] border border-white/10 rounded-full shadow-sm font-mono">
+              <div className="flex items-center gap-2.5 pl-2 py-1 pr-3 bg-slate-100 dark:bg-[#081827] border border-slate-200 dark:border-white/10 rounded-full shadow-sm font-mono">
                 <img 
                   src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80" 
                   alt="Profile" 
                   className="h-8 w-8 rounded-full object-cover ring-2 ring-red-500/40"
                 />
-                <span className="text-xs font-bold text-white hidden sm:inline-block">{userName || "Chief Commander"}</span>
+                <span className="text-xs font-bold text-slate-900 dark:text-white hidden sm:inline-block">{userName || "Chief Commander"}</span>
               </div>
             </div>
           </header>

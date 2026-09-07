@@ -1,71 +1,71 @@
-@custom-variant dark (&:is(.dark *));
+@custom-variant dark (&:is(.dark, .dark *));
 
 :root {
   --font-size: 16px;
-  --background: #06111F;
-  --foreground: #F8FAFC;
-  --card: #111C2D;
-  --card-foreground: #F8FAFC;
-  --popover: #111C2D;
-  --popover-foreground: #F8FAFC;
+  --background: #F8FAFC;
+  --foreground: #0F172A;
+  --card: #FFFFFF;
+  --card-foreground: #0F172A;
+  --popover: #FFFFFF;
+  --popover-foreground: #0F172A;
   --primary: #EF4444;
   --primary-foreground: #ffffff;
   --primary-hover: #DC2626;
-  --secondary: #081827;
-  --secondary-foreground: #F8FAFC;
-  --secondary-hover: #111C2D;
-  --muted: #081827;
-  --muted-foreground: #94A3B8;
-  --accent: #111C2D;
+  --secondary: #F1F5F9;
+  --secondary-foreground: #0F172A;
+  --secondary-hover: #E2E8F0;
+  --muted: #F1F5F9;
+  --muted-foreground: #64748B;
+  --accent: #F1F5F9;
   --accent-foreground: #EF4444;
   --destructive: #EF4444;
   --destructive-foreground: #ffffff;
-  --border: rgba(255, 255, 255, 0.1);
-  --input: rgba(255, 255, 255, 0.08);
-  --input-background: #081827;
-  --switch-background: #111C2D;
+  --border: #E2E8F0;
+  --input: #E2E8F0;
+  --input-background: #FFFFFF;
+  --switch-background: #CBD5E1;
   --font-weight-medium: 500;
   --font-weight-normal: 400;
   --ring: #EF4444;
   
   /* Healthcare & Telemetry specific colors */
-  --success: #22C55E;
+  --success: #16A34A;
   --success-foreground: #ffffff;
-  --success-hover: #16A34A;
-  --success-50: rgba(34, 197, 94, 0.12);
-  --success-700: #22C55E;
+  --success-hover: #15803D;
+  --success-50: rgba(22, 163, 74, 0.1);
+  --success-700: #16A34A;
   
-  --warning: #F59E0B;
+  --warning: #D97706;
   --warning-foreground: #ffffff;
-  --warning-hover: #D97706;
-  --warning-50: rgba(245, 158, 11, 0.12);
-  --warning-700: #F59E0B;
+  --warning-hover: #B45309;
+  --warning-50: rgba(217, 119, 6, 0.1);
+  --warning-700: #D97706;
   
   --danger: #EF4444;
   --danger-foreground: #ffffff;
   --danger-hover: #DC2626;
-  --danger-50: rgba(239, 68, 68, 0.12);
+  --danger-50: rgba(239, 68, 68, 0.1);
   --danger-700: #EF4444;
   
-  --info: #3B82F6;
+  --info: #2563EB;
   --info-foreground: #ffffff;
-  --info-hover: #2563EB;
-  --info-50: rgba(59, 130, 246, 0.12);
-  --info-700: #3B82F6;
+  --info-hover: #1D4ED8;
+  --info-50: rgba(37, 99, 235, 0.1);
+  --info-700: #2563EB;
   
   --chart-1: #EF4444;
-  --chart-2: #22C55E;
-  --chart-3: #F59E0B;
-  --chart-4: #3B82F6;
-  --chart-5: #00E5FF;
+  --chart-2: #16A34A;
+  --chart-3: #D97706;
+  --chart-4: #2563EB;
+  --chart-5: #0D9488;
   --radius: 0.75rem;
-  --sidebar: #081827;
-  --sidebar-foreground: #F8FAFC;
+  --sidebar: #FFFFFF;
+  --sidebar-foreground: #0F172A;
   --sidebar-primary: #EF4444;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #111C2D;
+  --sidebar-accent: #F1F5F9;
   --sidebar-accent-foreground: #EF4444;
-  --sidebar-border: rgba(255, 255, 255, 0.1);
+  --sidebar-border: #E2E8F0;
   --sidebar-ring: #EF4444;
 }
 

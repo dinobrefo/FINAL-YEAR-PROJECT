@@ -22,7 +22,7 @@ export const ImpactMetrics: React.FC = () => {
         {/* Hairline Grid Data List */}
         <dl className="grid sm:grid-cols-2 lg:grid-cols-4 gap-px bg-white/10">
           {/* Cell 1: -35% Response Time */}
-          <div className="bg-card p-6 sm:p-8 space-y-2">
+          <div className="bg-[#081827] p-6 sm:p-8 space-y-2">
             <dd className="text-3xl sm:text-4xl lg:text-5xl font-mono font-bold text-ink">
               <AnimatedCounter value={35} prefix="−" suffix="%" />
             </dd>
@@ -32,7 +32,7 @@ export const ImpactMetrics: React.FC = () => {
           </div>
 
           {/* Cell 2: +28% Resource Utilisation */}
-          <div className="bg-card p-6 sm:p-8 space-y-2">
+          <div className="bg-[#081827] p-6 sm:p-8 space-y-2">
             <dd className="text-3xl sm:text-4xl lg:text-5xl font-mono font-bold text-ink">
               <AnimatedCounter value={28} prefix="+" suffix="%" />
             </dd>
@@ -42,7 +42,7 @@ export const ImpactMetrics: React.FC = () => {
           </div>
 
           {/* Cell 3: 24/7 Live Monitoring */}
-          <div className="bg-card p-6 sm:p-8 space-y-2">
+          <div className="bg-[#081827] p-6 sm:p-8 space-y-2">
             <dd className="text-3xl sm:text-4xl lg:text-5xl font-mono font-bold text-ink">
               24/7
             </dd>
@@ -52,7 +52,7 @@ export const ImpactMetrics: React.FC = () => {
           </div>
 
           {/* Cell 4: End-to-end Emergency Coordination */}
-          <div className="bg-card p-6 sm:p-8 space-y-2">
+          <div className="bg-[#081827] p-6 sm:p-8 space-y-2">
             <dd className="text-3xl sm:text-4xl lg:text-5xl font-mono font-bold text-ink">
               End-to-end
             </dd>
