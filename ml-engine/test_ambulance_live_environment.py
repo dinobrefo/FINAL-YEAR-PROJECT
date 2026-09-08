@@ -5,7 +5,7 @@ import math
 import requests
 
 # Add ml-engine directory to path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'ml-engine'))
+sys.path.insert(0, os.path.dirname(__file__))
 from models.routing_model import recommend_hospitals, calculate_distance, get_traffic_multiplier
 
 class MockAmbulance:
