@@ -1176,11 +1176,17 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
     }
   };
 
-  // Map Tile URLs (Supports CartoDB, Esri Satellite, and Google Maps Live Traffic & Hybrid)
+  // Map Tile URLs (Supports Clean Zero-Key OpenStreetMap, CARTO Basemaps when key provided, Esri Satellite, and Google Maps)
   const googleKey = getGoogleMapsApiKey();
+  const cartoBasemapKey = ((import.meta.env.VITE_CARTO_BASEMAPS_KEY || import.meta.env.VITE_CARTO_API_KEY) as string | undefined)?.trim() || '';
+
   const tileUrls: Record<string, string> = {
-    dark: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
-    street: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
+    dark: cartoBasemapKey
+      ? `https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png?key=${cartoBasemapKey}`
+      : 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+    street: cartoBasemapKey
+      ? `https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png?key=${cartoBasemapKey}`
+      : 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
     satellite: googleKey
       ? `https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}&key=${googleKey}`
       : 'https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}',
@@ -1759,16 +1765,19 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
         zoomControl={false}
       >
         <TileLayer
-          key={mapTheme}
+          key={`${mapTheme}-${Boolean(cartoBasemapKey)}`}
           attribution={
             mapTheme.startsWith('google')
               ? '&copy; <a href="https://www.google.com/maps" target="_blank" rel="noreferrer">Google Maps Platform</a>'
               : mapTheme === 'satellite'
               ? '&copy; <a href="https://www.esri.com/">Esri</a>, Maxar'
-              : '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/">CARTO</a>'
+              : cartoBasemapKey
+              ? '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/">CARTO</a>'
+              : '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           }
           url={tileUrls[mapTheme] || tileUrls.dark}
           maxZoom={mapTheme.startsWith('google') ? 20 : 19}
+          className={mapTheme === 'dark' && !cartoBasemapKey ? 'leaflet-dark-mode-tiles' : ''}
         />
 
         <MapController

@@ -170,3 +170,14 @@
   pointer-events: auto !important;
 }
 
+/* ==========================================================================
+   Zero-Key High-Contrast Dark Map Tile Filter (100% Free, Zero Watermarks)
+   Transforms standard OpenStreetMap tiles into a sleek tactical dark basemap
+   without any CARTO API Key watermarks, while preserving markers & overlays.
+   ========================================================================== */
+.leaflet-dark-mode-tiles .leaflet-tile,
+.leaflet-dark-mode-tiles.leaflet-tile,
+.leaflet-tile-pane.leaflet-dark-mode-tiles .leaflet-tile {
+  filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%) !important;
+}
+
