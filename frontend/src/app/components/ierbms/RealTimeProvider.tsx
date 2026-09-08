@@ -292,45 +292,4 @@ export const RealTimeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   );
 };
 
-// Visual Auto-Sync Status Badge to show examiners and users real-time rendering in action
-export const AutoSyncBadge: React.FC<{ className?: string }> = ({ className = "" }) => {
-  const { connected, isAutoSyncing, lastSyncTime, refreshData } = useRealTime();
-
-  return (
-    <button
-      onClick={() => refreshData()}
-      title={connected ? "Connected to live Render & Neon cloud stream (Click to force refresh)" : "Connecting to cloud WebSocket... (Click to retry)"}
-      className={`inline-flex items-center gap-2 px-2.5 py-1 rounded-full text-xs font-semibold border transition-all cursor-pointer select-none ${
-        connected
-          ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/15"
-          : "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20 hover:bg-amber-500/15"
-      } ${className}`}
-    >
-      <span className="relative flex h-2 w-2">
-        {connected ? (
-          <>
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-          </>
-        ) : (
-          <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500 animate-pulse"></span>
-        )}
-      </span>
-
-      <span className="flex items-center gap-1">
-        <span>{connected ? "Live Auto-Render" : "Connecting..."}</span>
-        {isAutoSyncing && (
-          <span className="text-[10px] text-muted-foreground animate-spin">⟳</span>
-        )}
-      </span>
-
-      {lastSyncTime && (
-        <span className="hidden sm:inline font-mono text-[10px] text-muted-foreground/80 border-l border-border/60 pl-1.5 ml-0.5">
-          {lastSyncTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
-        </span>
-      )}
-    </button>
-  );
-};
-
 export default RealTimeProvider;
