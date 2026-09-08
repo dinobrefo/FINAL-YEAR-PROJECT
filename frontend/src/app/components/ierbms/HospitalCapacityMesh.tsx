@@ -115,43 +115,43 @@ export const HospitalCapacityMesh: React.FC<HospitalCapacityMeshProps> = ({ hosp
 
   if (data.length === 0) {
     return (
-      <div className="w-full h-full min-h-[260px] bg-slate-950 text-slate-100 p-6 rounded-xl border border-slate-800 flex flex-col items-center justify-center text-center">
+      <div className="w-full h-full min-h-[260px] bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 p-6 rounded-xl border border-slate-200 dark:border-slate-800 flex flex-col items-center justify-center text-center">
         <div className="flex items-center gap-2 mb-2">
           <span className="relative flex h-2 w-2">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-500 dark:bg-emerald-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-600 dark:bg-emerald-500"></span>
           </span>
-          <p className="text-xs font-semibold text-emerald-400 uppercase tracking-wider">Telemetry Mesh Synchronizing</p>
+          <p className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">Telemetry Mesh Synchronizing</p>
         </div>
-        <p className="text-xs text-slate-400">Loading real-time regional hospital ER & ICU telemetry...</p>
+        <p className="text-xs text-slate-500 dark:text-slate-400">Loading real-time regional hospital ER & ICU telemetry...</p>
       </div>
     );
   }
 
   return (
-    <div className="w-full h-full min-h-[280px] bg-slate-950 text-slate-100 p-4 rounded-xl border border-slate-800 flex flex-col justify-between select-none">
+    <div className="w-full h-full min-h-[280px] bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 p-4 rounded-xl border border-slate-200 dark:border-slate-800 flex flex-col justify-between select-none">
       {/* Telemetry Header */}
-      <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-slate-800/80">
+      <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-slate-200 dark:border-slate-800/80">
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2">
             <span className="relative flex h-2.5 w-2.5">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-500 dark:bg-emerald-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-600 dark:bg-emerald-500"></span>
             </span>
-            <span className="text-xs font-semibold tracking-wider uppercase text-emerald-400">
+            <span className="text-xs font-semibold tracking-wider uppercase text-emerald-600 dark:text-emerald-400">
               3D Hospital Capacity Mesh
             </span>
           </div>
-          <div className="hidden sm:flex items-center gap-3 text-[11px] text-slate-400 pl-2 border-l border-slate-800">
-            <span>Total Beds: <strong className="text-slate-200">{totalBeds}</strong></span>
-            <span>Free ER: <strong className="text-emerald-400">{totalFreeGen}</strong></span>
-            <span>Free ICU: <strong className="text-cyan-400">{totalFreeIcu}</strong></span>
-            <span>Load: <strong className={avgOccupancy > 80 ? "text-red-400" : "text-amber-400"}>{avgOccupancy}%</strong></span>
+          <div className="hidden sm:flex items-center gap-3 text-[11px] text-slate-500 dark:text-slate-400 pl-2 border-l border-slate-200 dark:border-slate-800">
+            <span>Total Beds: <strong className="text-slate-800 dark:text-slate-200">{totalBeds}</strong></span>
+            <span>Free ER: <strong className="text-emerald-600 dark:text-emerald-400">{totalFreeGen}</strong></span>
+            <span>Free ICU: <strong className="text-cyan-600 dark:text-cyan-400">{totalFreeIcu}</strong></span>
+            <span>Load: <strong className={avgOccupancy > 80 ? "text-red-600 dark:text-red-400" : "text-amber-600 dark:text-amber-400"}>{avgOccupancy}%</strong></span>
           </div>
         </div>
 
-        <div className="flex items-center gap-2 text-[11px] text-slate-400">
-          <span className="px-2 py-0.5 rounded bg-slate-900 border border-slate-800 text-slate-300 font-mono">
+        <div className="flex items-center gap-2 text-[11px] text-slate-500 dark:text-slate-400">
+          <span className="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 font-mono">
             {data.length} Monitored Centers
           </span>
         </div>
@@ -171,8 +171,8 @@ export const HospitalCapacityMesh: React.FC<HospitalCapacityMeshProps> = ({ hosp
               onMouseEnter={() => setSelectedItem(item)}
               className={`group relative flex flex-col items-center justify-end h-[165px] p-2 rounded-lg transition-all duration-200 cursor-pointer border ${
                 isSelected 
-                  ? "bg-slate-900 border-emerald-500/80 ring-1 ring-emerald-500/50 scale-[1.03] shadow-lg shadow-emerald-500/10" 
-                  : "bg-slate-900/40 border-slate-800 hover:bg-slate-900/70 hover:border-slate-700"
+                  ? "bg-white dark:bg-slate-900 border-emerald-500/80 ring-1 ring-emerald-500/50 scale-[1.03] shadow-lg shadow-emerald-500/10" 
+                  : "bg-slate-100/80 dark:bg-slate-900/40 border-slate-200 dark:border-slate-800 hover:bg-slate-200/80 dark:hover:bg-slate-900/70 hover:border-slate-300 dark:hover:border-slate-700"
               }`}
             >
               {/* Dual Isometric Towers */}
@@ -189,7 +189,7 @@ export const HospitalCapacityMesh: React.FC<HospitalCapacityMeshProps> = ({ hosp
                   >
                     <div className="absolute inset-x-0 top-0 h-1 bg-white/40 rounded-t" />
                   </div>
-                  <span className="text-[9px] text-slate-400 mt-1 font-mono font-medium">{item.occupancyRate}%</span>
+                  <span className="text-[9px] text-slate-500 dark:text-slate-400 mt-1 font-mono font-medium">{item.occupancyRate}%</span>
                 </div>
 
                 {/* Critical ICU Bed Tower */}
@@ -204,20 +204,20 @@ export const HospitalCapacityMesh: React.FC<HospitalCapacityMeshProps> = ({ hosp
                   >
                     <div className="absolute inset-x-0 top-0 h-1 bg-white/40 rounded-t" />
                   </div>
-                  <span className="text-[9px] text-cyan-400 mt-1 font-mono font-bold">{item.icuOccupancy}%</span>
+                  <span className="text-[9px] text-cyan-600 dark:text-cyan-400 mt-1 font-mono font-bold">{item.icuOccupancy}%</span>
                 </div>
               </div>
 
               {/* Hospital Title Label */}
               <div className="w-full text-center">
-                <p className="text-[10px] font-semibold text-slate-200 truncate leading-tight" title={item.name}>
+                <p className="text-[10px] font-semibold text-slate-800 dark:text-slate-200 truncate leading-tight" title={item.name}>
                   {item.shortName}
                 </p>
                 <div className="flex items-center justify-center gap-1 mt-0.5">
                   <span className={`h-1.5 w-1.5 rounded-full ${
-                    item.status === "Optimal" ? "bg-emerald-400" : item.status === "Moderate" ? "bg-amber-400" : "bg-red-400"
+                    item.status === "Optimal" ? "bg-emerald-500 dark:bg-emerald-400" : item.status === "Moderate" ? "bg-amber-500 dark:bg-amber-400" : "bg-red-500 dark:bg-red-400"
                   }`} />
-                  <span className="text-[9px] text-slate-400 font-mono">
+                  <span className="text-[9px] text-slate-500 dark:text-slate-400 font-mono">
                     {item.availableBeds} free
                   </span>
                 </div>
@@ -228,37 +228,37 @@ export const HospitalCapacityMesh: React.FC<HospitalCapacityMeshProps> = ({ hosp
       </div>
 
       {/* Detail Footer */}
-      <div className="pt-2.5 border-t border-slate-800 flex items-center justify-between text-xs text-slate-400">
+      <div className="pt-2.5 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-1.5">
             <span className="inline-block w-2.5 h-2.5 rounded-sm bg-emerald-500" />
-            <span className="text-[10px] text-slate-300">ER Beds (Left)</span>
+            <span className="text-[10px] text-slate-600 dark:text-slate-300">ER Beds (Left)</span>
           </div>
           <div className="flex items-center gap-1.5">
             <span className="inline-block w-2.5 h-2.5 rounded-sm bg-cyan-500" />
-            <span className="text-[10px] text-slate-300">ICU Beds (Right)</span>
+            <span className="text-[10px] text-slate-600 dark:text-slate-300">ICU Beds (Right)</span>
           </div>
           <div className="flex items-center gap-1.5">
             <span className="inline-block w-2.5 h-2.5 rounded-sm bg-red-500" />
-            <span className="text-[10px] text-slate-300">Surge (&gt;85%)</span>
+            <span className="text-[10px] text-slate-600 dark:text-slate-300">Surge (&gt;85%)</span>
           </div>
         </div>
 
         {selectedItem ? (
-          <div className="hidden sm:flex items-center gap-2 bg-slate-900 px-2.5 py-1 rounded border border-slate-700 text-[11px] text-slate-200 animate-in fade-in">
-            <span className="font-semibold text-white">{selectedItem.name}:</span>
-            <span>Gen: <strong className="text-emerald-400">{selectedItem.availableBeds}/{selectedItem.totalBeds}</strong> free</span>
-            <span>ICU: <strong className="text-cyan-400">{selectedItem.icuAvailable}/{selectedItem.icuTotal}</strong> free</span>
+          <div className="hidden sm:flex items-center gap-2 bg-slate-100 dark:bg-slate-900 px-2.5 py-1 rounded border border-slate-200 dark:border-slate-700 text-[11px] text-slate-700 dark:text-slate-200 animate-in fade-in">
+            <span className="font-semibold text-slate-900 dark:text-white">{selectedItem.name}:</span>
+            <span>Gen: <strong className="text-emerald-600 dark:text-emerald-400">{selectedItem.availableBeds}/{selectedItem.totalBeds}</strong> free</span>
+            <span>ICU: <strong className="text-cyan-600 dark:text-cyan-400">{selectedItem.icuAvailable}/{selectedItem.icuTotal}</strong> free</span>
             <span className={`px-1.5 py-0.2 rounded text-[10px] ${
-              selectedItem.status === "Optimal" ? "bg-emerald-950 text-emerald-300 border border-emerald-800" :
-              selectedItem.status === "Moderate" ? "bg-amber-950 text-amber-300 border border-amber-800" :
-              "bg-red-950 text-red-300 border border-red-800"
+              selectedItem.status === "Optimal" ? "bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/40" :
+              selectedItem.status === "Moderate" ? "bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/40" :
+              "bg-red-500/20 text-red-700 dark:text-red-300 border border-red-500/40"
             }`}>
               {selectedItem.status}
             </span>
           </div>
         ) : (
-          <span className="text-[10px] text-slate-500 italic hidden sm:inline">
+          <span className="text-[10px] text-slate-400 dark:text-slate-500 italic hidden sm:inline">
             Click or hover over any hospital column for real-time triage metrics.
           </span>
         )}

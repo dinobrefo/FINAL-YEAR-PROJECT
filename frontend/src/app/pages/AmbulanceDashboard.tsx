@@ -713,25 +713,25 @@ export const AmbulanceDashboard: React.FC = () => {
   return (
     <AppShell role="ambulance" userName="Paramedic Team Unit #1">
       {showOverlay && activeRouteCaseId && (
-        <div className="fixed inset-0 z-50 bg-slate-950 flex flex-col animate-in fade-in duration-300">
-          <div className="bg-slate-900 border-b border-slate-800 p-4 flex items-center justify-between z-10 text-white shadow-2xl">
+        <div className="fixed inset-0 z-50 bg-slate-100 dark:bg-slate-950 flex flex-col animate-in fade-in duration-300">
+          <div className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 p-4 flex items-center justify-between z-10 text-slate-900 dark:text-white shadow-2xl">
             <div className="flex items-center gap-3">
               <div className="h-3 w-3 rounded-full bg-red-500 animate-pulse" />
               <div>
-                <h3 className="font-bold text-lg text-white flex items-center gap-2">
+                <h3 className="font-bold text-lg text-slate-900 dark:text-white flex items-center gap-2">
                   <span>🕹️ 3D Emergency Cockpit Navigation</span>
-                  <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-blue-500/20 text-blue-400 border border-blue-500/30">
+                  <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-blue-500/15 dark:bg-blue-500/20 text-blue-700 dark:text-blue-400 border border-blue-500/30">
                     60° Camera HUD Active
                   </span>
                 </h3>
-                <p className="text-xs text-slate-400">Turn-by-turn turn-around, 3D building extrusions, and live traffic telemetry</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">Turn-by-turn turn-around, 3D building extrusions, and live traffic telemetry</p>
               </div>
             </div>
             <div className="flex items-center gap-2">
               <Button 
                 variant="outline" 
                 size="sm" 
-                className="border-slate-700 hover:bg-slate-800 text-white cursor-pointer"
+                className="border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-white cursor-pointer"
                 onClick={() => {
                   const params = new URLSearchParams(searchParams);
                   params.delete("showOverlay");
@@ -896,7 +896,7 @@ export const AmbulanceDashboard: React.FC = () => {
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="min-h-[280px] w-full rounded-xl overflow-hidden border border-border bg-slate-950">
+                  <div className="min-h-[280px] w-full rounded-xl overflow-hidden border border-border bg-slate-100 dark:bg-slate-950">
                     <HospitalCapacityMesh hospitals={hospitals} />
                   </div>
                 </CardContent>

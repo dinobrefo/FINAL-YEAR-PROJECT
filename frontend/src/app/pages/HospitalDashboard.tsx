@@ -98,7 +98,7 @@ export const HospitalDashboard: React.FC = () => {
       </CardHeader>
       <CardContent>
         {vizMode === "3d" ? (
-          <div className="w-full rounded-xl overflow-hidden border border-border bg-slate-950/60 p-2">
+          <div className="w-full rounded-xl overflow-hidden border border-border bg-slate-100 dark:bg-slate-950/60 p-2">
             <HospitalCapacityMesh hospitals={hospitals} height={340} />
           </div>
         ) : (

@@ -1240,38 +1240,38 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
         <div ref={searchContainerRef} className="absolute top-3 left-1/2 -translate-x-1/2 z-[1000] w-[95%] max-w-md flex flex-col gap-2">
           {/* Google Search Card */}
           <div className="relative">
-            <div className="relative flex items-center bg-[#202124]/95 backdrop-blur-md border border-[#3c4043] rounded-full shadow-2xl hover:border-[#5f6368] focus-within:border-[#4285f4] focus-within:ring-2 focus-within:ring-[#4285f4]/30 transition-all px-3.5 py-1.5">
-              <Search className="h-4 w-4 text-[#8ab4f8] shrink-0 mr-2.5" />
+            <div className="relative flex items-center bg-white/95 dark:bg-[#202124]/95 backdrop-blur-md border border-slate-200 dark:border-[#3c4043] rounded-full shadow-lg dark:shadow-2xl hover:border-slate-400 dark:hover:border-[#5f6368] focus-within:border-[#4285f4] focus-within:ring-2 focus-within:ring-[#4285f4]/30 transition-all px-3.5 py-1.5">
+              <Search className="h-4 w-4 text-[#1a73e8] dark:text-[#8ab4f8] shrink-0 mr-2.5" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onFocus={() => setIsSearchFocused(true)}
                 placeholder="Search Google Maps or facilities..."
-                className="w-full py-1 text-xs sm:text-sm font-medium text-white placeholder-[#9aa0a6] bg-transparent focus:outline-none"
+                className="w-full py-1 text-xs sm:text-sm font-medium text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-[#9aa0a6] bg-transparent focus:outline-none"
               />
               {searchQuery ? (
                 <button
                   onClick={() => setSearchQuery("")}
-                  className="p-1 text-[#9aa0a6] hover:text-white transition-colors cursor-pointer"
+                  className="p-1 text-slate-400 hover:text-slate-700 dark:text-[#9aa0a6] dark:hover:text-white transition-colors cursor-pointer"
                   title="Clear Search"
                 >
                   <X className="h-3.5 w-3.5" />
                 </button>
               ) : (
                 <div className="flex items-center gap-1.5 shrink-0 pl-1">
-                  <span className="h-2 w-2 rounded-full bg-emerald-400" title="Google Maps Connected" />
+                  <span className="h-2 w-2 rounded-full bg-emerald-500" title="Google Maps Connected" />
                 </div>
               )}
             </div>
 
             {/* Autocomplete Results Dropdown */}
             {isSearchFocused && searchResults.length > 0 && (
-              <div className="absolute top-full left-0 right-0 mt-2 bg-[#202124]/98 backdrop-blur-md border border-[#3c4043] rounded-2xl shadow-2xl overflow-hidden divide-y divide-[#303134] z-[1001] max-h-72 overflow-y-auto">
-                <div className="px-3.5 py-2 bg-[#171717] text-[10px] font-bold uppercase tracking-wider text-[#9aa0a6] flex justify-between items-center">
+              <div className="absolute top-full left-0 right-0 mt-2 bg-white/98 dark:bg-[#202124]/98 backdrop-blur-md border border-slate-200 dark:border-[#3c4043] rounded-2xl shadow-xl dark:shadow-2xl overflow-hidden divide-y divide-slate-100 dark:divide-[#303134] z-[1001] max-h-72 overflow-y-auto">
+                <div className="px-3.5 py-2 bg-slate-50 dark:bg-[#171717] text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-[#9aa0a6] flex justify-between items-center">
                   <span>{searchQuery ? "Places & Facilities" : "Suggested Hospitals"}</span>
-                  <span className="text-[#8ab4f8] text-[10px] flex items-center gap-1">
-                    <span className="h-1.5 w-1.5 rounded-full bg-[#8ab4f8] animate-pulse" />
+                  <span className="text-[#1a73e8] dark:text-[#8ab4f8] text-[10px] flex items-center gap-1">
+                    <span className="h-1.5 w-1.5 rounded-full bg-[#1a73e8] dark:bg-[#8ab4f8] animate-pulse" />
                     {isGoogleMapsConfigured() ? "Google Places Live" : "OSM Live"}
                   </span>
                 </div>
@@ -1279,20 +1279,20 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
                   <button
                     key={res.type + res.id}
                     onClick={() => handleSelectResult(res)}
-                    className="w-full text-left p-3 hover:bg-[#303134] transition-colors flex items-center justify-between gap-3 cursor-pointer group"
+                    className="w-full text-left p-3 hover:bg-slate-100 dark:hover:bg-[#303134] transition-colors flex items-center justify-between gap-3 cursor-pointer group"
                   >
                     <div className="flex items-center gap-2.5 min-w-0">
                       <span className="text-base shrink-0">
                         {res.type === 'hospital' ? '🏥' : res.type === 'ambulance' ? '🚑' : res.type === 'place' ? '📍' : '⚠️'}
                       </span>
                       <div className="min-w-0">
-                        <p className="font-semibold text-xs text-white group-hover:text-[#8ab4f8] truncate">
+                        <p className="font-semibold text-xs text-slate-900 dark:text-white group-hover:text-[#1a73e8] dark:group-hover:text-[#8ab4f8] truncate">
                           {res.title}
                         </p>
-                        <p className="text-[11px] text-[#9aa0a6] truncate">{res.subtitle}</p>
+                        <p className="text-[11px] text-slate-500 dark:text-[#9aa0a6] truncate">{res.subtitle}</p>
                       </div>
                     </div>
-                    <Crosshair className="h-3.5 w-3.5 text-[#9aa0a6] group-hover:text-[#8ab4f8] shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <Crosshair className="h-3.5 w-3.5 text-slate-400 dark:text-[#9aa0a6] group-hover:text-[#1a73e8] dark:group-hover:text-[#8ab4f8] shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
                   </button>
                 ))}
               </div>
@@ -1306,7 +1306,7 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
                 setSearchQuery("hospital");
                 setIsSearchFocused(true);
               }}
-              className="px-3 py-1 rounded-full text-[11px] font-semibold bg-[#202124]/90 hover:bg-[#303134] text-[#e8eaed] border border-[#3c4043] shadow-md backdrop-blur-md transition-all flex items-center gap-1.5 cursor-pointer shrink-0"
+              className="px-3 py-1 rounded-full text-[11px] font-semibold bg-white/90 dark:bg-[#202124]/90 hover:bg-slate-100 dark:hover:bg-[#303134] text-slate-700 dark:text-[#e8eaed] border border-slate-200 dark:border-[#3c4043] shadow-md backdrop-blur-md transition-all flex items-center gap-1.5 cursor-pointer shrink-0"
             >
               <span>🏥</span>
               <span>Hospitals</span>
@@ -1321,8 +1321,8 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
               className={cn(
                 "px-3 py-1 rounded-full text-[11px] font-semibold border shadow-md backdrop-blur-md transition-all flex items-center gap-1.5 cursor-pointer shrink-0",
                 mapTheme === 'google-traffic'
-                  ? "bg-emerald-600/30 text-emerald-300 border-emerald-500/50"
-                  : "bg-[#202124]/90 hover:bg-[#303134] text-[#e8eaed] border-[#3c4043]"
+                  ? "bg-emerald-600/20 text-emerald-700 dark:text-emerald-300 border-emerald-500/40"
+                  : "bg-white/90 dark:bg-[#202124]/90 hover:bg-slate-100 dark:hover:bg-[#303134] text-slate-700 dark:text-[#e8eaed] border-slate-200 dark:border-[#3c4043]"
               )}
             >
               <span>🚦</span>
@@ -1338,8 +1338,8 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
               className={cn(
                 "px-3 py-1 rounded-full text-[11px] font-semibold border shadow-md backdrop-blur-md transition-all flex items-center gap-1.5 cursor-pointer shrink-0",
                 mapTheme === 'satellite'
-                  ? "bg-sky-600/30 text-sky-300 border-sky-500/50"
-                  : "bg-[#202124]/90 hover:bg-[#303134] text-[#e8eaed] border-[#3c4043]"
+                  ? "bg-sky-600/20 text-sky-700 dark:text-sky-300 border-sky-500/40"
+                  : "bg-white/90 dark:bg-[#202124]/90 hover:bg-slate-100 dark:hover:bg-[#303134] text-slate-700 dark:text-[#e8eaed] border-slate-200 dark:border-[#3c4043]"
               )}
             >
               <span>🛰️</span>
@@ -1351,7 +1351,7 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
                 setInspectedPoint([5.6037, -0.1870]);
                 audioTelemetry.speak("Viewing Greater Accra Metropolitan Area.");
               }}
-              className="px-3 py-1 rounded-full text-[11px] font-semibold bg-[#202124]/90 hover:bg-[#303134] text-[#e8eaed] border border-[#3c4043] shadow-md backdrop-blur-md transition-all flex items-center gap-1 cursor-pointer shrink-0"
+              className="px-3 py-1 rounded-full text-[11px] font-semibold bg-white/90 dark:bg-[#202124]/90 hover:bg-slate-100 dark:hover:bg-[#303134] text-slate-700 dark:text-[#e8eaed] border border-slate-200 dark:border-[#3c4043] shadow-md backdrop-blur-md transition-all flex items-center gap-1 cursor-pointer shrink-0"
             >
               <span>📍</span>
               <span>Accra</span>
@@ -1362,7 +1362,7 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
                 setInspectedPoint([6.6961, -1.6310]);
                 audioTelemetry.speak("Viewing Kumasi Metropolitan Area.");
               }}
-              className="px-3 py-1 rounded-full text-[11px] font-semibold bg-[#202124]/90 hover:bg-[#303134] text-[#e8eaed] border border-[#3c4043] shadow-md backdrop-blur-md transition-all flex items-center gap-1 cursor-pointer shrink-0"
+              className="px-3 py-1 rounded-full text-[11px] font-semibold bg-white/90 dark:bg-[#202124]/90 hover:bg-slate-100 dark:hover:bg-[#303134] text-slate-700 dark:text-[#e8eaed] border border-slate-200 dark:border-[#3c4043] shadow-md backdrop-blur-md transition-all flex items-center gap-1 cursor-pointer shrink-0"
             >
               <span>📍</span>
               <span>Kumasi</span>
@@ -1372,7 +1372,7 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
                 setFlyTarget([7.95, -1.03]);
                 audioTelemetry.speak("National facilities overview active.");
               }}
-              className="px-3 py-1 rounded-full text-[11px] font-semibold bg-[#202124]/90 hover:bg-[#303134] text-[#e8eaed] border border-[#3c4043] shadow-md backdrop-blur-md transition-all flex items-center gap-1 cursor-pointer shrink-0"
+              className="px-3 py-1 rounded-full text-[11px] font-semibold bg-white/90 dark:bg-[#202124]/90 hover:bg-slate-100 dark:hover:bg-[#303134] text-slate-700 dark:text-[#e8eaed] border border-slate-200 dark:border-[#3c4043] shadow-md backdrop-blur-md transition-all flex items-center gap-1 cursor-pointer shrink-0"
             >
               <span>🇬🇭</span>
               <span>All Ghana</span>
@@ -1383,29 +1383,29 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
 
       {/* 3. Google Maps Authentic Bottom ETA & Trip Sheet */}
       {routePolyline && activeHospital && (
-        <div className="absolute bottom-4 left-3 right-3 sm:left-6 sm:right-auto sm:w-[440px] z-[1000] bg-[#202124]/95 backdrop-blur-md border border-[#3c4043] p-4 rounded-2xl shadow-2xl flex flex-col gap-3 text-white animate-in fade-in slide-in-from-bottom-3 duration-300">
+        <div className="absolute bottom-4 left-3 right-3 sm:left-6 sm:right-auto sm:w-[440px] z-[1000] bg-white/95 dark:bg-[#202124]/95 backdrop-blur-md border border-slate-200 dark:border-[#3c4043] p-4 rounded-2xl shadow-2xl flex flex-col gap-3 text-slate-900 dark:text-white animate-in fade-in slide-in-from-bottom-3 duration-300">
           {/* Big Bold Google Green ETA Header Row */}
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
               <div className="flex items-baseline gap-2">
-                <span className="text-3xl sm:text-4xl font-black text-[#34a853] leading-none tracking-tight">
+                <span className="text-3xl sm:text-4xl font-black text-[#1e8e3e] dark:text-[#34a853] leading-none tracking-tight">
                   {sirenDurationMins || routeDurationMins || 8}
                 </span>
-                <span className="text-base sm:text-lg font-bold text-[#34a853]">min</span>
+                <span className="text-base sm:text-lg font-bold text-[#1e8e3e] dark:text-[#34a853]">min</span>
                 {routeDurationMins && sirenDurationMins && routeDurationMins > sirenDurationMins && (
-                  <span className="text-xs text-[#9aa0a6] line-through ml-1">
+                  <span className="text-xs text-slate-400 dark:text-[#9aa0a6] line-through ml-1">
                     {routeDurationMins} min
                   </span>
                 )}
               </div>
-              <div className="flex items-center gap-2 text-xs text-[#9aa0a6] font-medium mt-1">
+              <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-[#9aa0a6] font-medium mt-1">
                 <span>{routeDistanceKm || "4.2"} km</span>
                 <span>•</span>
                 <span>ETA {formatArrivalTime(sirenDurationMins || routeDurationMins) || "10:45 AM"}</span>
                 {routeTrafficSource === 'google_live' && (
                   <>
                     <span>•</span>
-                    <span className="text-emerald-400 font-semibold">Live Traffic</span>
+                    <span className="text-emerald-600 dark:text-emerald-400 font-semibold">Live Traffic</span>
                   </>
                 )}
               </div>
@@ -1414,16 +1414,16 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
             {/* Siren Emergency Clearance Savings Badge */}
             {routeDurationMins && sirenDurationMins && routeDurationMins > sirenDurationMins ? (
               <div className="flex flex-col items-end shrink-0">
-                <span className="px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-rose-500/20 text-rose-300 border border-rose-500/30 flex items-center gap-1 shadow-sm animate-pulse">
-                  <Siren className="h-3 w-3 text-rose-400" />
+                <span className="px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-rose-500/15 dark:bg-rose-500/20 text-rose-700 dark:text-rose-300 border border-rose-500/30 flex items-center gap-1 shadow-sm animate-pulse">
+                  <Siren className="h-3 w-3 text-rose-500 dark:text-rose-400" />
                   Siren -{routeDurationMins - sirenDurationMins}m
                 </span>
-                <span className="text-[10px] text-emerald-400 font-bold mt-1">Fastest route</span>
+                <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold mt-1">Fastest route</span>
               </div>
             ) : (
               <div className="flex flex-col items-end shrink-0">
-                <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1">
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-ping" />
+                <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-500/15 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 flex items-center gap-1">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 dark:bg-emerald-400 animate-ping" />
                   Optimal Corridor
                 </span>
               </div>
@@ -1432,7 +1432,7 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
 
           {/* Google Maps Multi-Color Mini Congestion Ribbon */}
           <div className="flex flex-col gap-1">
-            <div className="w-full bg-[#303134] rounded-full h-2 overflow-hidden flex shadow-inner">
+            <div className="w-full bg-slate-200 dark:bg-[#303134] rounded-full h-2 overflow-hidden flex shadow-inner">
               {trafficSegments.length > 0 ? (
                 trafficSegments.map((seg, sIdx) => {
                   const segColor = seg.level === 'heavy' ? '#ea4335' : seg.level === 'moderate' ? '#fbbc04' : '#34a853';
@@ -1448,9 +1448,9 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
                 <div className="w-full h-full bg-gradient-to-r from-[#34a853] via-[#fbbc04] to-[#34a853]" />
               )}
             </div>
-            <div className="flex items-center justify-between text-[10px] text-[#9aa0a6] px-0.5">
+            <div className="flex items-center justify-between text-[10px] text-slate-500 dark:text-[#9aa0a6] px-0.5">
               <span>Traffic condition on route</span>
-              <span className="text-[#34a853] font-semibold">Mostly typical traffic</span>
+              <span className="text-emerald-600 dark:text-[#34a853] font-semibold">Mostly typical traffic</span>
             </div>
           </div>
 
@@ -1463,7 +1463,7 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
                   "px-3 py-1 rounded-full text-[11px] font-semibold transition-all cursor-pointer shrink-0 border",
                   selectedAltIndex === 0
                     ? "bg-[#1e8e3e] text-white border-[#34a853] shadow-sm"
-                    : "bg-[#303134] hover:bg-[#3c4043] text-[#e8eaed] border-[#3c4043]"
+                    : "bg-slate-100 dark:bg-[#303134] hover:bg-slate-200 dark:hover:bg-[#3c4043] text-slate-700 dark:text-[#e8eaed] border-slate-200 dark:border-[#3c4043]"
                 )}
               >
                 Primary ({sirenDurationMins || routeDurationMins}m)
@@ -1476,7 +1476,7 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
                     "px-3 py-1 rounded-full text-[11px] font-semibold transition-all cursor-pointer shrink-0 border truncate max-w-[150px]",
                     selectedAltIndex === idx + 1
                       ? "bg-[#1e8e3e] text-white border-[#34a853] shadow-sm"
-                      : "bg-[#303134] hover:bg-[#3c4043] text-[#e8eaed] border-[#3c4043]"
+                      : "bg-slate-100 dark:bg-[#303134] hover:bg-slate-200 dark:hover:bg-[#3c4043] text-slate-700 dark:text-[#e8eaed] border-slate-200 dark:border-[#3c4043]"
                   )}
                   title={`Alternative via ${alt.summary}`}
                 >
@@ -1487,24 +1487,24 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
           )}
 
           {/* Real-time Drive Simulation Progress & Cockpit Controls */}
-          <div className="pt-2 border-t border-[#303134] flex flex-col gap-2">
+          <div className="pt-2 border-t border-slate-200 dark:border-[#303134] flex flex-col gap-2">
             <div className="flex items-center justify-between text-[11px]">
-              <div className="flex items-center gap-1.5 font-bold text-white">
-                <Gauge className="h-3.5 w-3.5 text-[#34a853]" />
+              <div className="flex items-center gap-1.5 font-bold text-slate-800 dark:text-white">
+                <Gauge className="h-3.5 w-3.5 text-emerald-600 dark:text-[#34a853]" />
                 <span>{isDriving ? `${currentSpeedKmh} km/h` : driveProgress > 0 ? "Drive Paused" : "Ready to Dispatch"}</span>
                 {isDriving && (
-                  <span className="text-[10px] text-emerald-400 font-mono">
+                  <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-mono">
                     • 🧭 {Math.round(animatedHeading)}°
                   </span>
                 )}
               </div>
-              <span className="font-mono text-[#9aa0a6] font-bold text-[10px]">
+              <span className="font-mono text-slate-500 dark:text-[#9aa0a6] font-bold text-[10px]">
                 {Math.round(driveProgress * 100)}% Traversed
               </span>
             </div>
 
             {/* Dynamic Transit Progress Bar */}
-            <div className="w-full bg-[#303134] rounded-full h-1.5 overflow-hidden">
+            <div className="w-full bg-slate-200 dark:bg-[#303134] rounded-full h-1.5 overflow-hidden">
               <div
                 className="bg-gradient-to-r from-[#34a853] via-[#4285f4] to-rose-500 h-full transition-all duration-150 rounded-full"
                 style={{ width: `${Math.max(2, Math.round(driveProgress * 100))}%` }}
@@ -1546,7 +1546,7 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
                 {/* Simulation Speed Pill (1x, 2x, 4x) */}
                 <button
                   onClick={() => setPlaybackRate(r => (r === 1 ? 2 : r === 2 ? 4 : 1))}
-                  className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-[#303134] hover:bg-[#3c4043] text-[#e8eaed] border border-[#3c4043] cursor-pointer"
+                  className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-slate-100 dark:bg-[#303134] hover:bg-slate-200 dark:hover:bg-[#3c4043] text-slate-700 dark:text-[#e8eaed] border border-slate-200 dark:border-[#3c4043] cursor-pointer"
                   title="Cycle Drive Simulation Speed"
                 >
                   {playbackRate}x
@@ -1563,7 +1563,7 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
                     "px-3 py-1 rounded-full text-[10px] font-bold transition-all flex items-center gap-1 cursor-pointer border",
                     isChaseActive
                       ? "bg-[#1a73e8] text-white border-[#4285f4] shadow-sm"
-                      : "bg-[#303134] hover:bg-[#3c4043] text-[#e8eaed] border-[#3c4043]"
+                      : "bg-slate-100 dark:bg-[#303134] hover:bg-slate-200 dark:hover:bg-[#3c4043] text-slate-700 dark:text-[#e8eaed] border-slate-200 dark:border-[#3c4043]"
                   )}
                   title="Auto-pan camera to follow moving ambulance"
                 >
@@ -1582,7 +1582,7 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
                     setCurrentSpeedKmh(0);
                     audioTelemetry.speak("Drive simulation reset to start point.");
                   }}
-                  className="p-1.5 rounded-full bg-[#303134] hover:bg-[#3c4043] text-[#9aa0a6] hover:text-white transition-colors cursor-pointer border border-[#3c4043]"
+                  className="p-1.5 rounded-full bg-slate-100 dark:bg-[#303134] hover:bg-slate-200 dark:hover:bg-[#3c4043] text-slate-500 dark:text-[#9aa0a6] hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer border border-slate-200 dark:border-[#3c4043]"
                   title="Reset drive simulation"
                 >
                   <RotateCcw className="h-3.5 w-3.5" />
@@ -1600,11 +1600,11 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
           onClick={() => {
             setAnimatedHeading(0);
           }}
-          className="h-10 w-10 rounded-full bg-[#202124]/90 hover:bg-[#303134] border border-[#3c4043] text-white shadow-xl flex items-center justify-center transition-all cursor-pointer"
+          className="h-10 w-10 rounded-full bg-white/95 dark:bg-[#202124]/90 hover:bg-slate-100 dark:hover:bg-[#303134] border border-slate-200 dark:border-[#3c4043] text-slate-700 dark:text-white shadow-xl flex items-center justify-center transition-all cursor-pointer"
           title="North Compass"
         >
           <Compass
-            className="h-5 w-5 text-rose-400 transition-transform duration-300"
+            className="h-5 w-5 text-rose-500 dark:text-rose-400 transition-transform duration-300"
             style={{ transform: `rotate(${-animatedHeading}deg)` }}
           />
         </button>
@@ -1612,7 +1612,7 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
         {/* Locate Me (Google Blue) */}
         <button
           onClick={handleLocateMe}
-          className="h-10 w-10 rounded-full bg-[#202124]/90 hover:bg-[#303134] border border-[#3c4043] text-[#4285f4] shadow-xl flex items-center justify-center transition-all cursor-pointer"
+          className="h-10 w-10 rounded-full bg-white/95 dark:bg-[#202124]/90 hover:bg-slate-100 dark:hover:bg-[#303134] border border-slate-200 dark:border-[#3c4043] text-[#1a73e8] dark:text-[#4285f4] shadow-xl flex items-center justify-center transition-all cursor-pointer"
           title="Your Location"
         >
           <LocateFixed className="h-5 w-5" />
@@ -1630,10 +1630,10 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
             setMapTheme(nextTheme);
             audioTelemetry.speak(`Switched to ${nextTheme.replace('-', ' ')} layer.`);
           }}
-          className="h-10 w-10 rounded-full bg-[#202124]/90 hover:bg-[#303134] border border-[#3c4043] text-white shadow-xl flex items-center justify-center transition-all cursor-pointer"
+          className="h-10 w-10 rounded-full bg-white/95 dark:bg-[#202124]/90 hover:bg-slate-100 dark:hover:bg-[#303134] border border-slate-200 dark:border-[#3c4043] text-slate-700 dark:text-white shadow-xl flex items-center justify-center transition-all cursor-pointer"
           title={`Layers (Current: ${mapTheme.toUpperCase()})`}
         >
-          <Layers className="h-5 w-5 text-[#8ab4f8]" />
+          <Layers className="h-5 w-5 text-blue-600 dark:text-[#8ab4f8]" />
         </button>
 
         {/* Accident Hotspots Toggle */}
@@ -1642,8 +1642,8 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
           className={cn(
             "h-10 w-10 rounded-full border shadow-xl flex items-center justify-center transition-all cursor-pointer",
             showHotspots
-              ? "bg-amber-500/20 text-amber-300 border-amber-500/40"
-              : "bg-[#202124]/90 hover:bg-[#303134] text-[#9aa0a6] border-[#3c4043]"
+              ? "bg-amber-500/20 text-amber-600 dark:text-amber-300 border-amber-500/40"
+              : "bg-white/95 dark:bg-[#202124]/90 hover:bg-slate-100 dark:hover:bg-[#303134] text-slate-500 dark:text-[#9aa0a6] border-slate-200 dark:border-[#3c4043]"
           )}
           title="Toggle High-Risk Corridors"
         >
@@ -1656,8 +1656,8 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
           className={cn(
             "h-10 w-10 rounded-full border shadow-xl flex items-center justify-center transition-all cursor-pointer",
             !isAudioMuted
-              ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/40"
-              : "bg-[#202124]/90 hover:bg-[#303134] text-[#9aa0a6] border-[#3c4043]"
+              ? "bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border-emerald-500/40"
+              : "bg-white/95 dark:bg-[#202124]/90 hover:bg-slate-100 dark:hover:bg-[#303134] text-slate-500 dark:text-[#9aa0a6] border-slate-200 dark:border-[#3c4043]"
           )}
           title={isAudioMuted ? "Unmute Voice Guidance" : "Mute Voice Guidance"}
         >
@@ -1668,7 +1668,7 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
         {activeAmbulance && (
           <button
             onClick={handleFocusActiveDispatch}
-            className="h-10 w-10 rounded-full bg-[#202124]/90 hover:bg-[#303134] border border-[#3c4043] text-rose-400 shadow-xl flex items-center justify-center transition-all cursor-pointer"
+            className="h-10 w-10 rounded-full bg-white/95 dark:bg-[#202124]/90 hover:bg-slate-100 dark:hover:bg-[#303134] border border-slate-200 dark:border-[#3c4043] text-rose-500 dark:text-rose-400 shadow-xl flex items-center justify-center transition-all cursor-pointer"
             title="Track Active Ambulance"
           >
             <Crosshair className="h-5 w-5" />
@@ -1802,13 +1802,13 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
             zIndexOffset={2500}
           >
             <Popup>
-              <div className="text-white font-sans p-1 min-w-[170px]">
-                <div className="flex items-center gap-1.5 font-bold text-xs text-white">
+              <div className="text-slate-900 dark:text-white font-sans p-1 min-w-[170px]">
+                <div className="flex items-center gap-1.5 font-bold text-xs text-slate-900 dark:text-white">
                   <span>🚗 Fast Route Corridor</span>
                 </div>
-                <div className="mt-1 text-xs text-slate-300">
-                  Estimated duration: <strong className="text-emerald-400">{sirenDurationMins || routeDurationMins} min</strong>
-                  {routeDistanceKm && <div className="text-slate-400 mt-0.5">Total distance: {routeDistanceKm} km</div>}
+                <div className="mt-1 text-xs text-slate-600 dark:text-slate-300">
+                  Estimated duration: <strong className="text-emerald-600 dark:text-emerald-400">{sirenDurationMins || routeDurationMins} min</strong>
+                  {routeDistanceKm && <div className="text-slate-500 dark:text-slate-400 mt-0.5">Total distance: {routeDistanceKm} km</div>}
                 </div>
               </div>
             </Popup>
@@ -1842,30 +1842,30 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
             zIndexOffset={3000}
           >
             <Popup>
-              <div className="text-white font-sans p-1 min-w-[210px]">
-                <div className="flex items-center justify-between border-b border-slate-700/80 pb-1 mb-1">
-                  <div className="flex items-center gap-1.5 font-bold text-xs text-rose-400">
-                    <Siren className="h-3.5 w-3.5 text-rose-400 animate-pulse" />
+              <div className="text-slate-900 dark:text-white font-sans p-1 min-w-[210px]">
+                <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-700/80 pb-1 mb-1">
+                  <div className="flex items-center gap-1.5 font-bold text-xs text-rose-600 dark:text-rose-400">
+                    <Siren className="h-3.5 w-3.5 text-rose-500 dark:text-rose-400 animate-pulse" />
                     <span>Unit En Route (Code 1)</span>
                   </div>
-                  <span className="text-[10px] font-mono bg-rose-500/20 text-rose-300 border border-rose-500/30 px-1.5 py-0.5 rounded font-bold uppercase">
+                  <span className="text-[10px] font-mono bg-rose-500/15 dark:bg-rose-500/20 text-rose-700 dark:text-rose-300 border border-rose-500/30 px-1.5 py-0.5 rounded font-bold uppercase">
                     {isDriving ? "In Motion" : "Paused"}
                   </span>
                 </div>
-                <h4 className="font-bold text-sm text-white">{activeAmbulance?.plateNumber || "Paramedic Unit"}</h4>
-                <div className="grid grid-cols-2 gap-1.5 my-1.5 text-[11px] font-mono bg-slate-950 p-1.5 rounded border border-slate-800">
+                <h4 className="font-bold text-sm text-slate-900 dark:text-white">{activeAmbulance?.plateNumber || "Paramedic Unit"}</h4>
+                <div className="grid grid-cols-2 gap-1.5 my-1.5 text-[11px] font-mono bg-slate-100 dark:bg-slate-950 p-1.5 rounded border border-slate-200 dark:border-slate-800">
                   <div>
-                    <span className="text-slate-400 text-[10px] block">Speed:</span>
-                    <strong className="text-teal-300">{currentSpeedKmh} km/h</strong>
+                    <span className="text-slate-500 dark:text-slate-400 text-[10px] block">Speed:</span>
+                    <strong className="text-teal-700 dark:text-teal-300">{currentSpeedKmh} km/h</strong>
                   </div>
                   <div>
-                    <span className="text-slate-400 text-[10px] block">Heading:</span>
-                    <strong className="text-sky-300">{Math.round(animatedHeading)}°</strong>
+                    <span className="text-slate-500 dark:text-slate-400 text-[10px] block">Heading:</span>
+                    <strong className="text-sky-700 dark:text-sky-300">{Math.round(animatedHeading)}°</strong>
                   </div>
                 </div>
-                <div className="flex items-center justify-between text-[11px] text-slate-300 bg-slate-800/80 p-1.5 rounded">
+                <div className="flex items-center justify-between text-[11px] text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800/80 p-1.5 rounded border border-slate-200 dark:border-transparent">
                   <span>To:</span>
-                  <span className="font-semibold text-teal-300 truncate max-w-[130px]">{activeHospital?.name || "Target Facility"}</span>
+                  <span className="font-semibold text-teal-700 dark:text-teal-300 truncate max-w-[130px]">{activeHospital?.name || "Target Facility"}</span>
                 </div>
               </div>
             </Popup>
@@ -1883,23 +1883,23 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
                 zIndexOffset={1000}
               >
                 <Popup>
-                  <div className="text-white font-sans p-1 min-w-[220px]">
-                    <div className="flex items-center justify-between border-b border-slate-700/80 pb-1.5 mb-1.5">
-                      <div className="flex items-center gap-1.5 font-bold text-xs text-sky-400">
-                        <Navigation className="h-3.5 w-3.5 text-sky-400 animate-pulse" />
+                  <div className="text-slate-900 dark:text-white font-sans p-1 min-w-[220px]">
+                    <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-700/80 pb-1.5 mb-1.5">
+                      <div className="flex items-center gap-1.5 font-bold text-xs text-sky-600 dark:text-sky-400">
+                        <Navigation className="h-3.5 w-3.5 text-sky-500 dark:text-sky-400 animate-pulse" />
                         <span>Your Live Location</span>
                       </div>
-                      <span className="text-[10px] font-mono bg-sky-500/20 text-sky-300 border border-sky-500/30 px-1.5 py-0.5 rounded font-bold uppercase">
+                      <span className="text-[10px] font-mono bg-sky-500/15 dark:bg-sky-500/20 text-sky-700 dark:text-sky-300 border border-sky-500/30 px-1.5 py-0.5 rounded font-bold uppercase">
                         Origin Point
                       </span>
                     </div>
-                    <h4 className="font-bold text-sm text-white">{activeAmbulance?.plateNumber || "Paramedic Unit"}</h4>
-                    <p className="text-xs text-slate-300 font-mono bg-slate-950 p-1.5 rounded border border-slate-800 mt-1 mb-1.5">
+                    <h4 className="font-bold text-sm text-slate-900 dark:text-white">{activeAmbulance?.plateNumber || "Paramedic Unit"}</h4>
+                    <p className="text-xs text-slate-600 dark:text-slate-300 font-mono bg-slate-100 dark:bg-slate-950 p-1.5 rounded border border-slate-200 dark:border-slate-800 mt-1 mb-1.5">
                       GPS: {effectiveUserCoords[0].toFixed(5)}, {effectiveUserCoords[1].toFixed(5)}
                     </p>
-                    <div className="flex items-center justify-between text-[11px] text-slate-300 bg-slate-800/80 p-1.5 rounded">
+                    <div className="flex items-center justify-between text-[11px] text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800/80 p-1.5 rounded border border-slate-200 dark:border-transparent">
                       <span>Destination:</span>
-                      <span className="font-semibold text-teal-300 truncate max-w-[130px]">{activeHospital?.name || "Target Facility"}</span>
+                      <span className="font-semibold text-teal-700 dark:text-teal-300 truncate max-w-[130px]">{activeHospital?.name || "Target Facility"}</span>
                     </div>
                   </div>
                 </Popup>
@@ -1914,38 +1914,38 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
                 zIndexOffset={1100}
               >
                 <Popup>
-                  <div className="text-white font-sans p-1 min-w-[240px]">
-                    <div className="flex items-center justify-between border-b border-slate-700/80 pb-1.5 mb-2">
-                      <div className="flex items-center gap-1.5 font-bold text-xs text-emerald-400">
-                        <Building2 className="h-3.5 w-3.5 text-emerald-400" />
+                  <div className="text-slate-900 dark:text-white font-sans p-1 min-w-[240px]">
+                    <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-700/80 pb-1.5 mb-2">
+                      <div className="flex items-center gap-1.5 font-bold text-xs text-emerald-600 dark:text-emerald-400">
+                        <Building2 className="h-3.5 w-3.5 text-emerald-500 dark:text-emerald-400" />
                         <span>Target Destination</span>
                       </div>
-                      <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+                      <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-emerald-500/15 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/40">
                         Assigned ER
                       </span>
                     </div>
-                    <h4 className="font-bold text-sm text-white mb-2">{activeHospital.name}</h4>
+                    <h4 className="font-bold text-sm text-slate-900 dark:text-white mb-2">{activeHospital.name}</h4>
                     <div className="grid grid-cols-2 gap-2 text-xs mb-2">
-                      <div className="bg-emerald-500/20 border border-emerald-500/40 rounded-lg p-1.5 text-center">
-                        <span className="block text-[10px] text-emerald-300 font-semibold">Beds Free</span>
-                        <span className="text-base font-extrabold text-white">{activeHospital.availableBeds ?? 0}</span>
+                      <div className="bg-emerald-500/15 dark:bg-emerald-500/20 border border-emerald-500/40 rounded-lg p-1.5 text-center">
+                        <span className="block text-[10px] text-emerald-700 dark:text-emerald-300 font-semibold">Beds Free</span>
+                        <span className="text-base font-extrabold text-slate-900 dark:text-white">{activeHospital.availableBeds ?? 0}</span>
                       </div>
-                      <div className="bg-blue-500/20 border border-blue-500/40 rounded-lg p-1.5 text-center">
-                        <span className="block text-[10px] text-blue-300 font-semibold">ICU Free</span>
-                        <span className="text-base font-extrabold text-white">{activeHospital.icuBeds?.available ?? 0}</span>
+                      <div className="bg-blue-500/15 dark:bg-blue-500/20 border border-blue-500/40 rounded-lg p-1.5 text-center">
+                        <span className="block text-[10px] text-blue-700 dark:text-blue-300 font-semibold">ICU Free</span>
+                        <span className="text-base font-extrabold text-slate-900 dark:text-white">{activeHospital.icuBeds?.available ?? 0}</span>
                       </div>
                     </div>
                     {routeDistanceKm && routeDurationMins && (
-                      <div className="bg-slate-950 p-1.5 rounded border border-slate-800 text-[11px] text-teal-300 flex items-center justify-between mb-1.5 font-semibold">
+                      <div className="bg-slate-100 dark:bg-slate-950 p-1.5 rounded border border-slate-200 dark:border-slate-800 text-[11px] text-teal-700 dark:text-teal-300 flex items-center justify-between mb-1.5 font-semibold">
                         <span>Distance: {routeDistanceKm} km</span>
                         <span>ETA: ~{routeDurationMins} mins</span>
                       </div>
                     )}
                     {activeHospital.address && (
-                      <p className="text-[11px] text-slate-300 truncate mb-1">📍 {activeHospital.address}</p>
+                      <p className="text-[11px] text-slate-600 dark:text-slate-300 truncate mb-1">📍 {activeHospital.address}</p>
                     )}
-                    <p className="text-[11px] text-slate-300 flex items-center gap-1">
-                      <Phone className="h-3 w-3 text-slate-400" /> <span className="text-white font-medium">{activeHospital.phone || "+233 302 662 000"}</span>
+                    <p className="text-[11px] text-slate-600 dark:text-slate-300 flex items-center gap-1">
+                      <Phone className="h-3 w-3 text-slate-400" /> <span className="text-slate-900 dark:text-white font-medium">{activeHospital.phone || "+233 302 662 000"}</span>
                     </p>
                   </div>
                 </Popup>
@@ -1968,14 +1968,14 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
                 }}
               >
                 <Popup>
-                  <div className="text-white font-sans p-1 min-w-[190px]">
-                    <div className="flex items-center gap-1.5 font-bold text-xs text-rose-400 mb-1">
-                      <Flame className="h-3.5 w-3.5 text-rose-400" />
+                  <div className="text-slate-900 dark:text-white font-sans p-1 min-w-[190px]">
+                    <div className="flex items-center gap-1.5 font-bold text-xs text-rose-600 dark:text-rose-400 mb-1">
+                      <Flame className="h-3.5 w-3.5 text-rose-500 dark:text-rose-400" />
                       Accident Hotspot
                     </div>
-                    <h4 className="font-bold text-sm text-white">{spot.name}</h4>
-                    <p className="text-xs text-slate-200 mt-1">Severity: <span className="font-semibold text-rose-300">{spot.risk}</span></p>
-                    <p className="text-[11px] text-slate-400 mt-0.5">High collision incidence rate zone</p>
+                    <h4 className="font-bold text-sm text-slate-900 dark:text-white">{spot.name}</h4>
+                    <p className="text-xs text-slate-700 dark:text-slate-200 mt-1">Severity: <span className="font-semibold text-rose-600 dark:text-rose-300">{spot.risk}</span></p>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">High collision incidence rate zone</p>
                   </div>
                 </Popup>
               </Circle>
@@ -1987,15 +1987,15 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
                 icon={routePolyline ? createGoogleOriginIcon() : createPulsingLeafletIcon('#3b82f6', '📍', true)}
               >
                 <Popup>
-                  <div className="text-white font-sans p-1 min-w-[210px]">
-                    <div className="flex items-center gap-1.5 font-bold text-xs text-blue-400 mb-1">
-                      <LocateFixed className="h-3.5 w-3.5 text-blue-400" />
+                  <div className="text-slate-900 dark:text-white font-sans p-1 min-w-[210px]">
+                    <div className="flex items-center gap-1.5 font-bold text-xs text-blue-600 dark:text-blue-400 mb-1">
+                      <LocateFixed className="h-3.5 w-3.5 text-blue-500 dark:text-blue-400" />
                       Your Device Location
                     </div>
-                    <p className="text-xs text-slate-200 font-mono bg-slate-950 p-1.5 rounded border border-slate-700">
+                    <p className="text-xs text-slate-700 dark:text-slate-200 font-mono bg-slate-100 dark:bg-slate-950 p-1.5 rounded border border-slate-200 dark:border-slate-700">
                       {userLocation[0].toFixed(5)}, {userLocation[1].toFixed(5)}
                     </p>
-                    <p className="text-[11px] text-slate-400 mt-1">Live active GPS transmitter point</p>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">Live active GPS transmitter point</p>
                   </div>
                 </Popup>
               </Marker>
@@ -2007,24 +2007,24 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
                 icon={createPulsingLeafletIcon('#06b6d4', '🎯', true)}
               >
                 <Popup>
-                  <div className="text-white font-sans p-1 min-w-[220px]">
-                    <div className="flex items-center justify-between border-b border-slate-700/80 pb-1.5 mb-1.5">
-                      <span className="text-xs font-bold text-teal-300 flex items-center gap-1">
-                        <MapPin className="h-3.5 w-3.5 text-teal-400" />
+                  <div className="text-slate-900 dark:text-white font-sans p-1 min-w-[220px]">
+                    <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-700/80 pb-1.5 mb-1.5">
+                      <span className="text-xs font-bold text-teal-700 dark:text-teal-300 flex items-center gap-1">
+                        <MapPin className="h-3.5 w-3.5 text-teal-600 dark:text-teal-400" />
                         Inspected Location
                       </span>
-                      <span className="text-[10px] font-mono bg-slate-800 text-slate-300 px-1.5 py-0.5 rounded">
+                      <span className="text-[10px] font-mono bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-1.5 py-0.5 rounded border border-slate-200 dark:border-transparent">
                         GPS Point
                       </span>
                     </div>
-                    <p className="text-xs text-slate-200 font-mono bg-slate-950 p-1.5 rounded border border-slate-800 mb-2">
+                    <p className="text-xs text-slate-700 dark:text-slate-200 font-mono bg-slate-100 dark:bg-slate-950 p-1.5 rounded border border-slate-200 dark:border-slate-800 mb-2">
                       Lat: {inspectedPoint[0].toFixed(5)} | Lng: {inspectedPoint[1].toFixed(5)}
                     </p>
                     {closestHospitalToInspected && (
-                      <div className="bg-slate-800/80 border border-slate-700 rounded-lg p-2 text-xs">
-                        <span className="text-[10px] uppercase font-bold text-slate-400 block mb-0.5">Nearest Facility</span>
-                        <p className="font-bold text-white truncate">{closestHospitalToInspected.hospital.name}</p>
-                        <p className="text-[11px] text-teal-300 font-semibold mt-0.5">
+                      <div className="bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-lg p-2 text-xs">
+                        <span className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400 block mb-0.5">Nearest Facility</span>
+                        <p className="font-bold text-slate-900 dark:text-white truncate">{closestHospitalToInspected.hospital.name}</p>
+                        <p className="text-[11px] text-teal-700 dark:text-teal-300 font-semibold mt-0.5">
                           ~{closestHospitalToInspected.distKm.toFixed(1)} km away • {closestHospitalToInspected.hospital.availableBeds ?? 0} beds free
                         </p>
                       </div>
@@ -2050,25 +2050,25 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
                   zIndexOffset={isTargetFacility ? 1100 : undefined}
                 >
                   <Popup>
-                    <div className="text-white font-sans p-1 min-w-[220px]">
-                      <div className="flex items-center justify-between border-b border-slate-700/80 pb-1.5 mb-2">
-                        <h4 className="font-bold text-sm text-white truncate">{hospital.name}</h4>
+                    <div className="text-slate-900 dark:text-white font-sans p-1 min-w-[220px]">
+                      <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-700/80 pb-1.5 mb-2">
+                        <h4 className="font-bold text-sm text-slate-900 dark:text-white truncate">{hospital.name}</h4>
                       </div>
                       <div className="grid grid-cols-2 gap-2 text-xs mb-2">
-                        <div className="bg-emerald-500/20 border border-emerald-500/40 rounded-lg p-1.5 text-center">
-                          <span className="block text-[10px] text-emerald-300 font-semibold">Beds Free</span>
-                          <span className="text-base font-extrabold text-white">{hospital.availableBeds}</span>
+                        <div className="bg-emerald-500/15 dark:bg-emerald-500/20 border border-emerald-500/40 rounded-lg p-1.5 text-center">
+                          <span className="block text-[10px] text-emerald-700 dark:text-emerald-300 font-semibold">Beds Free</span>
+                          <span className="text-base font-extrabold text-slate-900 dark:text-white">{hospital.availableBeds}</span>
                         </div>
-                        <div className="bg-blue-500/20 border border-blue-500/40 rounded-lg p-1.5 text-center">
-                          <span className="block text-[10px] text-blue-300 font-semibold">ICU Free</span>
-                          <span className="text-base font-extrabold text-white">{hospital.icuBeds?.available ?? 0}</span>
+                        <div className="bg-blue-500/15 dark:bg-blue-500/20 border border-blue-500/40 rounded-lg p-1.5 text-center">
+                          <span className="block text-[10px] text-blue-700 dark:text-blue-300 font-semibold">ICU Free</span>
+                          <span className="text-base font-extrabold text-slate-900 dark:text-white">{hospital.icuBeds?.available ?? 0}</span>
                         </div>
                       </div>
                       {hospital.address && (
-                        <p className="text-[11px] text-slate-200 truncate mb-1">📍 {hospital.address}</p>
+                        <p className="text-[11px] text-slate-700 dark:text-slate-200 truncate mb-1">📍 {hospital.address}</p>
                       )}
-                      <p className="text-[11px] text-slate-300 flex items-center gap-1">
-                        <Phone className="h-3 w-3 text-slate-400" /> <span className="text-white font-medium">{hospital.phone || "+233 302 662 000"}</span>
+                      <p className="text-[11px] text-slate-600 dark:text-slate-300 flex items-center gap-1">
+                        <Phone className="h-3 w-3 text-slate-400" /> <span className="text-slate-900 dark:text-white font-medium">{hospital.phone || "+233 302 662 000"}</span>
                       </p>
                     </div>
                   </Popup>
@@ -2090,19 +2090,19 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
                   icon={createPulsingLeafletIcon(pinColor, '🚑', isBusy)}
                 >
                   <Popup>
-                    <div className="text-white font-sans p-1 min-w-[200px]">
-                      <div className="flex items-center justify-between border-b border-slate-700/80 pb-1.5 mb-1.5">
-                        <h4 className="font-bold text-sm text-white">{ambulance.plateNumber || ambulance.id}</h4>
+                    <div className="text-slate-900 dark:text-white font-sans p-1 min-w-[200px]">
+                      <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-700/80 pb-1.5 mb-1.5">
+                        <h4 className="font-bold text-sm text-slate-900 dark:text-white">{ambulance.plateNumber || ambulance.id}</h4>
                         <span className={cn(
                           "px-2 py-0.5 rounded text-[10px] font-extrabold uppercase border",
                           isBusy 
-                            ? "bg-rose-500/25 text-rose-200 border-rose-500/40" 
-                            : "bg-teal-500/25 text-teal-200 border-teal-500/40"
+                            ? "bg-rose-500/15 dark:bg-rose-500/25 text-rose-700 dark:text-rose-200 border-rose-500/40" 
+                            : "bg-teal-500/15 dark:bg-teal-500/25 text-teal-700 dark:text-teal-200 border-teal-500/40"
                         )}>
                           {ambulance.status}
                         </span>
                       </div>
-                      <p className="text-xs text-slate-200">Unit ID: <span className="font-mono font-semibold text-white">{ambulance.id}</span></p>
+                      <p className="text-xs text-slate-700 dark:text-slate-200">Unit ID: <span className="font-mono font-semibold text-slate-900 dark:text-white">{ambulance.id}</span></p>
                     </div>
                   </Popup>
                 </Marker>
@@ -2123,15 +2123,15 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
                   icon={createPulsingLeafletIcon(pinColor, '⚠️', isCritical)}
                 >
                   <Popup>
-                    <div className="text-white font-sans p-1 min-w-[220px]">
-                      <div className="flex items-center justify-between border-b border-slate-700/80 pb-1.5 mb-1.5">
-                        <h4 className="font-bold text-sm text-white truncate">{emergency.emergencyType}</h4>
+                    <div className="text-slate-900 dark:text-white font-sans p-1 min-w-[220px]">
+                      <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-700/80 pb-1.5 mb-1.5">
+                        <h4 className="font-bold text-sm text-slate-900 dark:text-white truncate">{emergency.emergencyType}</h4>
                         <StatusBadge status={emergency.severity} className="text-xs">
                           {emergency.severity}
                         </StatusBadge>
                       </div>
-                      <p className="text-xs text-slate-200">Patient: <span className="font-semibold text-white">{emergency.patientName || 'Emergency Patient'}</span></p>
-                      <p className="text-xs text-slate-300 mt-1">Assigned: <span className="font-semibold text-teal-300">{emergency.assignedHospital || 'Seeking Facility...'}</span></p>
+                      <p className="text-xs text-slate-700 dark:text-slate-200">Patient: <span className="font-semibold text-slate-900 dark:text-white">{emergency.patientName || 'Emergency Patient'}</span></p>
+                      <p className="text-xs text-slate-600 dark:text-slate-300 mt-1">Assigned: <span className="font-semibold text-teal-700 dark:text-teal-300">{emergency.assignedHospital || 'Seeking Facility...'}</span></p>
                     </div>
                   </Popup>
                 </Marker>

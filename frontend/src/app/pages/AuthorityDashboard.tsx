@@ -424,12 +424,12 @@ export const AuthorityDashboard: React.FC = () => {
 
         {/* Official Statutory GHS/MOH Audit Dossier Modal */}
         {showDossierModal && (
-          <div className="fixed inset-0 z-[10000] bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto animate-in fade-in duration-200">
-            <div className="bg-white text-slate-900 max-w-4xl w-full rounded-2xl shadow-2xl overflow-hidden border border-slate-300 flex flex-col max-h-[92vh]">
+          <div className="fixed inset-0 z-[10000] bg-slate-900/60 dark:bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto animate-in fade-in duration-200">
+            <div className="bg-white text-slate-900 max-w-4xl w-full rounded-2xl shadow-2xl overflow-hidden border border-slate-200 dark:border-slate-800 flex flex-col max-h-[92vh]">
               {/* Modal Action Bar (Hidden when printing) */}
-              <div className="p-4 bg-slate-900 text-white flex items-center justify-between print:hidden">
+              <div className="p-4 bg-slate-100 dark:bg-slate-900 text-slate-900 dark:text-white border-b border-slate-200 dark:border-slate-800 flex items-center justify-between print:hidden">
                 <div className="flex items-center gap-2">
-                  <Shield className="h-5 w-5 text-teal-400" />
+                  <Shield className="h-5 w-5 text-teal-600 dark:text-teal-400" />
                   <span className="font-bold text-sm tracking-wide">Official Ghana Health Service Audit Dossier</span>
                 </div>
                 <div className="flex items-center gap-2">
@@ -443,7 +443,7 @@ export const AuthorityDashboard: React.FC = () => {
                   </Button>
                   <button
                     onClick={() => setShowDossierModal(false)}
-                    className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 cursor-pointer"
+                    className="p-1.5 rounded-lg text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-800 cursor-pointer"
                   >
                     <X className="h-5 w-5" />
                   </button>

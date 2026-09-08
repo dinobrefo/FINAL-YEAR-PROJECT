@@ -63,22 +63,37 @@
 }
 
 .leaflet-popup-content-wrapper {
-  background: #0f172a !important;
-  color: #ffffff !important;
+  background: #ffffff !important;
+  color: #0f172a !important;
   border-radius: 14px !important;
   padding: 6px !important;
+  border: 1px solid #cbd5e1 !important;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1) !important;
+}
+
+.dark .leaflet-popup-content-wrapper {
+  background: #0f172a !important;
+  color: #ffffff !important;
   border: 1px solid #334155 !important;
   box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.6), 0 8px 10px -6px rgba(0, 0, 0, 0.6) !important;
 }
 
 .leaflet-popup-tip {
+  background: #ffffff !important;
+}
+
+.dark .leaflet-popup-tip {
   background: #0f172a !important;
 }
 
 .leaflet-popup-content {
-  color: #ffffff !important;
+  color: #0f172a !important;
   margin: 8px 12px !important;
   line-height: 1.4 !important;
+}
+
+.dark .leaflet-popup-content {
+  color: #ffffff !important;
 }
 
 .leaflet-popup-content h1,
@@ -89,16 +104,35 @@
 .leaflet-popup-content h6,
 .leaflet-popup-content strong,
 .leaflet-popup-content b {
+  color: #0f172a !important;
+}
+
+.dark .leaflet-popup-content h1,
+.dark .leaflet-popup-content h2,
+.dark .leaflet-popup-content h3,
+.dark .leaflet-popup-content h4,
+.dark .leaflet-popup-content h5,
+.dark .leaflet-popup-content h6,
+.dark .leaflet-popup-content strong,
+.dark .leaflet-popup-content b {
   color: #ffffff !important;
 }
 
 .leaflet-popup-close-button {
-  color: #94a3b8 !important;
+  color: #64748b !important;
   top: 10px !important;
   right: 10px !important;
 }
 
+.dark .leaflet-popup-close-button {
+  color: #94a3b8 !important;
+}
+
 .leaflet-popup-close-button:hover {
+  color: #0f172a !important;
+}
+
+.dark .leaflet-popup-close-button:hover {
   color: #ffffff !important;
 }
 
