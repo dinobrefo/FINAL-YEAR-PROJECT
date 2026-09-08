@@ -234,7 +234,7 @@ export const AppShell: React.FC<AppShellProps> = ({ role, userName, children }) 
                 <Activity className="h-5 w-5 text-[#EF4444]" />
               </div>
               <div>
-                <h1 className="text-lg font-black tracking-tight text-slate-900 dark:text-white font-mono">IERBMS</h1>
+                <h1 className="text-lg font-black tracking-tight text-slate-900 dark:text-white font-mono">PULSEGRID</h1>
                 <p className="text-[11px] font-semibold text-red-600 dark:text-red-400 capitalize font-mono">{role} Portal</p>
               </div>
             </div>

@@ -126,7 +126,7 @@ export const HeroSection: React.FC = () => {
             </h1>
 
             <p className="max-w-xl text-ink-muted sm:text-lg leading-relaxed">
-              IERBMS connects ambulances and hospitals through real-time data, explainable hospital
+              PULSEGRID connects ambulances and hospitals through real-time data, explainable hospital
               recommendations, and live capacity monitoring — so every patient reaches the right care,
               faster.
             </p>

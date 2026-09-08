@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>PULSEGRID • UML Use Case Diagram</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<script>
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: 'dark',
+    themeVariables: {
+      darkMode: true,
+      background: '#081827',
+      primaryColor: '#EF4444',
+      primaryTextColor: '#FFFFFF',
+      primaryBorderColor: '#EF4444',
+      lineColor: '#06B6D4',
+      secondaryColor: '#111C2D',
+      tertiaryColor: '#162235'
+    },
+    flowchart: { curve: 'basis', htmlLabels: true },
+    sequence: { actorFontSize: 13, noteFontSize: 12, messageFontSize: 12 }
+  });
+</script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@600;800&family=Inter:wght@400;600;800&display=swap');
+  body {
+    background: #06111F;
+    color: #F8FAFC;
+    font-family: 'Inter', sans-serif;
+    padding: 30px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    margin: 0;
+  }
+  .card {
+    background: #111C2D;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 16px;
+    padding: 24px 32px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+    max-width: 95%;
+  }
+  .header {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding-bottom: 12px;
+    margin-bottom: 20px;
+  }
+  h1 {
+    font-size: 20px;
+    font-weight: 800;
+    color: #FFFFFF;
+    margin: 0 0 4px 0;
+  }
+  p {
+    font-size: 13px;
+    color: #94A3B8;
+    margin: 0;
+  }
+  .mermaid-box {
+    background: #081827;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 20px;
+    display: flex;
+    justify-content: center;
+    overflow-x: auto;
+  }
+</style>
+</head>
+<body>
+  <div class="card">
+    <div class="header">
+      <h1>PULSEGRID • UML Use Case Diagram</h1>
+      <p>Actors, System Boundary, and <<include>> / <<extend>> Clinical Relationships</p>
+    </div>
+    <div class="mermaid-box">
+      <div class="mermaid">
+flowchart TB
+    subgraph Human_Actors ["Human Clinical Actors"]
+        P((Paramedic / EMS))
+        D((ER Doctor))
+        N((Ward Nurse))
+        C((Command Dispatcher))
+        A((Health Authority))
+    end
+
+    subgraph System_Actors ["Automated System Actors"]
+        AI((AI & Routing Engine))
+    end
+
+    subgraph PULSEGRID_Platform ["PULSEGRID System Boundary"]
+        UC1(["UC-1: Authenticate via RBAC JWT"])
+        UC2(["UC-2: Intake Emergency Vitals"])
+        UC3(["UC-3: Compute SATS & TEWS Score"])
+        UC4(["UC-4: Evaluate Hard Safety Constraints"])
+        UC5(["UC-5: Predict Turnaround via Random Forest"])
+        UC6(["UC-6: Navigate via OSRM Road Snapping"])
+        UC7(["UC-7: Pre-Assign Emergency Bed"])
+        UC8(["UC-8: Acknowledge Inbound Patient"])
+        UC9(["UC-9: Update Real-time Bed Census"])
+        UC10(["UC-10: Execute Manual Fleet Reroute"])
+        UC11(["UC-11: Generate 24-Hour AI Bed Forecast"])
+        UC12(["UC-12: Enqueue Offline Payload to IndexedDB"])
+        UC13(["UC-13: Synchronize Offline Transaction Queue"])
+    end
+
+    P --> UC1
+    D --> UC1
+    N --> UC1
+    C --> UC1
+    A --> UC1
+
+    P --> UC2
+    UC2 -.->|<<include>>| UC3
+    UC3 -.->|<<include>>| UC4
+    UC4 -.->|<<include>>| UC5
+    AI --> UC4
+    AI --> UC5
+
+    P --> UC6
+    P -.->|<<extend: Network Loss>>| UC12
+    UC12 -.->|<<extend: Reconnect>>| UC13
+
+    D --> UC7
+    D --> UC8
+    UC7 -.->|<<include>>| UC9
+
+    N --> UC9
+    C --> UC10
+    C --> UC6
+
+    A --> UC11
+    AI --> UC11
+      </div>
+    </div>
+  </div>
+</body>
+</html>

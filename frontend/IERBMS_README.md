@@ -1,7 +1,7 @@
-# IERBMS - Integrated Emergency Resource & Bed Management System
+# PULSEGRID - Intelligent Emergency Routing & Bed Management System
 
 ## Overview
-A comprehensive healthcare emergency management platform that coordinates communication between ambulances and hospitals during medical emergencies. Built with React, TypeScript, Tailwind CSS, and Recharts.
+A comprehensive healthcare emergency management platform that coordinates communication between ambulances and hospitals during medical emergencies across Ghana. Built with React, TypeScript, Tailwind CSS, and Leaflet.
 
 ## Features Implemented
 
@@ -90,7 +90,7 @@ A comprehensive healthcare emergency management platform that coordinates commun
 ## Technical Architecture
 
 ### Components
-- **Custom IERBMS Components**:
+- **Custom PULSEGRID Components**:
   - `Button`: Multi-variant with loading states
   - `Card`: Flexible card layouts
   - `Input`: Form inputs with validation

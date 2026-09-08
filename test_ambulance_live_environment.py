@@ -32,7 +32,7 @@ class MockHospital:
 
 def run_ambulance_test_environment():
     print("=" * 75)
-    print("🚑 IERBMS AMBULANCE TEST ENVIRONMENT (LIVE LOCATION HARNESS)")
+    print("🚑 PULSEGRID AMBULANCE TEST ENVIRONMENT (LIVE LOCATION HARNESS)")
     print("=" * 75)
     
     # -------------------------------------------------------------

@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>PULSEGRID • UML Activity Diagram (Clinical Swimlanes)</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<script>
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: 'dark',
+    themeVariables: {
+      darkMode: true,
+      background: '#081827',
+      primaryColor: '#EF4444',
+      primaryTextColor: '#FFFFFF',
+      primaryBorderColor: '#EF4444',
+      lineColor: '#06B6D4',
+      secondaryColor: '#111C2D',
+      tertiaryColor: '#162235'
+    },
+    flowchart: { curve: 'basis', htmlLabels: true },
+    sequence: { actorFontSize: 13, noteFontSize: 12, messageFontSize: 12 }
+  });
+</script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@600;800&family=Inter:wght@400;600;800&display=swap');
+  body {
+    background: #06111F;
+    color: #F8FAFC;
+    font-family: 'Inter', sans-serif;
+    padding: 30px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    margin: 0;
+  }
+  .card {
+    background: #111C2D;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 16px;
+    padding: 24px 32px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+    max-width: 95%;
+  }
+  .header {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding-bottom: 12px;
+    margin-bottom: 20px;
+  }
+  h1 {
+    font-size: 20px;
+    font-weight: 800;
+    color: #FFFFFF;
+    margin: 0 0 4px 0;
+  }
+  p {
+    font-size: 13px;
+    color: #94A3B8;
+    margin: 0;
+  }
+  .mermaid-box {
+    background: #081827;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 20px;
+    display: flex;
+    justify-content: center;
+    overflow-x: auto;
+  }
+</style>
+</head>
+<body>
+  <div class="card">
+    <div class="header">
+      <h1>PULSEGRID • UML Activity Diagram (Clinical Swimlanes)</h1>
+      <p>Coordinated Workflow Across Paramedic, Offline Edge, AI Engine, and Hospital ER Bay</p>
+    </div>
+    <div class="mermaid-box">
+      <div class="mermaid">
+flowchart TD
+    subgraph Paramedic_Lane ["Paramedic / EMS Field Unit"]
+        Start([● Emergency Dispatched]) --> Assess[Assess Patient at Scene]
+        Assess --> InputVitals[Input Vitals & Trauma Score into HUD]
+    end
+
+    subgraph Edge_Lane ["Edge / Offline Resilience Layer"]
+        InputVitals --> CheckNet{Internet Connection Available?}
+        CheckNet -- No --> QueueIDB[Persist Payload to IndexedDB Queue]
+        QueueIDB --> ShowOfflineBadge[Render 'Offline Queued' Badge]
+        ShowOfflineBadge --> PollNet{Network Restored?}
+        PollNet -- No --> PollNet
+        PollNet -- Yes --> FlushQueue[Flush Batch Payload via Background Sync]
+        FlushQueue --> ProcessPayload[Process Transmitted Payload]
+        CheckNet -- Yes --> ProcessPayload
+    end
+
+    subgraph AI_Lane ["AI / Constraint Engine (FastAPI + PostGIS)"]
+        ProcessPayload --> AutoTEWS[Compute Composite TEWS Score]
+        AutoTEWS --> QueryPostGIS[Query Nearby Facilities ST_DWithin 60km]
+        QueryPostGIS --> EvalConstraints{Is Trauma Score >= 4?}
+        EvalConstraints -- Yes --> FilterICU[Filter: Drop Facilities with ICU Beds = 0]
+        EvalConstraints -- No --> FilterGen[Filter: Drop Facilities with General Beds = 0]
+        FilterICU --> PredictTurnaround[Random Forest: Predict Turnaround Latency]
+        FilterGen --> PredictTurnaround
+        PredictTurnaround --> RankHosp[Rank by Optimal Match Index]
+    end
+
+    subgraph Paramedic_Lane
+        RankHosp --> DisplayRanked[Display Top-3 Recommended Hospitals on Cockpit HUD]
+        DisplayRanked --> AcceptRoute[Paramedic Clicks 'Take Emergency & Route']
+        AcceptRoute --> TacticalMode[Enter Tactical Mission Mode: Hide Unrelated Pins]
+        TacticalMode --> DriveRoute[Follow Road-Snapped Turn-by-Turn Guidance]
+    end
+
+    subgraph Hospital_Lane ["Hospital Trauma & Bed Bay"]
+        AcceptRoute --> LockBed[Atomically Decrement Assigned Bed]
+        LockBed --> RingAlarm[Sound Pre-Arrival Audio Telemetry Alarm]
+        RingAlarm --> PrepBay[Surgeons & Nurses Prepare Trauma Bay]
+        DriveRoute --> GateArrival[Ambulance Arrives at Hospital Gate]
+        GateArrival --> TransferPatient[Direct Stretcher Transfer to Prepared Bed]
+        TransferPatient --> MarkAdmitted[Doctor Marks Patient 'Admitted']
+    end
+
+    MarkAdmitted --> EndNode([● Case Closed / Telemetry Archived])
+      </div>
+    </div>
+  </div>
+</body>
+</html>

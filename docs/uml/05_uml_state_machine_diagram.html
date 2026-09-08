@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>PULSEGRID • UML State Machine Diagram</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<script>
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: 'dark',
+    themeVariables: {
+      darkMode: true,
+      background: '#081827',
+      primaryColor: '#EF4444',
+      primaryTextColor: '#FFFFFF',
+      primaryBorderColor: '#EF4444',
+      lineColor: '#06B6D4',
+      secondaryColor: '#111C2D',
+      tertiaryColor: '#162235'
+    },
+    flowchart: { curve: 'basis', htmlLabels: true },
+    sequence: { actorFontSize: 13, noteFontSize: 12, messageFontSize: 12 }
+  });
+</script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@600;800&family=Inter:wght@400;600;800&display=swap');
+  body {
+    background: #06111F;
+    color: #F8FAFC;
+    font-family: 'Inter', sans-serif;
+    padding: 30px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    margin: 0;
+  }
+  .card {
+    background: #111C2D;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 16px;
+    padding: 24px 32px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+    max-width: 95%;
+  }
+  .header {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding-bottom: 12px;
+    margin-bottom: 20px;
+  }
+  h1 {
+    font-size: 20px;
+    font-weight: 800;
+    color: #FFFFFF;
+    margin: 0 0 4px 0;
+  }
+  p {
+    font-size: 13px;
+    color: #94A3B8;
+    margin: 0;
+  }
+  .mermaid-box {
+    background: #081827;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 20px;
+    display: flex;
+    justify-content: center;
+    overflow-x: auto;
+  }
+</style>
+</head>
+<body>
+  <div class="card">
+    <div class="header">
+      <h1>PULSEGRID • UML State Machine Diagram</h1>
+      <p>Lifecycle State Transitions for Emergency Incidents and Ambulance Units</p>
+    </div>
+    <div class="mermaid-box">
+      <div class="mermaid">
+stateDiagram-v2
+    [*] --> REPORTED : Citizen Call / CAD Intake
+    REPORTED --> DISPATCHED : Nearest Ambulance Assigned
+    
+    DISPATCHED --> ON_SCENE : Ambulance Arrives at Coordinates
+    ON_SCENE --> TRIAGED : Vitals Logged (SATS / TEWS Derived)
+
+    TRIAGED --> IN_TRANSIT : Destination Hospital Accepted
+    
+    state IN_TRANSIT {
+        [*] --> EN_ROUTE
+        EN_ROUTE --> REROUTED : Command Diversion / Road Block
+        REROUTED --> EN_ROUTE : New OSRM Path Snapped
+    }
+
+    IN_TRANSIT --> ARRIVED : Geofence Trigger / Gate Check-in
+    ARRIVED --> BED_ASSIGNED : Pre-reserved Bed Confirmed
+    BED_ASSIGNED --> ADMITTED : Clinical Handover Complete
+    
+    ADMITTED --> RESOLVED : Treatment Concluded / Discharged
+    RESOLVED --> [*]
+      </div>
+    </div>
+  </div>
+</body>
+</html>

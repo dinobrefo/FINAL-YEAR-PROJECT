@@ -12,7 +12,7 @@ export const LiveSystemOverview: React.FC = () => {
       id="live"
       eyebrow="Live system overview"
       title="Real numbers from the platform"
-      intro="These figures are pulled directly from the IERBMS operational database in real time."
+      intro="These figures are pulled directly from the PULSEGRID operational database in real time."
     >
       <div className="panel p-6 sm:p-8 relative overflow-hidden">
         {/* Top Status Header Bar */}

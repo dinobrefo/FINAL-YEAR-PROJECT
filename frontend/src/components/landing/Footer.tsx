@@ -15,7 +15,7 @@ export const Footer: React.FC = () => {
               <div className="h-8 w-8 rounded-md bg-primary/15 border border-primary/30 flex items-center justify-center text-primary">
                 <Activity className="h-4 w-4 text-primary" />
               </div>
-              <span className="font-mono font-bold text-base tracking-wider text-ink">IERBMS</span>
+              <span className="font-mono font-bold text-base tracking-wider text-ink">PULSEGRID</span>
             </Link>
             <p className="text-ink-muted text-sm leading-relaxed">
               Intelligent Emergency Routing & Bed Management System. Connecting national ambulance logistics with receiving hospital capacity across Ghana.
@@ -62,7 +62,7 @@ export const Footer: React.FC = () => {
         {/* Bottom Row */}
         <div className="pt-8 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-4 text-[11px] text-ink-faint font-mono">
           <div className="flex items-center gap-2">
-            <span>© {currentYear} IERBMS. All rights reserved.</span>
+            <span>© {currentYear} PULSEGRID. All rights reserved.</span>
             <span>·</span>
             <span className="text-ink-muted">Built for Ghana's emergency healthcare ecosystem.</span>
           </div>

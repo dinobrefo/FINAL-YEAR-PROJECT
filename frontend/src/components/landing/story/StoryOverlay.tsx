@@ -132,7 +132,7 @@ export const StoryOverlay: React.FC<StoryOverlayProps> = ({ stageIndex, progress
           <Navigation className="h-3 w-3 text-primary animate-pulse" />
           SCROLL TO ADVANCE MISSION SEQUENCE
         </span>
-        <span className="hidden sm:inline">IERBMS PROTOCOL v4.2</span>
+        <span className="hidden sm:inline">PULSEGRID PROTOCOL v4.2</span>
       </div>
     </div>
   );

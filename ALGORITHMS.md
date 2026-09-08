@@ -1,6 +1,6 @@
-# IERBMS Formal Algorithmic Architecture Specification
+# PULSEGRID Formal Algorithmic Architecture Specification
 
-This document provides the formal mathematical models, objective functions, clinical guardrails, and asymptotic computational complexities governing the **Integrated Emergency Resource & Bed Management System (IERBMS)**.
+This document provides the formal mathematical models, objective functions, clinical guardrails, and asymptotic computational complexities governing **PULSEGRID: Intelligent Emergency Routing & Bed Management System**.
 
 ---
 
@@ -141,7 +141,7 @@ Results from 5-Fold Cross Validation across $3,000$ patient clinical records:
 | **OLS Linear Regression** | $0.9253 \pm 0.006$ | $7.12 \pm 0.26$ | $5.32 \pm 0.07$ | $0.78\text{ ms}$ |
 | **Ridge Regression ($L_2$)** | $0.9253 \pm 0.006$ | $7.12 \pm 0.26$ | $5.32 \pm 0.07$ | $0.70\text{ ms}$ |
 | **Decision Tree (CART)** | $0.8637 \pm 0.007$ | $9.64 \pm 0.39$ | $7.01 \pm 0.20$ | $0.82\text{ ms}$ |
-| **Random Forest (IERBMS)** | $\mathbf{0.9255 \pm 0.005}$ | $\mathbf{7.12 \pm 0.12}$ | $\mathbf{5.30 \pm 0.08}$ | $\mathbf{11.10\text{ ms}}$ |
+| **Random Forest (PULSEGRID)** | $\mathbf{0.9255 \pm 0.005}$ | $\mathbf{7.12 \pm 0.12}$ | $\mathbf{5.30 \pm 0.08}$ | $\mathbf{11.10\text{ ms}}$ |
 | **Gradient Boosting (GBM)** | $0.9622 \pm 0.003$ | $5.07 \pm 0.17$ | $3.89 \pm 0.12$ | $2.88\text{ ms}$ |
 
 > **Conclusion**: The **Random Forest Regressor** provides the optimal Pareto frontier, guaranteeing sub-millisecond inference speeds for real-time mobile and in-vehicle navigation HUDs while capturing non-linear interactions between patient acuity and hospital bed saturation.

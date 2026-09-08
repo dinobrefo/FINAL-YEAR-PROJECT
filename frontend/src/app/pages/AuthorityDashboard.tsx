@@ -465,7 +465,7 @@ export const AuthorityDashboard: React.FC = () => {
                     Ghana Health Service & National Ambulance Service (NAS)
                   </h3>
                   <p className="text-xs text-slate-500 font-sans mt-1">
-                    Integrated Emergency Resource & Bed Management System (IERBMS) • Statutory Act 843
+                    PULSEGRID: Intelligent Emergency Routing & Bed Management System • Statutory Act 843
                   </p>
                   <div className="mt-4 inline-block px-4 py-1 rounded bg-slate-100 border border-slate-300 text-xs font-mono font-bold text-slate-800">
                     DOSSIER REF: GHS-NEMS/2026/AUDIT-0905 • CLASSIFICATION: OFFICIAL PUBLIC AUDIT
@@ -478,7 +478,7 @@ export const AuthorityDashboard: React.FC = () => {
                     1. Executive Response & Triage Performance Summary
                   </h4>
                   <p className="text-xs text-slate-600 leading-relaxed">
-                    This statutory dossier provides verified telemetry from the live IERBMS national network. Under the 2026 Emergency Medical Services Modernization Directive, all participating secondary and tertiary hospitals across Ghana report real-time bed inventories, trauma capability, and automated paramedic dispatch timestamps.
+                    This statutory dossier provides verified telemetry from the live PULSEGRID national network. Under the 2026 Emergency Medical Services Modernization Directive, all participating secondary and tertiary hospitals across Ghana report real-time bed inventories, trauma capability, and automated paramedic dispatch timestamps.
                   </p>
 
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3 pt-2">

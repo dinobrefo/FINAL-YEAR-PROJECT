@@ -234,7 +234,7 @@ export const LandingPage: React.FC = () => {
             Ready to Transform Emergency Response?
           </h2>
           <p className="text-xl text-white/90 mb-8">
-            Join hospitals and ambulance services already using IERBMS to save lives
+            Join hospitals and ambulance services already using PULSEGRID to save lives
           </p>
           <div className="flex items-center justify-center gap-4">
             <Button
@@ -260,9 +260,9 @@ export const LandingPage: React.FC = () => {
         <div className="max-w-7xl mx-auto px-6">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-xl font-bold text-[var(--primary)] mb-2">IERBMS</h3>
+              <h3 className="text-xl font-bold text-[var(--primary)] mb-2">PULSEGRID</h3>
               <p className="text-sm text-muted-foreground">
-                AI-Powered Integrated Emergency Resource and Bed Management System
+                Intelligent Emergency Routing & Bed Management System
               </p>
             </div>
             <div className="flex items-center gap-6 text-sm text-muted-foreground">
@@ -273,7 +273,7 @@ export const LandingPage: React.FC = () => {
             </div>
           </div>
           <div className="mt-8 pt-8 border-t text-center text-sm text-muted-foreground">
-            © {new Date().getFullYear()} IERBMS. All rights reserved.
+            © {new Date().getFullYear()} PULSEGRID. All rights reserved.
           </div>
         </div>
       </footer>

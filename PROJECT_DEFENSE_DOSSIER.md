@@ -1,6 +1,6 @@
-# IERBMS Project Defense & Academic Examination Dossier
+# PULSEGRID Project Defense & Academic Examination Dossier
 
-**Project Title**: Integrated Emergency Resource & Bed Management System (IERBMS)  
+**Project Title**: PULSEGRID: Intelligent Emergency Routing & Bed Management System  
 **Author / Candidate**: Kwabena Brefo  
 **Institution**: Kwame Nkrumah University of Science and Technology (KNUST), Kumasi, Ghana  
 **Faculty / Department**: Department of Computer Science & Computer Engineering  
@@ -35,8 +35,8 @@ In Ghana and across sub-Saharan Africa, the phenomenon known colloquially as the
 2. **Commercial API Prohibitions**: Solutions relying on proprietary platforms like Google Maps incur unsustainable recurring per-request billing ($5.00 to $10.00 per 1,000 requests), making nationwide government adoption cost-prohibitive.
 3. **Connectivity Fragility**: Mobile cellular coverage is inconsistent along major transit corridors (e.g., N1 Highway, Kumasi-Tamale trunk road), causing conventional cloud-dependent applications to crash or drop telemetry.
 
-### The IERBMS Solution:
-IERBMS is a **100% free, zero-API-cost, open-source emergency logistics and telemetry platform** engineered specifically for the Ghana Health Service (GHS) and the National Ambulance Service (NAS). It coordinates real-time bed reservations, clinical SATS/TEWS triage classification, and turn-by-turn road navigation powered by **Leaflet, OpenStreetMap, CartoDB, Esri Satellite, and OSRM**.
+### The PULSEGRID Solution:
+PULSEGRID is a **100% free, zero-API-cost, open-source emergency logistics and telemetry platform** engineered specifically for the Ghana Health Service (GHS) and the National Ambulance Service (NAS). It coordinates real-time bed reservations, clinical SATS/TEWS triage classification, and turn-by-turn road navigation powered by **Leaflet, OpenStreetMap, CartoDB, Esri Satellite, and OSRM**.
 
 ---
 
@@ -55,9 +55,9 @@ The system establishes an interconnected digital telemetry corridor linking prim
 
 ## 3. System Architecture & Distributed Dataflow
 
-IERBMS employs a **5-tier decoupled, reactive architecture** designed for high throughput, sub-millisecond edge latency, and zero cloud lock-in.
+PULSEGRID employs a **5-tier decoupled, reactive architecture** designed for high throughput, sub-millisecond edge latency, and zero cloud lock-in.
 
-![Figure 2: IERBMS 5-Tier Distributed Architecture](docs/assets/fig5_system_architecture.svg)
+![Figure 2: PULSEGRID 5-Tier Distributed Architecture](docs/assets/fig5_system_architecture.svg)
 *Figure 2: Complete Architectural Blueprint showing Client PWA Layer, Offline Resilience Bridge, Node.js Real-Time Cluster, Python FastAPI Predictive Engine, Open Cartography Stack, and PostgreSQL + PostGIS Persistence Tier.*
 
 ### Architectural Tiers:
@@ -86,7 +86,7 @@ Ambulance crews operate in high-stress, dynamic transit environments. The Parame
 
 ## 5. Clinical SATS / TEWS Triage Protocol
 
-Rather than using an arbitrary heuristic, IERBMS strictly implements the **South African Triage Scale (SATS)** adapted by the **Ghana Health Service (GHS)**, driven by the **Triage Early Warning Score (TEWS)**.
+Rather than using an arbitrary heuristic, PULSEGRID strictly implements the **South African Triage Scale (SATS)** adapted by the **Ghana Health Service (GHS)**, driven by the **Triage Early Warning Score (TEWS)**.
 
 ![Figure 4: South African Triage Scale (SATS) / TEWS Decision Matrix](docs/assets/fig8_sats_tews_clinical_matrix.svg)
 *Figure 4: Ghana Health Service Clinical Standard Triage Matrix categorizing emergencies into 5 priority levels with defined physiological criteria and automated bed-locking rules.*
@@ -204,7 +204,7 @@ To determine the most effective algorithmic foundation for emergency routing and
 > **Model Answer**: Yes. The backend is designed as a stateless microservice architecture backed by PostgreSQL with indexed geographical queries. The algorithmic ranking runs in O(N log N) time, completing in under **25 ms** even when searching across all 2,500 facilities in Ghana. Real-time updates utilize WebSocket channels segregated by region, preventing broadcast storms across unaffected districts.
 
 ### Q9: What happens if a hospital administrator forgets to update bed numbers manually?
-> **Model Answer**: IERBMS does not rely solely on manual updates. The system implements **Automated Bed Inventory Allocation**:
+> **Model Answer**: PULSEGRID does not rely solely on manual updates. The system implements **Automated Bed Inventory Allocation**:
 > 1. When an ambulance arrives at the emergency bay, the system automatically increments the hospital's occupied beds and decrements available beds.
 > 2. When the attending physician or triage nurse resolves the case or admits the patient to an inpatient ward, the emergency bed is automatically released back to the available pool.
 > 3. AI Model 2 (24-Hour Bed Occupancy Predictor) continuously models diurnal admission/discharge cycles to project availability even in the absence of manual inputs.
@@ -231,4 +231,4 @@ To determine the most effective algorithmic foundation for emergency routing and
 
 ---
 
-*IERBMS Academic Examination Dossier • Kwabena Brefo • KNUST Department of Computer Science & Computer Engineering • 2025/2026*
+*PULSEGRID Academic Examination Dossier • Kwabena Brefo • KNUST Department of Computer Science & Computer Engineering • 2025/2026*

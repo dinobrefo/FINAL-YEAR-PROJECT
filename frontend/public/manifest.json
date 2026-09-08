@@ -1,6 +1,6 @@
 {
-  "name": "IERBMS - Integrated Emergency Resource & Bed Management System",
-  "short_name": "IERBMS Ghana",
+  "name": "PULSEGRID - Intelligent Emergency Routing & Bed Management System",
+  "short_name": "PULSEGRID Ghana",
   "start_url": "/",
   "display": "standalone",
   "orientation": "any",

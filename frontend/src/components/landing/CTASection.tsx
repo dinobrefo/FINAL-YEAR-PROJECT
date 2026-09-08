@@ -25,7 +25,7 @@ export const CTASection: React.FC = () => {
         {/* Action Buttons */}
         <div className="flex flex-wrap items-center justify-center gap-4 pt-2">
           <a
-            href="mailto:contact@ierbms.gov.gh?subject=IERBMS%20Implementation%20Demo%20Request"
+            href="mailto:contact@pulsegrid.gov.gh?subject=PULSEGRID%20Implementation%20Demo%20Request"
             className="btn-primary px-7 py-3.5 text-sm font-semibold gap-2"
           >
             <Mail className="h-4 w-4" />

@@ -96,7 +96,7 @@ export const DashboardPreview: React.FC = () => {
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
               <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500" />
             </span>
-            <span className="font-bold text-white tracking-wide">IERBMS · COMMAND TELEMETRY VIEW</span>
+            <span className="font-bold text-white tracking-wide">PULSEGRID · COMMAND TELEMETRY VIEW</span>
             <span className="hidden sm:inline-block px-2 py-0.5 rounded text-[10px] bg-cyan-500/15 text-cyan-300 border border-cyan-500/30">
               DISPATCH NODE 01
             </span>

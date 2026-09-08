@@ -10,7 +10,7 @@ from models.routing_model import recommend_hospitals
 from models.bed_prediction_model import predict_bed_occupancy
 from models.demand_forecast_model import forecast_emergency_demand
 
-app = FastAPI(title="IERBMS ML Engine")
+app = FastAPI(title="PULSEGRID ML Engine")
 
 class HospitalData(BaseModel):
     id: str

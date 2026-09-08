@@ -1,6 +1,6 @@
-# Intelligent Emergency Resource & Bed Management System (IERBMS)
+# PULSEGRID: Intelligent Emergency Routing & Bed Management System
 
-Welcome to the **IERBMS** repository. This platform is an enterprise-grade emergency coordination system for Ghana Health Service (GHS) and the National Ambulance Service (NAS). It combines real-time emergency dispatch matching, predictive bed capacity forecasting, nationwide geospatial tracking across all 16 regions of Ghana, and clinical guardrails.
+Welcome to the **PULSEGRID** repository. This platform is an enterprise-grade emergency coordination system for Ghana Health Service (GHS) and the National Ambulance Service (NAS). It combines real-time emergency dispatch matching, predictive bed capacity forecasting, nationwide geospatial tracking across all 16 regions of Ghana, and clinical guardrails.
 
 ---
 

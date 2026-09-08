@@ -23,7 +23,7 @@ class TestHospital:
 
 def run_verification():
     print("=" * 70)
-    print("IERBMS MAP & ALGORITHM INTEGRATION VERIFICATION")
+    print("PULSEGRID MAP & ALGORITHM INTEGRATION VERIFICATION")
     print("=" * 70)
     
     # -------------------------------------------------------------

@@ -86,7 +86,7 @@ export const Register: React.FC = () => {
           <Activity className="h-6 w-6 text-[#EF4444]" />
         </div>
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-white font-mono">IERBMS</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-white font-mono">PULSEGRID</h1>
           <p className="text-xs text-red-400 font-mono font-semibold">HEALTHCARE STAFF ENROLLMENT</p>
         </div>
       </div>

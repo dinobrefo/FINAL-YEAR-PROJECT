@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>PULSEGRID • UML Class Diagram</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<script>
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: 'dark',
+    themeVariables: {
+      darkMode: true,
+      background: '#081827',
+      primaryColor: '#EF4444',
+      primaryTextColor: '#FFFFFF',
+      primaryBorderColor: '#EF4444',
+      lineColor: '#06B6D4',
+      secondaryColor: '#111C2D',
+      tertiaryColor: '#162235'
+    },
+    flowchart: { curve: 'basis', htmlLabels: true },
+    sequence: { actorFontSize: 13, noteFontSize: 12, messageFontSize: 12 }
+  });
+</script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@600;800&family=Inter:wght@400;600;800&display=swap');
+  body {
+    background: #06111F;
+    color: #F8FAFC;
+    font-family: 'Inter', sans-serif;
+    padding: 30px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    margin: 0;
+  }
+  .card {
+    background: #111C2D;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 16px;
+    padding: 24px 32px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+    max-width: 95%;
+  }
+  .header {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding-bottom: 12px;
+    margin-bottom: 20px;
+  }
+  h1 {
+    font-size: 20px;
+    font-weight: 800;
+    color: #FFFFFF;
+    margin: 0 0 4px 0;
+  }
+  p {
+    font-size: 13px;
+    color: #94A3B8;
+    margin: 0;
+  }
+  .mermaid-box {
+    background: #081827;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 20px;
+    display: flex;
+    justify-content: center;
+    overflow-x: auto;
+  }
+</style>
+</head>
+<body>
+  <div class="card">
+    <div class="header">
+      <h1>PULSEGRID • UML Class Diagram</h1>
+      <p>Object-Oriented Domain Entities, Multiplicities, Attributes, and Operations</p>
+    </div>
+    <div class="mermaid-box">
+      <div class="mermaid">
+classDiagram
+    class User {
+        +UUID id
+        +String username
+        +Role role
+        +UUID facilityId
+        +Boolean isActive
+        +validateCredentials(String password) Boolean
+        +generateJWTToken() String
+    }
+
+    class EmergencyCase {
+        +UUID id
+        +String caseNumber
+        +String patientName
+        +EmergencyType emergencyType
+        +SeverityLevel severity
+        +CaseStatus status
+        +updateStatus(CaseStatus newStatus) void
+        +assignHospital(UUID hospitalId) void
+        +assignAmbulance(UUID ambulanceId) void
+    }
+
+    class PatientVitals {
+        +UUID id
+        +Integer heartRate
+        +Integer systolicBP
+        +Integer respiratoryRate
+        +Float temperature
+        +Integer oxygenSaturation
+        +Integer traumaScore
+        +Integer tewsScore
+        +SATSColor triageCategory
+        +calculateTEWS() Integer
+        +deriveSATSColor() SATSColor
+    }
+
+    class Hospital {
+        +UUID id
+        +String name
+        +Point location
+        +Integer totalBeds
+        +Integer availableGeneralBeds
+        +Integer availableIcuBeds
+        +String[] specialists
+        +decrementBed(BedType type) Boolean
+        +incrementBed(BedType type) void
+        +getOccupancyRate() Float
+    }
+
+    class Ambulance {
+        +UUID id
+        +String plateNumber
+        +Point currentLocation
+        +Float heading
+        +Float speedKmh
+        +AmbulanceStatus status
+        +updateTelemetry(Point coord, Float speed) void
+        +setDispatchStatus(AmbulanceStatus newStatus) void
+    }
+
+    class MLMatchingEngine {
+        -String modelWeightsPath
+        +filterHardConstraints(EmergencyCase c, Hospital[] all) Hospital[]
+        +predictTurnaround(PatientVitals v, Hospital h, Float distKm) Float
+        +rankFacilities(EmergencyCase c, Hospital[] candidates) RankedMatch[]
+    }
+
+    class OfflineQueueManager {
+        -IDBDatabase dbInstance
+        +enqueue(String action, Object payload) Promise
+        +flushQueue() Promise
+        +getQueueLength() Integer
+    }
+
+    class GeospatialRouter {
+        -String osrmEndpoint
+        +getRoadRoute(Point origin, Point dest) RouteResult
+        +computeHaversine(Point p1, Point p2) Float
+    }
+
+    EmergencyCase "1" *-- "1" PatientVitals : composition
+    EmergencyCase "0..*" --> "1" Hospital : assigned to
+    EmergencyCase "0..1" --> "1" Ambulance : dispatched to
+    Hospital "1" *-- "1..*" DepartmentWard : partitions into
+    Ambulance "1" ..> GeospatialRouter : queries
+    EmergencyCase ..> MLMatchingEngine : scored by
+    Ambulance ..> OfflineQueueManager : persists via
+      </div>
+    </div>
+  </div>
+</body>
+</html>

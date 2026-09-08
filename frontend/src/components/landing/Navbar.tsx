@@ -39,7 +39,7 @@ export const Navbar: React.FC = () => {
           <div className="h-9 w-9 rounded-md bg-primary/15 border border-primary/30 flex items-center justify-center text-primary group-hover:bg-primary/25 transition-colors">
             <Activity className="h-5 w-5 text-[#EF4444]" />
           </div>
-          <span className="font-mono font-bold text-lg tracking-wider text-ink">IERBMS</span>
+          <span className="font-mono font-bold text-lg tracking-wider text-ink">PULSEGRID</span>
         </Link>
 
         {/* Desktop Anchor Links */}
@@ -64,7 +64,7 @@ export const Navbar: React.FC = () => {
             Log in
           </Link>
           <a
-            href="mailto:contact@ierbms.gov.gh?subject=IERBMS%20Platform%20Inquiry"
+            href="mailto:contact@pulsegrid.gov.gh?subject=PULSEGRID%20Platform%20Inquiry"
             className="btn-primary px-4 py-2 text-sm focus-visible:outline-primary"
           >
             Request Demo

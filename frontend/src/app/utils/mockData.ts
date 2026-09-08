@@ -1,4 +1,4 @@
-// Mock data for IERBMS platform
+// Mock data for PULSEGRID platform
 
 export interface Emergency {
   id: string;
