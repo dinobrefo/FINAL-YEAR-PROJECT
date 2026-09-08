@@ -83,9 +83,12 @@ export const AmbulanceDashboard: React.FC = () => {
     }
   }, [isSimulatingDrive, isTracking]);
 
-  // Auto-select the ambulance closest to physical location
+  // Auto-select the ambulance closest to physical location (instant default + background GPS proximity match)
   React.useEffect(() => {
     if (ambulances.length > 0 && !selectedAmbulance) {
+      // Instant default selection so UI is immediately active without waiting
+      setSelectedAmbulance(ambulances[0].id);
+
       if ("geolocation" in navigator) {
         navigator.geolocation.getCurrentPosition(
           (position) => {
@@ -117,13 +120,10 @@ export const AmbulanceDashboard: React.FC = () => {
             setAutoMatchStatus(`Linked to unit ${ambName} based on physical proximity in ${region}.`);
           },
           (err) => {
-            console.error("Could not obtain user location for auto-matching:", err);
-            setSelectedAmbulance(ambulances[0].id);
+            console.warn("Location auto-matching fallback:", err);
           },
-          { enableHighAccuracy: true, timeout: 5000, maximumAge: 60000 }
+          { enableHighAccuracy: false, timeout: 3000, maximumAge: 120000 }
         );
-      } else {
-        setSelectedAmbulance(ambulances[0].id);
       }
     } else if (ambulances.length > 0 && selectedAmbulance) {
       const exists = ambulances.some(a => a.id === selectedAmbulance);

@@ -149,7 +149,7 @@ export const NewEmergency: React.FC = () => {
           console.warn("GPS auto-detect fallback:", err);
           setGpsDetecting(false);
         },
-        { enableHighAccuracy: true, timeout: 6000 }
+        { enableHighAccuracy: false, timeout: 3500, maximumAge: 120000 }
       );
     }
   };
@@ -170,9 +170,62 @@ export const NewEmergency: React.FC = () => {
     });
   }, [formData]);
 
+  // High-accuracy Client-side Geodesic Multi-Criteria Decision Analysis (MCDA) Ranking (< 2ms)
+  const computeClientRecommendations = React.useCallback((
+    candidates: any[],
+    originLat: number,
+    originLng: number,
+    isCritical: boolean
+  ) => {
+    const scoredList = candidates.map(h => {
+      const distKm = computeHaversineKm(originLat, originLng, h.location.lat, h.location.lng);
+      const availIcu = h.icuBeds?.available ?? 0;
+      const availGen = h.availableBeds ?? 0;
+      
+      // 1. Proximity score (35% weight) - Golden Hour boundary
+      const sDist = distKm <= 60 ? Math.max(10, 100 * (1 - distKm / 60)) : Math.max(5, 30 * (1 - (distKm - 60) / 140));
+      
+      // 2. Capacity score (35% weight) - ICU preference for severe trauma
+      const sCap = isCritical
+        ? (availIcu <= 0 ? 0 : Math.min(100, 50 + availIcu * 10))
+        : (availGen <= 0 ? 0 : Math.min(100, 50 + availGen * 1.5));
+      
+      // 3. Clinical readiness (30% weight) - specialist readiness
+      const specMatch = h.specialists && h.specialists.length > 0;
+      const sRes = specMatch ? 90 : 60;
+      
+      let score = 0;
+      if (sCap > 0) {
+        const distScale = distKm <= 60 ? 1.0 : Math.max(0.25, 1 - (distKm - 60) / 80);
+        score = Math.round(((sDist * 0.35) + (sCap * 0.35) + (sRes * 0.30)) * distScale);
+        score = Math.max(15, Math.min(99, score));
+      }
+
+      // Emergency ambulance siren transit factor (~1.8 min/km)
+      const estMins = Math.max(1, Math.round(distKm * 1.8));
+
+      return {
+        ...h,
+        score,
+        distance_estimate: Math.round(distKm * 100) / 100,
+        distance_km: Math.round(distKm * 100) / 100,
+        estimated_travel_time_mins: estMins,
+        traffic_source: 'haversine_estimate'
+      };
+    });
+
+    scoredList.sort((a, b) => {
+      if ((a.score > 0) !== (b.score > 0)) return a.score > 0 ? -1 : 1;
+      if (a.score !== b.score) return b.score - a.score;
+      return (a.distance_estimate || 0) - (b.distance_estimate || 0);
+    });
+
+    const localOnly = scoredList.filter(h => h.score > 0 && (h.distance_estimate || 0) <= 60);
+    return localOnly.length > 0 ? localOnly : scoredList.slice(0, 4);
+  }, []);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
     setError(null);
     
     const [userLat, userLng] = formData.location.split(',').map(Number);
@@ -181,8 +234,6 @@ export const NewEmergency: React.FC = () => {
     const isCritical = tewsResult.traumaLevel >= 4;
 
     // 1. Intelligent Candidate Spatial Pre-filtering:
-    // Rank all hospitals by geographic proximity to the patient so we don't route patients 200+ km away
-    // and keep the payload within optimal OSRM routing limits (<30 facilities).
     const candidateHospitalsWithDistance = hospitals.map(h => ({
       hospital: h,
       distKm: computeHaversineKm(originLat, originLng, h.location.lat, h.location.lng)
@@ -192,107 +243,78 @@ export const NewEmergency: React.FC = () => {
     // Prioritize reachable facilities within the clinical Golden Hour boundary (<= 60 km)
     const localCandidates = candidateHospitalsWithDistance.filter(c => c.distKm <= 60);
     const focusedCandidates = (localCandidates.length >= 4 ? localCandidates : candidateHospitalsWithDistance)
-      .slice(0, 25)
+      .slice(0, 20)
       .map(c => c.hospital);
 
-    try {
-      const payload = {
-        ambulance_id: selectedAmbulanceId || "AMB-DEMO",
-        latitude: originLat,
-        longitude: originLng,
-        trauma_level: tewsResult.traumaLevel,
-        emergency_type: formData.emergencyType,
-        hospitals: focusedCandidates.map(h => ({
-          id: h.id,
-          latitude: h.location.lat,
-          longitude: h.location.lng,
-          occupied_general_beds: h.totalBeds - h.availableBeds,
-          total_general_beds: h.totalBeds,
-          occupied_icu_beds: h.icuBeds.total - h.icuBeds.available,
-          total_icu_beds: h.icuBeds.total,
-          specialists: h.specialists,
-          equipment: h.equipment
-        }))
-      };
+    // 2. Instant Zero-Latency Clinical Matching (< 2ms)
+    // Renders optimal hospitals immediately so paramedic or dispatcher never waits on network cold starts
+    const instantRecs = computeClientRecommendations(focusedCandidates, originLat, originLng, isCritical);
+    setRecommendedHospitals(instantRecs);
+    setShowRecommendations(true);
+    setLoading(false);
+    audioTelemetry.speak("Hospital recommendations matched.");
 
-      const res = await fetch('/ml-api/predict/route', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      
-      const data = await res.json();
-      
-      if (data.recommended_hospitals && data.recommended_hospitals.length > 0) {
-        const recs = data.recommended_hospitals.map((rec: any) => {
-          const h = hospitals.find(h => h.id === rec.hospital_id);
-          const normalizedScore = Math.max(0, Math.min(100, Math.round(rec.score ?? 85)));
-          return h ? {
-            ...h,
-            score: normalizedScore,
-            distance_estimate: rec.distance_estimate,
-            estimated_travel_time_mins: rec.estimated_travel_time_mins,
-            traffic_source: rec.traffic_source
-          } : null;
-        }).filter(Boolean);
-        
-        // Priority 1: Reachable hospitals in current geographic cluster (score > 0 and distance <= 60km)
-        const localRecs = recs.filter((r: any) => r.score > 0 && (r.distance_estimate == null || r.distance_estimate <= 60));
-        // Priority 2: If none within 60km, take the closest facilities
-        const finalRecs = localRecs.length > 0 ? localRecs : recs.slice(0, 4);
-        setRecommendedHospitals(finalRecs);
-      } else {
-        throw new Error("Empty recommendation payload");
-      }
-      setShowRecommendations(true);
-      audioTelemetry.speak("AI hospital rankings generated.");
-    } catch (err) {
-      console.warn("ML Engine offline fallback activated:", err);
-      // High-accuracy Client-side Geodesic Multi-Criteria Ranking Fallback
-      const scoredList = focusedCandidates.map(h => {
-        const distKm = computeHaversineKm(originLat, originLng, h.location.lat, h.location.lng);
-        const availIcu = h.icuBeds?.available ?? 0;
-        const availGen = h.availableBeds ?? 0;
-        
-        // 1. Proximity score (35%)
-        const sDist = distKm <= 60 ? Math.max(10, 100 * (1 - distKm / 60)) : Math.max(5, 30 * (1 - (distKm - 60) / 140));
-        // 2. Capacity score (35%)
-        const sCap = isCritical
-          ? (availIcu <= 0 ? 0 : Math.min(100, 50 + availIcu * 10))
-          : (availGen <= 0 ? 0 : Math.min(100, 50 + availGen * 1.5));
-        // 3. Clinical readiness (30%)
-        const specMatch = h.specialists && h.specialists.length > 0;
-        const sRes = specMatch ? 90 : 60;
-        
-        let score = 0;
-        if (sCap > 0) {
-          const distScale = distKm <= 60 ? 1.0 : Math.max(0.25, 1 - (distKm - 60) / 80);
-          score = Math.round(((sDist * 0.35) + (sCap * 0.35) + (sRes * 0.30)) * distScale);
-          score = Math.max(15, Math.min(99, score));
+    // 3. Fast Background ML & Live Traffic Refinement (< 2500ms timeout with AbortController)
+    const controller = new AbortController();
+    const abortTimeout = setTimeout(() => controller.abort(), 2500);
+
+    const payload = {
+      ambulance_id: selectedAmbulanceId || "AMB-DEMO",
+      latitude: originLat,
+      longitude: originLng,
+      trauma_level: tewsResult.traumaLevel,
+      emergency_type: formData.emergencyType,
+      hospitals: focusedCandidates.slice(0, 8).map(h => ({
+        id: h.id,
+        latitude: h.location.lat,
+        longitude: h.location.lng,
+        occupied_general_beds: h.totalBeds - h.availableBeds,
+        total_general_beds: h.totalBeds,
+        occupied_icu_beds: (h.icuBeds?.total || 0) - (h.icuBeds?.available || 0),
+        total_icu_beds: h.icuBeds?.total || 0,
+        specialists: h.specialists,
+        equipment: h.equipment
+      }))
+    };
+
+    fetch('/ml-api/predict/route', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+      signal: controller.signal
+    })
+      .then(async (res) => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json();
+      })
+      .then((data) => {
+        clearTimeout(abortTimeout);
+        if (data.recommended_hospitals && data.recommended_hospitals.length > 0) {
+          setRecommendedHospitals((prev) => {
+            return prev.map((h) => {
+              const rec = data.recommended_hospitals.find((r: any) => r.hospital_id === h.id);
+              if (!rec) return h;
+              const normalizedScore = Math.max(0, Math.min(100, Math.round(rec.score ?? h.score)));
+              return {
+                ...h,
+                score: normalizedScore,
+                distance_estimate: rec.distance_estimate ?? h.distance_estimate,
+                estimated_travel_time_mins: rec.estimated_travel_time_mins ?? h.estimated_travel_time_mins,
+                normal_travel_time_mins: rec.normal_travel_time_mins,
+                siren_savings_mins: rec.siren_savings_mins,
+                traffic_source: rec.traffic_source || h.traffic_source,
+                ml_used: true
+              };
+            });
+          });
         }
-
-        return {
-          ...h,
-          score,
-          distance_estimate: Math.round(distKm * 100) / 100,
-          estimated_travel_time_mins: Math.ceil(distKm * 2.2),
-          traffic_source: 'haversine_estimate'
-        };
+      })
+      .catch((err) => {
+        clearTimeout(abortTimeout);
+        if (err.name !== 'AbortError') {
+          console.warn("Background ML telemetry refinement notice:", err.message);
+        }
       });
-
-      scoredList.sort((a, b) => {
-        if ((a.score > 0) !== (b.score > 0)) return a.score > 0 ? -1 : 1;
-        if (a.score !== b.score) return b.score - a.score;
-        return (a.distance_estimate || 0) - (b.distance_estimate || 0);
-      });
-
-      const localOnly = scoredList.filter(h => h.score > 0 && (h.distance_estimate || 0) <= 60);
-      setRecommendedHospitals(localOnly.length > 0 ? localOnly : scoredList.slice(0, 4));
-      setShowRecommendations(true);
-      audioTelemetry.speak("Geodesic hospital rankings generated.");
-    } finally {
-      setLoading(false);
-    }
   };
 
   const handleConfirmHospital = async (hospitalId: string) => {
@@ -322,11 +344,16 @@ export const NewEmergency: React.FC = () => {
     };
 
     try {
+      const controller = new AbortController();
+      const abortTimer = setTimeout(() => controller.abort(), 4000);
+
       const res = await fetch('/api/ambulances/cases', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(casePayload)
+        body: JSON.stringify(casePayload),
+        signal: controller.signal
       });
+      clearTimeout(abortTimer);
       
       if (!res.ok) {
         throw new Error(`HTTP ${res.status}`);
@@ -336,11 +363,11 @@ export const NewEmergency: React.FC = () => {
       audioTelemetry.speak(`Emergency registered. Launching cockpit HUD.`);
       navigate(`/ambulance?caseId=${createdCase.id}&showOverlay=true`);
     } catch (err: any) {
-      console.warn("Server unavailable. Enqueuing emergency intake into offline storage:", err);
+      console.warn("Server unavailable or slow. Enqueuing emergency intake into offline storage:", err);
       const offlineItem = offlineQueue.enqueue(casePayload);
       checkOfflineQueue();
       audioTelemetry.speak("Offline mode active. Emergency intake saved locally to device queue.");
-      setOfflineNotice("Network/Server offline. Emergency intake saved to local device queue and will auto-sync.");
+      setOfflineNotice("Saved to local device queue and will auto-sync with server.");
       navigate(`/ambulance?caseId=${offlineItem.id}&showOverlay=true`);
     }
   };

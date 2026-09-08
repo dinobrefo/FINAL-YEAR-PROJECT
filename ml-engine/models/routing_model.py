@@ -6,14 +6,14 @@ import pandas as pd
 import requests
 from datetime import datetime
 
-# High-Speed In-Memory TTL Cache for Distance Matrix queries (60-second sliding window)
+# High-Speed In-Memory TTL Cache for Distance Matrix queries (300-second / 5-min sliding window)
 _DISTANCE_MATRIX_CACHE = {}
 _OSRM_MATRIX_CACHE = {}
-_MATRIX_CACHE_TTL_SECS = 60.0
+_MATRIX_CACHE_TTL_SECS = 300.0
 
 def _get_matrix_cache_key(amb_lat, amb_lon, hospitals):
-    h_ids = tuple(h.id for h in hospitals[:25])
-    return (round(amb_lat, 4), round(amb_lon, 4), h_ids)
+    h_ids = tuple(h.id for h in hospitals[:10])
+    return (round(amb_lat, 3), round(amb_lon, 3), h_ids)
 
 def apply_emergency_siren_dynamics(base_duration_mins: float, in_traffic: bool = True, trauma_level: int = 3):
     """
@@ -134,8 +134,8 @@ def get_google_distance_matrix(amb_lat, amb_lon, hospitals, api_key=None):
     if not api_key:
         return None
 
-    # Google allows up to 25 destinations per distance matrix request
-    batch_hospitals = hospitals[:25] if len(hospitals) > 25 else hospitals
+    # Google allows up to 25 destinations; cap to top 10 closest facilities for sub-second response
+    batch_hospitals = hospitals[:10] if len(hospitals) > 10 else hospitals
     destinations = "|".join(f"{h.latitude},{h.longitude}" for h in batch_hospitals)
     origin = f"{amb_lat},{amb_lon}"
 
@@ -150,7 +150,7 @@ def get_google_distance_matrix(amb_lat, amb_lon, hospitals, api_key=None):
     }
 
     try:
-        response = requests.get(url, params=params, timeout=6)
+        response = requests.get(url, params=params, timeout=2.5)
         if response.status_code == 200:
             data = response.json()
             if data.get("status") == "OK":
@@ -181,7 +181,7 @@ def get_osrm_distance_matrix(amb_lat, amb_lon, hospitals):
     Calls the free public OSRM API to get base travel times (driving durations)
     for a batch of hospitals from the ambulance's current location.
     Returns a dictionary mapping hospital_id -> base travel time in minutes.
-    Includes 60-second high-speed in-memory TTL caching shield.
+    Includes 300-second high-speed in-memory TTL caching shield.
     """
     if not hospitals:
         return None
@@ -194,8 +194,8 @@ def get_osrm_distance_matrix(amb_lat, amb_lon, hospitals):
             return cached_data
 
     # Coordinate string format for OSRM: lon,lat;lon,lat;lon,lat
-    # Cap to first 30 hospitals to prevent HTTP 414 (URI Too Long)
-    batch_hospitals = hospitals[:30] if len(hospitals) > 30 else hospitals
+    # Cap to top 10 hospitals for high-speed sub-second matrix response
+    batch_hospitals = hospitals[:10] if len(hospitals) > 10 else hospitals
     coords = [f"{amb_lon},{amb_lat}"]
     for h in batch_hospitals:
         coords.append(f"{h.longitude},{h.latitude}")
@@ -212,7 +212,7 @@ def get_osrm_distance_matrix(amb_lat, amb_lon, hospitals):
     }
     
     try:
-        response = requests.get(url, headers=headers, timeout=5)
+        response = requests.get(url, headers=headers, timeout=2.5)
         response.raise_for_status()
         data = response.json()
         
