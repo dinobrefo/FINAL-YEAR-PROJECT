@@ -3,7 +3,10 @@
 class AudioTelemetryEngine {
   private synth: SpeechSynthesis | null = typeof window !== 'undefined' ? window.speechSynthesis : null;
   private audioCtx: AudioContext | null = null;
-  private isMuted: boolean = false;
+  private isMuted: boolean = typeof window !== 'undefined' && localStorage.getItem('ierbms_audio_muted') === 'true';
+  private lastSpokenText: string = '';
+  private lastSpokenTimestamp: number = 0;
+  private readonly DEDUPLICATION_WINDOW_MS: number = 8000; // Do not repeat identical phrase within 8 seconds
 
   private getAudioContext(): AudioContext {
     if (!this.audioCtx && typeof window !== 'undefined') {
@@ -16,23 +19,62 @@ class AudioTelemetryEngine {
   public speak(text: string, priority: 'normal' | 'high' = 'normal') {
     if (this.isMuted || !this.synth) return;
 
-    if (priority === 'high') {
-      this.synth.cancel(); // Cancel ongoing speech for high-priority emergency alerts
+    const trimmed = (text || '').trim();
+    if (!trimmed) return;
+
+    const now = Date.now();
+
+    // Deduplication check: prevent identical speech from looping
+    if (priority !== 'high' && trimmed === this.lastSpokenText && (now - this.lastSpokenTimestamp) < this.DEDUPLICATION_WINDOW_MS) {
+      return;
     }
 
-    const utterance = new SpeechSynthesisUtterance(text);
+    this.lastSpokenText = trimmed;
+    this.lastSpokenTimestamp = now;
+
+    // Flush any currently queued / playing speech so messages NEVER pile up into a loop
+    try {
+      this.synth.cancel();
+    } catch {
+      // Safe fallback
+    }
+
+    const utterance = new SpeechSynthesisUtterance(trimmed);
     utterance.rate = 1.0;
     utterance.pitch = 1.05;
     utterance.lang = 'en-US';
 
     // Pick crisp natural English voice if available
-    const voices = this.synth.getVoices();
-    const preferredVoice = voices.find(v => v.lang.startsWith('en') && (v.name.includes('Google') || v.name.includes('Natural') || v.name.includes('Samantha') || v.name.includes('Daniel')));
-    if (preferredVoice) {
-      utterance.voice = preferredVoice;
+    try {
+      const voices = this.synth.getVoices();
+      const preferredVoice = voices.find(v => 
+        v.lang.startsWith('en') && 
+        (v.name.includes('Google') || v.name.includes('Natural') || v.name.includes('Samantha') || v.name.includes('Daniel'))
+      );
+      if (preferredVoice) {
+        utterance.voice = preferredVoice;
+      }
+    } catch {
+      // fallback
     }
 
-    this.synth.speak(utterance);
+    utterance.onerror = () => {
+      // Cleanly ignore canceled/interrupted events from queue flushing
+    };
+
+    try {
+      this.synth.speak(utterance);
+    } catch (e) {
+      console.warn("Speech synthesis playback error:", e);
+    }
+  }
+
+  public stop() {
+    if (this.synth) {
+      try {
+        this.synth.cancel();
+      } catch {}
+    }
   }
 
   public playAlertBeep(severity: 'critical' | 'warning' | 'success' = 'warning') {
@@ -80,8 +122,15 @@ class AudioTelemetryEngine {
 
   public toggleMute(): boolean {
     this.isMuted = !this.isMuted;
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem('ierbms_audio_muted', String(this.isMuted));
+      } catch {}
+    }
     if (this.isMuted && this.synth) {
-      this.synth.cancel();
+      try {
+        this.synth.cancel();
+      } catch {}
     }
     return this.isMuted;
   }
@@ -92,3 +141,4 @@ class AudioTelemetryEngine {
 }
 
 export const audioTelemetry = new AudioTelemetryEngine();
+

@@ -722,11 +722,16 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
     const emgCoords = extractCoordinates(activeEmergency);
     if (emgCoords) return emgCoords;
     return null;
-  }, [userCoords, userLocation, activeAmbulance, activeEmergency]);
+  }, [
+    userCoords?.[0], userCoords?.[1],
+    userLocation?.[0], userLocation?.[1],
+    activeAmbulance?.id,
+    activeEmergency?.id
+  ]);
 
   const destinationCoords = React.useMemo<[number, number] | null>(() => {
     return extractCoordinates(activeHospital);
-  }, [activeHospital]);
+  }, [activeHospital?.id, activeHospital?.name]);
 
   const routeBounds = React.useMemo<[[number, number], [number, number]] | null>(() => {
     if (isEmergencyFocusActive && effectiveUserCoords && destinationCoords) {
@@ -744,6 +749,8 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
     trafficSegments: TrafficSegment[];
     maneuvers: NavigationManeuver[];
   } | null>(null);
+  const lastAnnouncedRouteRef = React.useRef<string>("");
+  const arrivalAnnouncedRef = React.useRef<boolean>(false);
 
   const handleSelectRouteAlternative = (altIdx: number) => {
     setSelectedAltIndex(altIdx);
@@ -817,7 +824,12 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
             setSirenDurationMins(gResult.sirenDurationMins);
             setRouteSummary(gResult.summary || null);
             setRouteTrafficSource('google_live');
-            audioTelemetry.speak(`Google live traffic route locked to ${activeHospital?.name || 'facility'}. Siren ETA: ${gResult.sirenDurationMins} minutes.`);
+            const targetFacility = activeHospital?.name || 'facility';
+            const corridorKey = `${origin[0].toFixed(3)},${origin[1].toFixed(3)}->${dest[0].toFixed(3)},${dest[1].toFixed(3)}_${targetFacility}`;
+            if (lastAnnouncedRouteRef.current !== corridorKey) {
+              lastAnnouncedRouteRef.current = corridorKey;
+              audioTelemetry.speak(`Google live traffic route locked to ${targetFacility}. Siren ETA: ${gResult.sirenDurationMins} minutes.`);
+            }
             return;
           }
         } catch (err) {
@@ -841,7 +853,6 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
 
             // Urban congestion model for Kumasi & Accra:
             // Standard consumer driving speeds in Ghanaian metros average 24-28 km/h during daytime.
-            // For ~7.9 km, this naturally yields ~18 minutes (identical to Google Maps real-world traffic).
             const currentHour = new Date().getHours();
             const trafficFactor = (currentHour >= 7 && currentHour <= 9) || (currentHour >= 16 && currentHour <= 19)
               ? 1.70
@@ -849,31 +860,25 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
               ? 1.55
               : 1.15;
 
-            const carDurationMins = Math.max(1, Math.round(freeFlowMins * trafficFactor));
-            // Emergency Vehicle Dynamics (EVD): siren right-of-way yields ~18-22% savings
-            const sirenDur = Math.max(1, Math.round(carDurationMins * 0.80));
+            const carDurationMins = Math.max(4, Math.ceil(freeFlowMins * trafficFactor));
+            // Emergency siren clearance factor: ~35% speedup with priority sirens
+            const sirenDur = Math.max(3, Math.ceil(carDurationMins * 0.65));
 
-            // Parse OSRM steps into authentic turn-by-turn maneuvers
+            // Parse turn maneuvers for authentic Google Maps turn guidance HUD
             const maneuvers: NavigationManeuver[] = [];
             const rawSteps = route.legs?.[0]?.steps || [];
             for (const step of rawSteps) {
-              if (!step.maneuver) continue;
-              const type = step.maneuver.type;
-              const modifier = step.maneuver.modifier;
-              const name = step.name ? step.name.trim() : "";
-              let instruction = "";
-              if (type === 'depart') {
-                instruction = name ? `Head onto ${name}` : 'Depart towards destination';
-              } else if (type === 'arrive') {
-                instruction = `Arrive at ${activeHospital?.name || 'facility'}`;
-              } else if (type === 'roundabout') {
-                instruction = name ? `Enter roundabout onto ${name}` : 'Enter roundabout';
-              } else if (type === 'merge') {
-                instruction = name ? `Merge onto ${name}` : 'Merge ahead';
-              } else {
-                const turnStr = modifier ? modifier.replace(/-/g, ' ') : 'ahead';
-                instruction = name ? `Turn ${turnStr} onto ${name}` : `Continue ${turnStr}`;
-              }
+              const type = step.maneuver?.type || 'turn';
+              const modifier = step.maneuver?.modifier;
+              const street = step.name ? `onto ${step.name}` : '';
+              let instruction = 'Continue on road';
+              if (type === 'depart') instruction = 'Depart from your location';
+              else if (type === 'arrive') instruction = `Arrive at ${activeHospital?.name || 'facility'}`;
+              else if (type === 'turn' && modifier) instruction = `Turn ${modifier} ${street}`.trim();
+              else if (type === 'new name' || type === 'continue') instruction = `Continue ${street}`.trim();
+              else if (type === 'roundabout') instruction = `At the roundabout, take exit ${step.maneuver?.exit || ''} ${street}`.trim();
+              else if (modifier) instruction = `${type} ${modifier} ${street}`.trim();
+
               const distMeters = step.distance || 0;
               const distText = distMeters < 1000
                 ? `${Math.round(distMeters)} m`
@@ -887,7 +892,7 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
               });
             }
 
-            // Extract primary corridor names for route summary (e.g., "via N6 / Ring Road")
+            // Extract primary corridor names for route summary
             const streetNames = rawSteps
               .map((s: any) => s.name?.trim())
               .filter((n: string) => Boolean(n && n.length > 0));
@@ -912,7 +917,12 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
             setSirenDurationMins(sirenDur);
             setRouteSummary(summaryText);
             setRouteTrafficSource('osrm');
-            audioTelemetry.speak(`Emergency route locked to ${activeHospital?.name || 'facility'}. Estimated driving time: ${carDurationMins} minutes, Siren ETA: ${sirenDur} minutes.`);
+            const targetFacility = activeHospital?.name || 'facility';
+            const corridorKey = `${origin[0].toFixed(3)},${origin[1].toFixed(3)}->${dest[0].toFixed(3)},${dest[1].toFixed(3)}_${targetFacility}`;
+            if (lastAnnouncedRouteRef.current !== corridorKey) {
+              lastAnnouncedRouteRef.current = corridorKey;
+              audioTelemetry.speak(`Emergency route locked to ${targetFacility}. Estimated driving time: ${carDurationMins} minutes, Siren ETA: ${sirenDur} minutes.`);
+            }
             return;
           }
         }
@@ -934,7 +944,12 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
         setSirenDurationMins(durMins);
         setRouteSummary('Direct Line');
         setRouteTrafficSource('direct');
-        audioTelemetry.speak(`Direct dispatch route active to ${activeHospital?.name || 'facility'}. Estimated transit time: ${durMins} minutes.`);
+        const targetFacility = activeHospital?.name || 'facility';
+        const corridorKey = `${origin[0].toFixed(3)},${origin[1].toFixed(3)}->${dest[0].toFixed(3)},${dest[1].toFixed(3)}_${targetFacility}`;
+        if (lastAnnouncedRouteRef.current !== corridorKey) {
+          lastAnnouncedRouteRef.current = corridorKey;
+          audioTelemetry.speak(`Direct dispatch route active to ${targetFacility}. Estimated transit time: ${durMins} minutes.`);
+        }
       }
     };
 
@@ -943,7 +958,7 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
     return () => {
       isCancelled = true;
     };
-  }, [effectiveUserCoords, destinationCoords, activeHospital]);
+  }, [effectiveUserCoords, destinationCoords, activeHospital?.id]);
 
   // Direct line fallback if OSRM is unreachable
   const routePolyline = React.useMemo(() => {
@@ -981,10 +996,14 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
       setDriveProgress(prev => {
         const next = prev + stepSize;
         if (next >= 1.0) {
+          clearInterval(timer);
           setIsDriving(false);
           setAnimatedCoords(routePolyline[totalPts - 1]);
           setCurrentSpeedKmh(0);
-          audioTelemetry.speak(`Unit arrived at ${activeHospital?.name || 'medical center'}. Transitioning patient to ER.`);
+          if (!arrivalAnnouncedRef.current) {
+            arrivalAnnouncedRef.current = true;
+            audioTelemetry.speak(`Unit arrived at ${activeHospital?.name || 'medical center'}. Transitioning patient to ER.`);
+          }
           return 1.0;
         }
 
@@ -1027,6 +1046,7 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
     setIsDriving(false);
     setAnimatedCoords(null);
     setCurrentSpeedKmh(0);
+    arrivalAnnouncedRef.current = false;
   }, [destinationCoords, effectiveUserCoords]);
 
   // Calculate nearest hospital to an inspected click point
@@ -1661,6 +1681,7 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
                     setIsDriving(false);
                     setAnimatedCoords(null);
                     setCurrentSpeedKmh(0);
+                    arrivalAnnouncedRef.current = false;
                     audioTelemetry.speak("Drive simulation reset to start point.");
                   }}
                   className="p-1.5 rounded-full bg-slate-100 dark:bg-[#303134] hover:bg-slate-200 dark:hover:bg-[#3c4043] text-slate-500 dark:text-[#9aa0a6] hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer border border-slate-200 dark:border-[#3c4043]"
