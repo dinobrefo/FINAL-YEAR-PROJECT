@@ -7,6 +7,8 @@ export interface RealTimeContextType {
   ambulances: Ambulance[];
   hospitals: Hospital[];
   connected: boolean;
+  /** True until the backend has returned real data at least once this session. */
+  usingSampleData: boolean;
   isAutoSyncing: boolean;
   lastSyncTime: Date | null;
   syncCount: number;
@@ -63,6 +65,7 @@ export const RealTimeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [ambulances, setAmbulances] = React.useState<Ambulance[]>(mockAmbulances);
   const [hospitals, setHospitals] = React.useState<Hospital[]>(mockHospitals);
   const [connected, setConnected] = React.useState<boolean>(false);
+  const [liveDataReceived, setLiveDataReceived] = React.useState<boolean>(false);
   const [isAutoSyncing, setIsAutoSyncing] = React.useState<boolean>(false);
   const [lastSyncTime, setLastSyncTime] = React.useState<Date | null>(null);
   const [syncCount, setSyncCount] = React.useState<number>(0);
@@ -77,6 +80,7 @@ export const RealTimeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
       if (Array.isArray(data.hospitals) && data.hospitals.length > 0) {
         setHospitals(data.hospitals.map(mapHospital));
+        setLiveDataReceived(true);
       }
 
       if (Array.isArray(data.ambulances) && data.ambulances.length > 0) {
@@ -127,10 +131,13 @@ export const RealTimeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     // 1. Initial State Hydration on Mount
     fetchLatestData(false);
 
-    // 2. Direct Socket.IO Connection to Render Backend in Production
-    const socketBackendUrl = typeof window !== 'undefined' && window.location.hostname !== 'localhost'
-      ? 'https://ierbms-backend.onrender.com'
-      : undefined;
+    // 2. Socket.IO endpoint.
+    //    - VITE_SOCKET_URL wins when set (configure per environment on Vercel).
+    //    - On localhost, connect same-origin so the Vite dev proxy handles it.
+    //    - Otherwise fall back to the known Render backend.
+    const envSocketUrl = import.meta.env.VITE_SOCKET_URL as string | undefined;
+    const isLocalhost = typeof window !== 'undefined' && window.location.hostname === 'localhost';
+    const socketBackendUrl = envSocketUrl || (isLocalhost ? undefined : 'https://ierbms-backend.onrender.com');
 
     const socket: Socket = io(socketBackendUrl, {
       transports: ['websocket', 'polling'],
@@ -280,12 +287,15 @@ export const RealTimeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     await fetchLatestData(true);
   }, [fetchLatestData]);
 
+  const usingSampleData = !liveDataReceived;
+
   return (
     <RealTimeContext.Provider value={{
       emergencies,
       ambulances,
       hospitals,
       connected,
+      usingSampleData,
       isAutoSyncing,
       lastSyncTime,
       syncCount,
@@ -293,6 +303,19 @@ export const RealTimeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       updateEmergencyLocally,
       updateHospitalBedsLocally
     }}>
+      {usingSampleData && (
+        <div
+          role="status"
+          style={{
+            position: 'fixed', top: 0, left: 0, right: 0, zIndex: 9999,
+            background: '#b45309', color: '#fff', textAlign: 'center',
+            font: '600 12px/1.6 system-ui, sans-serif', padding: '4px 12px',
+            letterSpacing: '0.02em',
+          }}
+        >
+          SAMPLE DATA — live backend not connected. Figures below are illustrative only.
+        </div>
+      )}
       {children}
     </RealTimeContext.Provider>
   );
