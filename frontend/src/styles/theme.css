@@ -1,4 +1,4 @@
-@custom-variant dark (&:is(.dark, .dark *));
+@custom-variant dark (&:where(.dark, .dark *));
 
 :root {
   --font-size: 16px;
@@ -67,9 +67,11 @@
   --sidebar-accent-foreground: #EF4444;
   --sidebar-border: #E2E8F0;
   --sidebar-ring: #EF4444;
+  color-scheme: light;
 }
 
 .dark {
+  color-scheme: dark;
   --background: #06111F;
   --foreground: #F8FAFC;
   --card: #111C2D;
@@ -135,7 +137,7 @@
   --sidebar-ring: #EF4444;
 }
 
-@theme inline {
+@theme {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -174,6 +176,23 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+
+  /* Marketing & Landing Tokens */
+  --color-bg: #06111F;
+  --color-navy: #081827;
+  --color-card-dark: #111C2D;
+  --color-primary-glow: rgba(239, 68, 68, 0.35);
+  --color-ink: #F8FAFC;
+  --color-ink-muted: #94A3B8;
+  --color-ink-faint: #64748B;
+  --color-state-success: #22C55E;
+  --color-state-warning: #F59E0B;
+  --color-state-info: #3B82F6;
+
+  --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
+  --shadow-glow: 0 0 40px -8px rgba(239, 68, 68, 0.45);
+  --shadow-card: 0 1px 0 0 rgba(148, 163, 184, 0.08), 0 12px 40px -12px rgba(0, 0, 0, 0.6);
 }
 
 @layer base {
@@ -240,29 +259,6 @@
 /* ==========================================================================
    PULSEGRID Marketing Homepage Theme & Design Primitives
    ========================================================================== */
-
-@theme {
-  --color-bg: #06111F;
-  --color-navy: #081827;
-  --color-card: #111C2D;
-  --color-primary: #EF4444;
-  --color-primary-glow: rgba(239, 68, 68, 0.35);
-  --color-ink: #F8FAFC;
-  --color-ink-muted: #94A3B8;
-  --color-ink-faint: #64748B;
-  --color-state-success: #22C55E;
-  --color-state-warning: #F59E0B;
-  --color-state-info: #3B82F6;
-  
-  --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
-  --shadow-glow: 0 0 40px -8px rgba(239, 68, 68, 0.45);
-  --shadow-card: 0 1px 0 0 rgba(148, 163, 184, 0.08), 0 12px 40px -12px rgba(0, 0, 0, 0.6);
-}
-
-:root {
-  color-scheme: dark;
-}
 
 html {
   scroll-behavior: smooth;

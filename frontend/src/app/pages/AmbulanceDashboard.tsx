@@ -811,46 +811,46 @@ export const AmbulanceDashboard: React.FC = () => {
 
             {/* 3D Telemetry Cockpit & Destination Recommender Grid */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* 3D Cockpit HUD Card */}
-              <Card className="border-2 border-primary/20 bg-card">
+              {/* Cockpit HUD Card */}
+              <Card className="border border-slate-200 dark:border-primary/20 bg-card shadow-sm rounded-2xl">
                 <CardHeader className="pb-3">
                   <CardTitle className="flex items-center justify-between text-base">
-                    <span className="flex items-center gap-2">
+                    <span className="flex items-center gap-2 text-slate-900 dark:text-white">
                       <Gauge className="h-5 w-5 text-blue-500" />
                       Cockpit Telemetry HUD
                     </span>
                     <span className={`text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full border ${
                       isSimulatingDrive 
-                        ? "bg-amber-500/15 text-amber-400 border-amber-500/30 animate-pulse"
+                        ? "bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30 animate-pulse"
                         : speed > 0 
-                          ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30"
-                          : "bg-slate-500/15 text-slate-400 border-slate-500/30"
+                          ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30"
+                          : "bg-slate-200/80 dark:bg-slate-500/15 text-slate-700 dark:text-slate-400 border-slate-300 dark:border-slate-500/30"
                     }`}>
                       {isSimulatingDrive ? "Simulated Run" : speed > 0 ? "In Motion" : "Parked / Idle"}
                     </span>
                   </CardTitle>
-                  <CardDescription>
+                  <CardDescription className="text-slate-600 dark:text-muted-foreground">
                     {speed === 0 
                       ? "Vehicle stationary • Engine on standby" 
                       : `Real-time vehicle dynamics • ${isSimulatingDrive ? "Siren Run Active" : "Telemetry Active"}`}
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="grid grid-cols-2 gap-3 p-3 bg-muted/60 rounded-xl border border-border/50 text-center">
-                    <div className="p-2 bg-background rounded-lg border border-border/40">
-                      <p className="text-[10px] font-bold text-muted-foreground uppercase flex items-center justify-center gap-1">
+                  <div className="grid grid-cols-2 gap-3 p-3 bg-slate-50 dark:bg-muted/60 rounded-xl border border-slate-200 dark:border-border/50 text-center">
+                    <div className="p-2.5 bg-white dark:bg-background rounded-lg border border-slate-200 dark:border-border/40 shadow-xs">
+                      <p className="text-[10px] font-bold text-slate-500 dark:text-muted-foreground uppercase flex items-center justify-center gap-1">
                         <Gauge className="h-3 w-3 text-blue-500" /> Speed
                       </p>
-                      <p className="text-xl font-extrabold text-foreground mt-1">
-                        {speed} <span className="text-xs font-normal text-muted-foreground">km/h</span>
+                      <p className="text-xl font-extrabold text-slate-900 dark:text-foreground mt-1">
+                        {speed} <span className="text-xs font-normal text-slate-500 dark:text-muted-foreground">km/h</span>
                       </p>
                     </div>
-                    <div className="p-2 bg-background rounded-lg border border-border/40">
-                      <p className="text-[10px] font-bold text-muted-foreground uppercase flex items-center justify-center gap-1">
+                    <div className="p-2.5 bg-white dark:bg-background rounded-lg border border-slate-200 dark:border-border/40 shadow-xs">
+                      <p className="text-[10px] font-bold text-slate-500 dark:text-muted-foreground uppercase flex items-center justify-center gap-1">
                         <Compass className="h-3 w-3 text-violet-500" /> Heading
                       </p>
-                      <p className="text-xl font-extrabold text-foreground mt-1">
-                        {heading}° <span className="text-xs font-normal text-muted-foreground">{getCardinalDirection(heading)}</span>
+                      <p className="text-xl font-extrabold text-slate-900 dark:text-foreground mt-1">
+                        {heading}° <span className="text-xs font-normal text-slate-500 dark:text-muted-foreground">{getCardinalDirection(heading)}</span>
                       </p>
                     </div>
                   </div>
@@ -860,7 +860,7 @@ export const AmbulanceDashboard: React.FC = () => {
                     <Button 
                       size="sm" 
                       variant={isSimulatingDrive ? "destructive" : "outline"} 
-                      className="w-full text-xs font-semibold cursor-pointer flex items-center justify-center gap-1.5"
+                      className="w-full text-xs font-semibold cursor-pointer flex items-center justify-center gap-1.5 border-slate-200 dark:border-border text-slate-800 dark:text-foreground"
                       onClick={() => setIsSimulatingDrive(!isSimulatingDrive)}
                     >
                       <Activity className="h-3.5 w-3.5" />
@@ -872,10 +872,10 @@ export const AmbulanceDashboard: React.FC = () => {
                     <div className="flex items-center gap-2.5">
                       <Shield className="h-5 w-5 text-blue-500" />
                       <div>
-                        <p className="text-xs font-bold text-foreground">
+                        <p className="text-xs font-bold text-slate-900 dark:text-foreground">
                           {speed > 0 ? "AI Traffic Rerouting Active" : "AI Rerouting on Standby"}
                         </p>
-                        <p className="text-[10px] text-muted-foreground">
+                        <p className="text-[10px] text-slate-500 dark:text-muted-foreground">
                           {speed > 0 ? "Dynamic congestion avoidance enabled" : "Awaiting vehicle departure"}
                         </p>
                       </div>
@@ -884,19 +884,19 @@ export const AmbulanceDashboard: React.FC = () => {
                 </CardContent>
               </Card>
 
-              {/* 3D Hospital Bed Recommender Mesh Card */}
-              <Card className="lg:col-span-2 border-2 border-primary/20 bg-card overflow-hidden">
+              {/* Hospital Bed Recommender Mesh Card */}
+              <Card className="lg:col-span-2 border border-slate-200 dark:border-primary/20 bg-card shadow-sm rounded-2xl overflow-hidden">
                 <CardHeader className="flex flex-row items-center justify-between pb-3">
                   <div>
-                    <CardTitle className="flex items-center gap-2 text-base">
+                    <CardTitle className="flex items-center gap-2 text-base text-slate-900 dark:text-white">
                       <HospitalIcon className="h-5 w-5 text-emerald-500" />
                       Hospital Capacity Mesh
                     </CardTitle>
-                    <CardDescription>Real-time ER & ICU bed availability across regional hospitals</CardDescription>
+                    <CardDescription className="text-slate-600 dark:text-muted-foreground">Real-time ER & ICU bed availability across regional hospitals</CardDescription>
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="min-h-[280px] w-full rounded-xl overflow-hidden border border-border bg-slate-100 dark:bg-slate-950">
+                  <div className="min-h-[280px] w-full rounded-xl overflow-hidden border border-slate-200 dark:border-border bg-white dark:bg-slate-950 shadow-xs">
                     <HospitalCapacityMesh hospitals={hospitals} />
                   </div>
                 </CardContent>
@@ -906,17 +906,17 @@ export const AmbulanceDashboard: React.FC = () => {
             {/* Quick Actions Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* New Emergency Card */}
-              <Card className="border-[var(--primary)] bg-[var(--accent)] flex flex-col justify-between">
+              <Card className="border border-red-500/30 bg-red-500/5 dark:bg-red-500/10 flex flex-col justify-between rounded-2xl shadow-sm">
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-lg">Create Emergency</CardTitle>
-                  <CardDescription>
+                  <CardTitle className="text-lg text-slate-900 dark:text-white">Create Emergency</CardTitle>
+                  <CardDescription className="text-slate-600 dark:text-muted-foreground">
                     Report a new emergency case and compute AI hospital matches
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="pt-0 flex-1 flex flex-col justify-end">
                   <Button
                     variant="primary"
-                    className="w-full mt-4 flex items-center justify-center gap-1.5 cursor-pointer"
+                    className="w-full mt-4 flex items-center justify-center gap-1.5 cursor-pointer shadow-md"
                     onClick={() => navigate(`/ambulance/new-emergency?ambulanceId=${selectedAmbulance}`)}
                   >
                     <Plus className="h-5 w-5" />
@@ -926,24 +926,24 @@ export const AmbulanceDashboard: React.FC = () => {
               </Card>
 
               {/* Live GPS Tracker Card */}
-              <Card className="border-border bg-card flex flex-col justify-between">
+              <Card className="border border-slate-200 dark:border-white/10 bg-card flex flex-col justify-between rounded-2xl shadow-sm">
                 <CardHeader className="pb-3">
                   <div className="flex items-center justify-between">
-                    <CardTitle className="text-lg flex items-center gap-2">
-                      <Navigation className="h-5 w-5 text-[var(--primary)]" />
+                    <CardTitle className="text-lg flex items-center gap-2 text-slate-900 dark:text-white">
+                      <Navigation className="h-5 w-5 text-red-500" />
                       Device GPS Transmitter
                     </CardTitle>
                     <span className={cn(
                       "text-xs font-semibold px-2.5 py-1 rounded-full uppercase flex items-center gap-1.5",
                       isTracking 
-                        ? "bg-[var(--success)]/10 text-[var(--success)] animate-pulse" 
-                        : "bg-muted text-muted-foreground"
+                        ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 animate-pulse" 
+                        : "bg-slate-100 dark:bg-muted text-slate-600 dark:text-muted-foreground border border-slate-200 dark:border-border"
                     )}>
-                      <span className={cn("h-1.5 w-1.5 rounded-full", isTracking ? "bg-[var(--success)]" : "bg-muted-foreground")} />
+                      <span className={cn("h-1.5 w-1.5 rounded-full", isTracking ? "bg-emerald-500" : "bg-slate-400")} />
                       {isTracking ? "Transmitting" : "Inactive"}
                     </span>
                   </div>
-                  <CardDescription>
+                  <CardDescription className="text-slate-600 dark:text-muted-foreground">
                     Bind your device's physical location to an active ambulance unit
                   </CardDescription>
                 </CardHeader>
