@@ -26,7 +26,13 @@ import {
   CornerUpLeft,
   RotateCw,
   Zap,
-  Siren
+  Siren,
+  Play,
+  Pause,
+  RotateCcw,
+  Gauge,
+  Compass,
+  Eye
 } from 'lucide-react';
 import { useTheme } from './ThemeProvider';
 import {
@@ -108,6 +114,73 @@ const createPulsingLeafletIcon = (color: string, emoji: string, isPulsing = fals
   });
 };
 
+// Animated En-Route Siren Ambulance Marker Icon with Heading Rotation & Dual Strobe
+const createSirenVehicleIcon = (headingDeg = 0, isSirenActive = true) => {
+  return L.divIcon({
+    className: 'custom-siren-vehicle-marker',
+    html: `
+      <div style="position: relative; width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; cursor: pointer;">
+        ${isSirenActive ? `
+          <!-- Emergency Dual Siren Flash Rings (Red & Blue Strobe) -->
+          <div style="
+            position: absolute;
+            width: 46px;
+            height: 46px;
+            border-radius: 50%;
+            border: 3px solid #ef4444;
+            opacity: 0.85;
+            animation: siren-pulse-red 0.9s infinite cubic-bezier(0.4, 0, 0.6, 1);
+            pointer-events: none;
+          "></div>
+          <div style="
+            position: absolute;
+            width: 52px;
+            height: 52px;
+            border-radius: 50%;
+            border: 3px solid #3b82f6;
+            opacity: 0.85;
+            animation: siren-pulse-blue 0.9s infinite cubic-bezier(0.4, 0, 0.6, 1) 0.45s;
+            pointer-events: none;
+          "></div>
+        ` : ''}
+
+        <!-- Vehicle Core Body (Rotated towards live Heading) -->
+        <div style="
+          transform: rotate(${headingDeg}deg);
+          transition: transform 0.2s ease-out;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 38px;
+          height: 38px;
+          border-radius: 50%;
+          background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+          border: 2px solid #38bdf8;
+          box-shadow: 0 0 16px rgba(56, 189, 248, 0.65), 0 6px 12px rgba(0,0,0,0.6);
+        ">
+          <span style="font-size: 20px; line-height: 1; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));">🚑</span>
+        </div>
+
+        <!-- Code 1 Siren Beacon Indicator -->
+        <div style="
+          position: absolute;
+          top: 1px;
+          right: 1px;
+          width: 10px;
+          height: 10px;
+          border-radius: 50%;
+          background: #ef4444;
+          box-shadow: 0 0 8px #ef4444;
+          animation: beacon-blink 0.4s infinite alternate;
+        "></div>
+      </div>
+    `,
+    iconSize: [50, 50],
+    iconAnchor: [25, 25],
+    popupAnchor: [0, -25]
+  });
+};
+
 interface LeafletMapProps {
   emergencies: Emergency[];
   ambulances: Ambulance[];
@@ -129,7 +202,9 @@ const MapController: React.FC<{
   targetZoom?: number;
   routeBounds?: [[number, number], [number, number]] | null;
   autoFitInitial?: boolean;
-}> = ({ hospitals, ambulances, emergencies, targetCoords, targetZoom = 15, routeBounds, autoFitInitial = false }) => {
+  chaseCoords?: [number, number] | null;
+  isChaseActive?: boolean;
+}> = ({ hospitals, ambulances, emergencies, targetCoords, targetZoom = 15, routeBounds, autoFitInitial = false, chaseCoords, isChaseActive = false }) => {
   const map = useMap();
   const initialFitDone = React.useRef(false);
   const routeBoundsKeyRef = React.useRef<string | null>(null);
@@ -153,6 +228,13 @@ const MapController: React.FC<{
       map.flyTo(targetCoords, targetZoom, { duration: 1.2 });
     }
   }, [map, targetCoords, targetZoom]);
+
+  // Chase Camera: follow animated ambulance in real-time
+  React.useEffect(() => {
+    if (isChaseActive && chaseCoords) {
+      map.panTo(chaseCoords, { animate: true, duration: 0.25 });
+    }
+  }, [map, chaseCoords, isChaseActive]);
 
   // Auto-fit bounds to user location and destination when taking an emergency
   React.useEffect(() => {
@@ -257,6 +339,15 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
   const [routeAlternatives, setRouteAlternatives] = React.useState<RouteAlternative[]>([]);
   const [selectedAltIndex, setSelectedAltIndex] = React.useState<number>(0);
   const [routeSummary, setRouteSummary] = React.useState<string | null>(null);
+
+  // Live Ambulance On-Route Motion Simulation States
+  const [isDriving, setIsDriving] = React.useState<boolean>(false);
+  const [driveProgress, setDriveProgress] = React.useState<number>(0); // 0.0 to 1.0
+  const [animatedCoords, setAnimatedCoords] = React.useState<[number, number] | null>(null);
+  const [animatedHeading, setAnimatedHeading] = React.useState<number>(0);
+  const [currentSpeedKmh, setCurrentSpeedKmh] = React.useState<number>(0);
+  const [playbackRate, setPlaybackRate] = React.useState<number>(1); // 1x, 2x, 4x
+  const [isChaseActive, setIsChaseActive] = React.useState<boolean>(false);
 
   // Google Places search results for live Ghana geocoding
   const [googlePlacesResults, setGooglePlacesResults] = React.useState<GooglePlaceResult[]>([]);
@@ -560,6 +651,73 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
     if (!origin || !dest) return null;
     return [origin, dest] as Array<[number, number]>;
   }, [activeEmergency, osrmRoutePoints, effectiveUserCoords, destinationCoords]);
+
+  // Real-time ambulance road navigation traversal effect
+  React.useEffect(() => {
+    if (!isDriving || !routePolyline || routePolyline.length < 2) {
+      if (!isDriving && driveProgress === 0) {
+        setAnimatedCoords(null);
+        setCurrentSpeedKmh(0);
+      }
+      return;
+    }
+
+    const totalPts = routePolyline.length;
+    const intervalMs = 120;
+    // Step size adjusted by playbackRate: traverses whole route smoothly in ~25-30s at 1x
+    const stepSize = 0.004 * playbackRate;
+
+    const timer = setInterval(() => {
+      setDriveProgress(prev => {
+        const next = prev + stepSize;
+        if (next >= 1.0) {
+          setIsDriving(false);
+          setAnimatedCoords(routePolyline[totalPts - 1]);
+          setCurrentSpeedKmh(0);
+          audioTelemetry.speak(`Unit arrived at ${activeHospital?.name || 'medical center'}. Transitioning patient to ER.`);
+          return 1.0;
+        }
+
+        // Calculate exact point along the multi-point polyline
+        const exactIndex = next * (totalPts - 1);
+        const idx = Math.floor(exactIndex);
+        const frac = exactIndex - idx;
+        const p1 = routePolyline[idx];
+        const p2 = routePolyline[Math.min(idx + 1, totalPts - 1)];
+
+        const lat = p1[0] + (p2[0] - p1[0]) * frac;
+        const lng = p1[1] + (p2[1] - p1[1]) * frac;
+        setAnimatedCoords([lat, lng]);
+
+        // Calculate vehicle bearing / heading
+        const dLat = (p2[0] - p1[0]) * (Math.PI / 180);
+        const dLng = (p2[1] - p1[1]) * (Math.PI / 180);
+        const lat1Rad = p1[0] * (Math.PI / 180);
+        const lat2Rad = p2[0] * (Math.PI / 180);
+        const y = Math.sin(dLng) * Math.cos(lat2Rad);
+        const x = Math.cos(lat1Rad) * Math.sin(lat2Rad) - Math.sin(lat1Rad) * Math.cos(lat2Rad) * Math.cos(dLng);
+        const bearing = (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
+        setAnimatedHeading(bearing);
+
+        // Realistic emergency speed with dynamic fluctuation
+        const baseSpeed = 64;
+        const speedJitter = Math.floor(Math.sin(next * 35) * 9);
+        setCurrentSpeedKmh(Math.max(28, Math.min(84, baseSpeed + speedJitter)));
+
+        return next;
+      });
+    }, intervalMs);
+
+    return () => clearInterval(timer);
+  }, [isDriving, routePolyline, playbackRate, activeHospital]);
+
+  // Auto-reset drive progress when destination or origin changes
+  React.useEffect(() => {
+    setDriveProgress(0);
+    setIsDriving(false);
+    setAnimatedCoords(null);
+    setCurrentSpeedKmh(0);
+  }, [destinationCoords, effectiveUserCoords]);
 
   // Calculate nearest hospital to an inspected click point
   const closestHospitalToInspected = React.useMemo(() => {
@@ -992,6 +1150,111 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
             </div>
           )}
 
+          {/* Real-time En-Route Trip Progress & Telemetry Controller */}
+          <div className="pt-2 border-t border-slate-800 flex flex-col gap-1.5">
+            <div className="flex items-center justify-between text-[11px]">
+              <div className="flex items-center gap-1.5 font-bold text-white">
+                <Gauge className="h-3.5 w-3.5 text-teal-400" />
+                <span>{isDriving ? `${currentSpeedKmh} km/h` : driveProgress > 0 ? "Drive Paused" : "Ready to Dispatch"}</span>
+                {isDriving && (
+                  <span className="text-[10px] text-teal-300 font-mono">
+                    • 🧭 {Math.round(animatedHeading)}°
+                  </span>
+                )}
+              </div>
+              <span className="font-mono text-slate-300 font-bold text-[10px]">
+                {Math.round(driveProgress * 100)}% Traversed
+              </span>
+            </div>
+
+            {/* Dynamic Transit Progress Bar */}
+            <div className="w-full bg-slate-800/90 rounded-full h-2 overflow-hidden border border-slate-700/60 shadow-inner">
+              <div
+                className="bg-gradient-to-r from-teal-500 via-sky-400 to-rose-500 h-full transition-all duration-150 rounded-full"
+                style={{ width: `${Math.max(2, Math.round(driveProgress * 100))}%` }}
+              />
+            </div>
+
+            {/* Interactive Simulation Action Controls */}
+            <div className="flex items-center justify-between gap-1.5 pt-0.5">
+              <div className="flex items-center gap-1.5">
+                <button
+                  onClick={() => {
+                    const nextDriving = !isDriving;
+                    setIsDriving(nextDriving);
+                    if (nextDriving) {
+                      audioTelemetry.speak(`Emergency drive simulation active. Speed ~${currentSpeedKmh || 64} kilometers per hour.`);
+                    }
+                  }}
+                  className={cn(
+                    "px-2.5 py-1 rounded-lg font-bold text-[11px] flex items-center gap-1 transition-all cursor-pointer shadow border",
+                    isDriving
+                      ? "bg-amber-600 hover:bg-amber-500 text-white border-amber-400"
+                      : "bg-teal-600 hover:bg-teal-500 text-white border-teal-400"
+                  )}
+                  title={isDriving ? "Pause simulated drive" : "Start animated drive along route"}
+                >
+                  {isDriving ? (
+                    <>
+                      <Pause className="h-3 w-3 fill-current" />
+                      <span>Pause Drive</span>
+                    </>
+                  ) : (
+                    <>
+                      <Play className="h-3 w-3 fill-current" />
+                      <span>{driveProgress > 0 ? "Resume" : "Simulate Drive"}</span>
+                    </>
+                  )}
+                </button>
+
+                {/* Simulation Playback Rate (1x / 2x / 4x) */}
+                <button
+                  onClick={() => setPlaybackRate(r => (r === 1 ? 2 : r === 2 ? 4 : 1))}
+                  className="px-2 py-1 rounded-lg text-[10px] font-bold bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 cursor-pointer"
+                  title="Cycle Drive Simulation Speed (1x, 2x, 4x)"
+                >
+                  {playbackRate}x
+                </button>
+
+                {/* Auto-Follow / Chase Camera Toggle */}
+                <button
+                  onClick={() => {
+                    const next = !isChaseActive;
+                    setIsChaseActive(next);
+                    if (next) audioTelemetry.speak("Camera locked to ambulance cockpit.");
+                  }}
+                  className={cn(
+                    "px-2 py-1 rounded-lg text-[10px] font-bold transition-all flex items-center gap-1 cursor-pointer border",
+                    isChaseActive
+                      ? "bg-sky-600 text-white border-sky-400 shadow-sm"
+                      : "bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700"
+                  )}
+                  title="Auto-pan camera to follow moving ambulance"
+                >
+                  <Eye className="h-3 w-3" />
+                  <span>{isChaseActive ? "Chase ON" : "Follow"}</span>
+                </button>
+              </div>
+
+              {/* Reset Drive Button */}
+              {driveProgress > 0 && (
+                <button
+                  onClick={() => {
+                    setDriveProgress(0);
+                    setIsDriving(false);
+                    setAnimatedCoords(null);
+                    setCurrentSpeedKmh(0);
+                    audioTelemetry.speak("Drive simulation reset to start point.");
+                  }}
+                  className="p-1 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition-colors cursor-pointer border border-transparent hover:border-slate-700"
+                  title="Reset drive simulation"
+                >
+                  <RotateCcw className="h-3.5 w-3.5" />
+                </button>
+              )}
+            </div>
+          </div>
+
           {/* Real-time Traffic Color Legend */}
           <div className="flex items-center justify-between text-[9px] text-slate-400 pt-1">
             <div className="flex items-center gap-3">
@@ -1102,6 +1365,8 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
           targetCoords={flyTarget}
           routeBounds={routeBounds}
           autoFitInitial={false}
+          chaseCoords={animatedCoords}
+          isChaseActive={isChaseActive && isDriving}
         />
 
         {/* Click anywhere listener: drops inspector pin with live facility metrics */}
@@ -1168,11 +1433,49 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
           />
         )}
 
+        {/* Dynamic Moving Siren Ambulance Marker (rendered both in emergency and overview when in motion) */}
+        {routePolyline && animatedCoords && (isDriving || driveProgress > 0) && (
+          <Marker
+            position={animatedCoords}
+            icon={createSirenVehicleIcon(animatedHeading, isDriving)}
+            zIndexOffset={3000}
+          >
+            <Popup>
+              <div className="text-white font-sans p-1 min-w-[210px]">
+                <div className="flex items-center justify-between border-b border-slate-700/80 pb-1 mb-1">
+                  <div className="flex items-center gap-1.5 font-bold text-xs text-rose-400">
+                    <Siren className="h-3.5 w-3.5 text-rose-400 animate-pulse" />
+                    <span>Unit En Route (Code 1)</span>
+                  </div>
+                  <span className="text-[10px] font-mono bg-rose-500/20 text-rose-300 border border-rose-500/30 px-1.5 py-0.5 rounded font-bold uppercase">
+                    {isDriving ? "In Motion" : "Paused"}
+                  </span>
+                </div>
+                <h4 className="font-bold text-sm text-white">{activeAmbulance?.plateNumber || "Paramedic Unit"}</h4>
+                <div className="grid grid-cols-2 gap-1.5 my-1.5 text-[11px] font-mono bg-slate-950 p-1.5 rounded border border-slate-800">
+                  <div>
+                    <span className="text-slate-400 text-[10px] block">Speed:</span>
+                    <strong className="text-teal-300">{currentSpeedKmh} km/h</strong>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 text-[10px] block">Heading:</span>
+                    <strong className="text-sky-300">{Math.round(animatedHeading)}°</strong>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between text-[11px] text-slate-300 bg-slate-800/80 p-1.5 rounded">
+                  <span>To:</span>
+                  <span className="font-semibold text-teal-300 truncate max-w-[130px]">{activeHospital?.name || "Target Facility"}</span>
+                </div>
+              </div>
+            </Popup>
+          </Marker>
+        )}
+
         {/* TACTICAL EMERGENCY MODE: When taking an emergency, ONLY user location and destination show! */}
         {isEmergencyFocusActive ? (
           <>
-            {/* 1. User's Location Marker */}
-            {effectiveUserCoords && (
+            {/* 1. User's Origin Location Marker (when not actively driving along route) */}
+            {effectiveUserCoords && (!isDriving && driveProgress === 0) && (
               <Marker
                 position={effectiveUserCoords}
                 icon={createPulsingLeafletIcon('#0284c7', '🚑', true)}
@@ -1186,7 +1489,7 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
                         <span>Your Live Location</span>
                       </div>
                       <span className="text-[10px] font-mono bg-sky-500/20 text-sky-300 border border-sky-500/30 px-1.5 py-0.5 rounded font-bold uppercase">
-                        Responding
+                        Origin Point
                       </span>
                     </div>
                     <h4 className="font-bold text-sm text-white">{activeAmbulance?.plateNumber || "Paramedic Unit"}</h4>
