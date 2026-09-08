@@ -10,7 +10,7 @@ import { useNavigate, useLocation } from "react-router";
 import { LiveMap } from "../components/ierbms/LiveMap";
 
 export const DoctorDashboard: React.FC = () => {
-  const { emergencies, ambulances, hospitals } = useRealTime();
+  const { emergencies, ambulances, hospitals, updateEmergencyLocally } = useRealTime();
   const navigate = useNavigate();
   const location = useLocation();
   const cleanPath = location.pathname.replace(/\/$/, "");
@@ -37,13 +37,24 @@ export const DoctorDashboard: React.FC = () => {
 
   const handleSaveTriage = async () => {
     if (!selectedCase) return;
-    setLoadingId(selectedCase.id);
+    const caseId = selectedCase.id;
+    const targetStatus = selectedCase.status;
+    setLoadingId(caseId);
+
+    // Instant optimistic UI re-render
+    if (updateEmergencyLocally) {
+      updateEmergencyLocally(caseId, targetStatus, {
+        triageNotes: triageNote,
+        bedTypeAssigned: bedType
+      });
+    }
+
     try {
-      await fetch(`/api/ambulances/cases/${selectedCase.id}/status`, {
+      await fetch(`/api/ambulances/cases/${caseId}/status`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          status: selectedCase.status,
+          status: targetStatus,
           triage_notes: triageNote,
           bed_type_assigned: bedType
         })
@@ -58,6 +69,12 @@ export const DoctorDashboard: React.FC = () => {
 
   const updateEmergencyStatus = async (id: string, status: string) => {
     setLoadingId(id);
+
+    // Instant optimistic UI re-render
+    if (updateEmergencyLocally) {
+      updateEmergencyLocally(id, status);
+    }
+
     try {
       await fetch(`/api/ambulances/cases/${id}/status`, {
         method: 'PUT',

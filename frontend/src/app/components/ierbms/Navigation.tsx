@@ -25,6 +25,7 @@ import {
   WifiOff
 } from "lucide-react";
 import { offlineQueue } from "../../utils/offlineQueue";
+import { AutoSyncBadge } from "./RealTimeProvider";
 
 export interface NavItem {
   label: string;
@@ -298,7 +299,10 @@ export const AppShell: React.FC<AppShellProps> = ({ role, userName, children }) 
               <h2 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight mt-0.5 font-mono">{pageTitle}</h2>
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 sm:gap-3">
+              {/* Real-time Cloud Streaming & Auto-Render Badge */}
+              <AutoSyncBadge />
+
               {/* Real-time Field Sync Status Badge */}
               <div className={cn(
                 "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border font-mono transition-all",

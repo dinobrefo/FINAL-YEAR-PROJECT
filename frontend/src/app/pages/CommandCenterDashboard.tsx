@@ -12,7 +12,7 @@ import { LineChart, Line, BarChart, Bar, PieChart, Pie, XAxis, YAxis, CartesianG
 import { HospitalCapacityMesh } from "../components/ierbms/HospitalCapacityMesh";
 
 export const CommandCenterDashboard: React.FC = () => {
-  const { emergencies, hospitals, ambulances } = useRealTime();
+  const { emergencies, hospitals, ambulances, updateEmergencyLocally } = useRealTime();
   const location = useLocation();
   const navigate = useNavigate();
   const activeEmergencies = emergencies.filter(e => e.status !== "completed");
@@ -37,12 +37,20 @@ export const CommandCenterDashboard: React.FC = () => {
 
   const handleReroute = async () => {
     if (!rerouteCase || !targetHospitalId) return;
+    const caseId = rerouteCase.id;
+    const hospId = targetHospitalId;
     setIsSubmitting(true);
+
+    // Instant optimistic UI re-render
+    if (updateEmergencyLocally) {
+      updateEmergencyLocally(caseId, rerouteCase.status, { assignedHospital: hospId });
+    }
+
     try {
-      await fetch(`/api/ambulances/cases/${rerouteCase.id}/reroute`, {
+      await fetch(`/api/ambulances/cases/${caseId}/reroute`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ hospital_id: targetHospitalId })
+        body: JSON.stringify({ hospital_id: hospId })
       });
       setRerouteCase(null);
     } catch (err) {
@@ -54,12 +62,20 @@ export const CommandCenterDashboard: React.FC = () => {
 
   const handleAssignAmbulance = async () => {
     if (!assignAmbulanceCase || !targetAmbulanceId) return;
+    const caseId = assignAmbulanceCase.id;
+    const ambId = targetAmbulanceId;
     setIsSubmitting(true);
+
+    // Instant optimistic UI re-render
+    if (updateEmergencyLocally) {
+      updateEmergencyLocally(caseId, 'in-transit', { ambulanceId: ambId });
+    }
+
     try {
-      await fetch(`/api/ambulances/cases/${assignAmbulanceCase.id}/assign-ambulance`, {
+      await fetch(`/api/ambulances/cases/${caseId}/assign-ambulance`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ambulance_id: targetAmbulanceId })
+        body: JSON.stringify({ ambulance_id: ambId })
       });
       setAssignAmbulanceCase(null);
     } catch (err) {
@@ -70,6 +86,11 @@ export const CommandCenterDashboard: React.FC = () => {
   };
 
   const handleResolve = async (caseId: string) => {
+    // Instant optimistic UI re-render: removes case from active list immediately
+    if (updateEmergencyLocally) {
+      updateEmergencyLocally(caseId, 'resolved');
+    }
+
     try {
       await fetch(`/api/ambulances/cases/${caseId}/status`, {
         method: 'PUT',
