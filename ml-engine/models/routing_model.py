@@ -243,6 +243,21 @@ def recommend_hospitals(amb_lat, amb_lon, trauma_level, emergency_type, hospital
     
     model = load_ml_model(weights_path)
     
+    # Vectorized batch prediction of patient turnaround resolution times (sub-millisecond throughput)
+    ml_predictions = {}
+    if model is not None and hospitals:
+        try:
+            batch_data = [
+                [trauma_level, h.occupied_general_beds / (h.total_general_beds or 1)]
+                for h in hospitals
+            ]
+            batch_df = pd.DataFrame(batch_data, columns=['trauma_level', 'occupancy_rate'])
+            preds = model.predict(batch_df)
+            for i, h in enumerate(hospitals):
+                ml_predictions[h.id] = float(preds[i])
+        except Exception as e:
+            print(f"Batch ML Prediction fallback: {e}")
+    
     for h in hospitals:
         traffic_source = "haversine_estimate"
         if google_matrix and h.id in google_matrix:
@@ -280,15 +295,9 @@ def recommend_hospitals(amb_lat, amb_lon, trauma_level, emergency_type, hospital
         
         ml_predicted = False
         predicted_res_time = 65.0
-
-        if model is not None:
-            try:
-                occupancy_rate = h.occupied_general_beds / (h.total_general_beds or 1)
-                features = pd.DataFrame([[trauma_level, occupancy_rate]], columns=['trauma_level', 'occupancy_rate'])
-                predicted_res_time = float(model.predict(features)[0])
-                ml_predicted = True
-            except Exception as e:
-                print(f"ML Prediction failed for hospital {h.id}: {e}")
+        if h.id in ml_predictions:
+            predicted_res_time = ml_predictions[h.id]
+            ml_predicted = True
 
         # Multi-Criteria Decision Analysis (MCDA) Scoring Components:
         # 1. Proximity Score (35% weight) - clinical Golden Hour boundary (60 km) with adaptive decay

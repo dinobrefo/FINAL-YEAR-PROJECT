@@ -1,3 +1,4 @@
+import os
 import time
 import json
 import numpy as np
@@ -147,9 +148,10 @@ def run_model_benchmarks():
         "recommendation_rationale": "Random Forest provides the optimal Pareto frontier balancing high non-linear predictive capacity (R² > 0.94) with real-time sub-millisecond inference latency (12.4 μs/sample) required for live GPS navigation HUDs."
     }
     
-    with open("ml-engine/benchmark_results.json", "w") as f:
+    out_path = os.path.join(os.path.dirname(__file__), "benchmark_results.json")
+    with open(out_path, "w") as f:
         json.dump(output_payload, f, indent=2)
-    print("✓ Benchmark results exported to ml-engine/benchmark_results.json")
+    print(f"✓ Benchmark results exported to {out_path}")
     print("=" * 80)
 
 if __name__ == "__main__":
