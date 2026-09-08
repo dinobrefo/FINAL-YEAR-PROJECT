@@ -264,31 +264,47 @@ const createGoogleWaypointDotIcon = () => {
 // Google Maps Floating On-Route ETA Tooltip (matches the white 18 min / 7.9 km card in screenshot)
 const createRouteEtaBadgeIcon = (durationMins: number | null, distanceKm: string | null) => {
   const timeText = durationMins ? `${durationMins} min` : '18 min';
-  const distText = distanceKm ? `${distanceKm} km` : '7.9 km';
+  const rawDist = distanceKm ? String(distanceKm).replace(/\s*km/gi, '').trim() : '7.9';
+  const distText = `${rawDist} km`;
+
   return L.divIcon({
     className: 'custom-google-route-eta-badge',
     html: `
       <div style="
         position: relative;
-        transform: translate(-50%, -100%);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        width: 96px;
         background: #ffffff;
         color: #202124;
-        padding: 5px 11px;
+        padding: 6px 10px;
         border-radius: 8px;
-        box-shadow: 0 3px 10px rgba(0,0,0,0.4);
-        border: 1px solid rgba(0,0,0,0.12);
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        box-shadow: 0 3px 10px rgba(0,0,0,0.38), 0 0 2px rgba(0,0,0,0.15);
+        border: 1px solid rgba(0,0,0,0.14);
+        font-family: Roboto, -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
         text-align: center;
-        white-space: nowrap;
-        pointer-events: auto;
-        cursor: pointer;
+        box-sizing: border-box;
         user-select: none;
+        cursor: pointer;
       ">
-        <div style="display: flex; align-items: center; justify-content: center; gap: 5px; font-weight: 700; font-size: 13px; line-height: 1.2;">
-          <span style="font-size: 13px;">🚗</span>
-          <span style="color: #202124;">${timeText}</span>
+        <!-- Line 1: Google Monochrome Vector Car + Bold Duration -->
+        <div style="display: flex; align-items: center; justify-content: center; gap: 5px; font-weight: 700; font-size: 13px; line-height: 16px; color: #202124; white-space: nowrap;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" style="color: #3c4043; flex-shrink: 0; display: inline-block;">
+            <path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.85 7h10.29l1.04 3H5.81l1.04-3zM19 17H5v-4.66l.12-.34h13.77l.11.34V17z"/>
+            <circle cx="7.5" cy="14.5" r="1.5"/>
+            <circle cx="16.5" cy="14.5" r="1.5"/>
+          </svg>
+          <span style="letter-spacing: -0.2px;">${timeText}</span>
         </div>
-        ${distText ? `<div style="font-size: 11px; font-weight: 500; color: #5f6368; line-height: 1.1; margin-top: 1px;">${distText}</div>` : ''}
+
+        <!-- Line 2: Distance in Kilometers -->
+        <div style="font-size: 11px; font-weight: 500; color: #5f6368; line-height: 14px; margin-top: 2px; white-space: nowrap;">
+          ${distText}
+        </div>
+
+        <!-- Downward Pointer Triangle Anchored to Polyline -->
         <div style="
           position: absolute;
           bottom: -6px;
@@ -302,8 +318,60 @@ const createRouteEtaBadgeIcon = (durationMins: number | null, distanceKm: string
         "></div>
       </div>
     `,
-    iconSize: [0, 0],
-    iconAnchor: [0, 0]
+    iconSize: [96, 52],
+    iconAnchor: [48, 52]
+  });
+};
+
+// Alternative route ETA badge (Google Maps grey secondary corridor style)
+const createRouteAltEtaBadgeIcon = (durationMins: number | null, distanceKm: string | null) => {
+  const timeText = durationMins ? `${durationMins} min` : '22 min';
+  const rawDist = distanceKm ? String(distanceKm).replace(/\s*km/gi, '').trim() : '8.4';
+  const distText = `${rawDist} km`;
+
+  return L.divIcon({
+    className: 'custom-google-route-eta-badge',
+    html: `
+      <div style="
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        width: 88px;
+        background: #f1f3f4;
+        color: #5f6368;
+        padding: 5px 8px;
+        border-radius: 8px;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+        border: 1px solid #dadce0;
+        font-family: Roboto, -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+        text-align: center;
+        box-sizing: border-box;
+        user-select: none;
+        cursor: pointer;
+      ">
+        <div style="font-weight: 700; font-size: 12px; line-height: 15px; color: #3c4043; white-space: nowrap;">
+          ${timeText}
+        </div>
+        <div style="font-size: 10px; font-weight: 500; color: #70757a; line-height: 13px; margin-top: 1px; white-space: nowrap;">
+          ${distText}
+        </div>
+        <div style="
+          position: absolute;
+          bottom: -5px;
+          left: 50%;
+          transform: translateX(-50%);
+          width: 0;
+          height: 0;
+          border-left: 5px solid transparent;
+          border-right: 5px solid transparent;
+          border-top: 5px solid #f1f3f4;
+        "></div>
+      </div>
+    `,
+    iconSize: [88, 48],
+    iconAnchor: [44, 48]
   });
 };
 
@@ -1688,6 +1756,25 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
             </Popup>
           </Marker>
         )}
+
+        {/* Secondary Corridor ETA Badges for Alternative Routes */}
+        {routeAlternatives && routeAlternatives.length > 0 &&
+          routeAlternatives.map((alt, altIdx) => {
+            if (!alt.points || alt.points.length === 0) return null;
+            const altMidpoint = alt.points[Math.floor(alt.points.length * 0.45)];
+            if (!altMidpoint) return null;
+            return (
+              <Marker
+                key={`alt-eta-${alt.id}`}
+                position={altMidpoint}
+                icon={createRouteAltEtaBadgeIcon(alt.sirenDurationMins || alt.durationMins, alt.distanceKm)}
+                zIndexOffset={2200}
+                eventHandlers={{
+                  click: () => handleSelectRouteAlternative(altIdx + 1)
+                }}
+              />
+            );
+          })}
 
         {/* Dynamic Moving Siren Ambulance Marker (rendered both in emergency and overview when in motion) */}
         {routePolyline && animatedCoords && (isDriving || driveProgress > 0) && (

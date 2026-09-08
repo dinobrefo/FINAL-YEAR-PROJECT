@@ -115,3 +115,24 @@
   pointer-events: none;
 }
 
+/* Authentic Google Maps On-Route ETA Badge (unclipped layout) */
+.custom-google-route-eta-badge {
+  background: transparent !important;
+  border: none !important;
+  overflow: visible !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  pointer-events: auto !important;
+  z-index: 2500 !important;
+}
+
+.custom-google-origin-marker,
+.custom-google-dest-marker,
+.custom-google-waypoint-dot {
+  background: transparent !important;
+  border: none !important;
+  overflow: visible !important;
+  pointer-events: auto !important;
+}
+
