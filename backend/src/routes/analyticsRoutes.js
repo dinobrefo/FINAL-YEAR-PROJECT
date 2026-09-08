@@ -27,7 +27,7 @@ router.get('/overview', async (req, res) => {
   } catch (err) {
     console.error('Error fetching analytics overview:', err.message);
     res.status(503).json({
-      error: err.message,
+      error: 'Live system data is currently unavailable',
       hasData: false,
       emptyStateMessage: "Live system data is currently unavailable (Database connection error)"
     });

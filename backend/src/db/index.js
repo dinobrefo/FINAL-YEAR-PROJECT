@@ -22,7 +22,41 @@ const poolConfig = process.env.DATABASE_URL
 
 const pool = new Pool(poolConfig);
 
+// Surface pool-level errors instead of crashing the process on an idle client drop.
+pool.on('error', (err) => {
+  console.error('[db] idle client error:', err.message);
+});
+
+/**
+ * Run `fn` inside a single transaction. `fn` receives a query-capable client
+ * ({ query }) and its return value is passed through. Any throw rolls back.
+ *
+ *   const caseRow = await withTransaction(async (tx) => {
+ *     const { rows } = await tx.query('UPDATE ... RETURNING *', [...]);
+ *     return rows[0];
+ *   });
+ */
+async function withTransaction(fn) {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const result = await fn(client);
+    await client.query('COMMIT');
+    return result;
+  } catch (err) {
+    try {
+      await client.query('ROLLBACK');
+    } catch (rollbackErr) {
+      console.error('[db] rollback failed:', rollbackErr.message);
+    }
+    throw err;
+  } finally {
+    client.release();
+  }
+}
+
 module.exports = {
   query: (text, params) => pool.query(text, params),
-  pool
+  withTransaction,
+  pool,
 };

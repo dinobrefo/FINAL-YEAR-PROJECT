@@ -1,5 +1,3 @@
-const db = require('../db');
-
 /**
  * Bed capacity lifecycle.
  *
@@ -13,10 +11,12 @@ const db = require('../db');
  *   free       -> the case was resolved (after arrival) or cancelled / rerouted
  *                 (before arrival). Nothing is counted.
  *
- * `applyCaseTransition` is the single entry point: give it the case's old and
- * new (status, hospital, bed type) and it makes the minimal set of counter
- * changes and broadcasts a `hospital_capacity_update` for every hospital it
- * touched.
+ * `applyCaseTransition` is the single entry point. It takes a query executor
+ * (`db` or a transaction client), makes the minimal set of counter changes for
+ * the given old -> new (status, hospital, bed type), and returns the set of
+ * hospital ids it touched. The caller is responsible for broadcasting
+ * `hospital_capacity_update` for those hospitals *after* its transaction
+ * commits (see `emitHospitalCapacity`).
  */
 
 const normBedType = (bedType) => (bedType === 'icu' ? 'icu' : 'general');
@@ -33,32 +33,15 @@ const holdsReservation = (status) =>
 
 const holdsOccupied = (status) => status === 'arrived';
 
-async function emitHospital(io, hospitalId) {
-  if (!io || !hospitalId) return;
-  const { rows } = await db.query('SELECT * FROM hospitals WHERE id = $1', [hospitalId]);
-  if (rows.length > 0) io.emit('hospital_capacity_update', rows[0]);
-}
-
-async function bumpReserved(hospitalId, bedType, delta) {
+async function bump(exec, hospitalId, bedType, field, delta) {
   const c = columnsFor(bedType);
+  const col = c[field];
   const expr =
     delta > 0
-      ? `LEAST(${c.total}, ${c.reserved} + ${delta})`
-      : `GREATEST(0, ${c.reserved} - ${Math.abs(delta)})`;
-  await db.query(
-    `UPDATE hospitals SET ${c.reserved} = ${expr}, updated_at = CURRENT_TIMESTAMP WHERE id = $1`,
-    [hospitalId]
-  );
-}
-
-async function bumpOccupied(hospitalId, bedType, delta) {
-  const c = columnsFor(bedType);
-  const expr =
-    delta > 0
-      ? `LEAST(${c.total}, ${c.occupied} + ${delta})`
-      : `GREATEST(0, ${c.occupied} - ${Math.abs(delta)})`;
-  await db.query(
-    `UPDATE hospitals SET ${c.occupied} = ${expr}, updated_at = CURRENT_TIMESTAMP WHERE id = $1`,
+      ? `LEAST(${c.total}, ${col} + ${delta})`
+      : `GREATEST(0, ${col} - ${Math.abs(delta)})`;
+  await exec.query(
+    `UPDATE hospitals SET ${col} = ${expr}, updated_at = CURRENT_TIMESTAMP WHERE id = $1`,
     [hospitalId]
   );
 }
@@ -66,7 +49,7 @@ async function bumpOccupied(hospitalId, bedType, delta) {
 /**
  * Reconcile bed counters for a single case transition.
  *
- * @param {object} io                Socket.IO server (may be null).
+ * @param {{query: Function}} exec   db module or a transaction client.
  * @param {object} change
  * @param {?string} change.oldStatus       Previous case status (null on creation).
  * @param {?string} change.newStatus       New case status.
@@ -74,8 +57,9 @@ async function bumpOccupied(hospitalId, bedType, delta) {
  * @param {?string} change.newHospitalId   Newly assigned hospital (null if none).
  * @param {?string} change.oldBedType      Previous bed type ('general' | 'icu').
  * @param {?string} change.newBedType      New bed type ('general' | 'icu').
+ * @returns {Promise<Set<string>>} hospital ids whose counters changed.
  */
-async function applyCaseTransition(io, {
+async function applyCaseTransition(exec, {
   oldStatus = null,
   newStatus = null,
   oldHospitalId = null,
@@ -95,29 +79,42 @@ async function applyCaseTransition(io, {
 
   // Release the old slot when the case leaves it (status change, reroute, or bed-type change).
   if (reservedBefore && (!reservedAfter || !sameSlot)) {
-    await bumpReserved(oldHospitalId, oldBedType, -1);
+    await bump(exec, oldHospitalId, oldBedType, 'reserved', -1);
     touched.add(oldHospitalId);
   }
   if (occupiedBefore && (!occupiedAfter || !sameSlot)) {
-    await bumpOccupied(oldHospitalId, oldBedType, -1);
+    await bump(exec, oldHospitalId, oldBedType, 'occupied', -1);
     touched.add(oldHospitalId);
   }
 
   // Acquire the new slot when the case enters it.
   if (reservedAfter && (!reservedBefore || !sameSlot)) {
-    await bumpReserved(newHospitalId, newBedType, +1);
+    await bump(exec, newHospitalId, newBedType, 'reserved', +1);
     touched.add(newHospitalId);
   }
   if (occupiedAfter && (!occupiedBefore || !sameSlot)) {
-    await bumpOccupied(newHospitalId, newBedType, +1);
+    await bump(exec, newHospitalId, newBedType, 'occupied', +1);
     touched.add(newHospitalId);
-  }
-
-  for (const hospitalId of touched) {
-    await emitHospital(io, hospitalId);
   }
 
   return touched;
 }
 
-module.exports = { applyCaseTransition, normBedType, holdsReservation };
+/**
+ * Broadcast the current row for each hospital id in `hospitalIds`. Call this
+ * from the route handler *after* the transaction has committed.
+ */
+async function emitHospitalCapacity(exec, io, hospitalIds) {
+  if (!io || !hospitalIds || hospitalIds.size === 0) return;
+  for (const hospitalId of hospitalIds) {
+    const { rows } = await exec.query('SELECT * FROM hospitals WHERE id = $1', [hospitalId]);
+    if (rows.length > 0) io.emit('hospital_capacity_update', rows[0]);
+  }
+}
+
+module.exports = {
+  applyCaseTransition,
+  emitHospitalCapacity,
+  normBedType,
+  holdsReservation,
+};
