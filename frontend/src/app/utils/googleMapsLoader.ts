@@ -23,6 +23,7 @@ export interface TrafficSegment {
   points: Array<[number, number]>;
   level: 'fast' | 'moderate' | 'heavy';
   color: string;
+  casingColor?: string;
   speedKmh: number;
 }
 
@@ -31,6 +32,7 @@ export interface NavigationManeuver {
   distanceText: string;
   durationText?: string;
   maneuver?: string;
+  location?: [number, number];
 }
 
 export interface RouteAlternative {
@@ -261,14 +263,23 @@ const parseRouteLeg = (route: any, leg: any) => {
   const sirenDurationMins = Math.max(1, Math.round(durationMins * sirenFactor));
 
   // Extract Turn-by-Turn Navigation Maneuvers
-  const maneuvers: NavigationManeuver[] = (leg?.steps || []).map((s: any) => ({
-    instruction: stripHtml(s.instructions || ''),
-    distanceText: s.distance?.text || '',
-    durationText: s.duration?.text || '',
-    maneuver: s.maneuver || ''
-  })).filter((m: NavigationManeuver) => Boolean(m.instruction));
+  const maneuvers: NavigationManeuver[] = (leg?.steps || []).map((s: any) => {
+    let loc: [number, number] | undefined = undefined;
+    if (s.start_location) {
+      loc = typeof s.start_location.lat === 'function'
+        ? [s.start_location.lat(), s.start_location.lng()]
+        : [s.start_location.lat, s.start_location.lng];
+    }
+    return {
+      instruction: stripHtml(s.instructions || ''),
+      distanceText: s.distance?.text || '',
+      durationText: s.duration?.text || '',
+      maneuver: s.maneuver || '',
+      location: loc
+    };
+  }).filter((m: NavigationManeuver) => Boolean(m.instruction));
 
-  // Extract Traffic-Segmented Polylines (Green / Amber / Red based on step velocity)
+  // Extract Traffic-Segmented Polylines (Google Maps Authentic Blue with Amber/Red Congestion)
   const trafficSegments: TrafficSegment[] = [];
   if (leg?.steps && leg.steps.length > 0) {
     for (const s of leg.steps) {
@@ -287,20 +298,24 @@ const parseRouteLeg = (route: any, leg: any) => {
         const speedKmh = sDur > 0 ? (sDist / sDur) * 3.6 : 35;
 
         let level: 'fast' | 'moderate' | 'heavy' = 'fast';
-        let color = '#10b981'; // Green: Free flow > 42 km/h
+        let color = '#4285F4'; // Authentic Google Maps Royal Blue
+        let casingColor = '#185ABC'; // Outer dark blue casing
 
         if (speedKmh < 20) {
           level = 'heavy';
-          color = '#ef4444'; // Red: Severe bottleneck < 20 km/h
+          color = '#D93025'; // Red: Severe bottleneck < 20 km/h
+          casingColor = '#8A180E';
         } else if (speedKmh < 42) {
           level = 'moderate';
-          color = '#f59e0b'; // Amber: Moderate flow 20-42 km/h
+          color = '#FA7B17'; // Amber/Orange: Slowdown (like N6 in screenshot!)
+          casingColor = '#B06000';
         }
 
         trafficSegments.push({
           points: stepPoints,
           level,
           color,
+          casingColor,
           speedKmh: Math.round(speedKmh)
         });
       }
@@ -312,7 +327,8 @@ const parseRouteLeg = (route: any, leg: any) => {
     trafficSegments.push({
       points,
       level: inTraffic ? 'moderate' : 'fast',
-      color: inTraffic ? '#f59e0b' : '#10b981',
+      color: inTraffic ? '#FA7B17' : '#4285F4',
+      casingColor: inTraffic ? '#B06000' : '#185ABC',
       speedKmh: 35
     });
   }

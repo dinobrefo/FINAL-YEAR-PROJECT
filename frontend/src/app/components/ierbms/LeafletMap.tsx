@@ -191,6 +191,122 @@ const createSirenVehicleIcon = (headingDeg = 0, isSirenActive = true) => {
   });
 };
 
+// Google Maps Authentic Origin Concentric Blue Marker (matches Crunchmasters marker in screenshot)
+const createGoogleOriginIcon = () => {
+  return L.divIcon({
+    className: 'custom-google-origin-marker',
+    html: `
+      <div style="position: relative; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; cursor: pointer;">
+        <div style="
+          width: 20px;
+          height: 20px;
+          border-radius: 50%;
+          background: #ffffff;
+          border: 2.5px solid #1a73e8;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          box-shadow: 0 2px 6px rgba(0,0,0,0.55);
+        ">
+          <div style="
+            width: 9px;
+            height: 9px;
+            border-radius: 50%;
+            background: #1a73e8;
+          "></div>
+        </div>
+      </div>
+    `,
+    iconSize: [22, 22],
+    iconAnchor: [11, 11],
+    popupAnchor: [0, -11]
+  });
+};
+
+// Google Maps Authentic Red Teardrop Destination Pin (matches Amakom pin in screenshot)
+const createGoogleDestinationIcon = () => {
+  return L.divIcon({
+    className: 'custom-google-dest-marker',
+    html: `
+      <div style="position: relative; width: 32px; height: 42px; display: flex; align-items: center; justify-content: center; cursor: pointer;">
+        <svg width="32" height="42" viewBox="0 0 32 42" fill="none" xmlns="http://www.w3.org/2000/svg" style="filter: drop-shadow(0 3px 6px rgba(0,0,0,0.55));">
+          <path d="M16 0C7.163 0 0 7.163 0 16C0 26.5 16 42 16 42C16 42 32 26.5 32 16C32 7.163 24.837 0 16 0Z" fill="#EA4335" stroke="#FFFFFF" stroke-width="1.5"/>
+          <ellipse cx="16" cy="15" rx="5.5" ry="5.5" fill="#A50E0E"/>
+        </svg>
+      </div>
+    `,
+    iconSize: [32, 42],
+    iconAnchor: [16, 42],
+    popupAnchor: [0, -42]
+  });
+};
+
+// Google Maps Turn Waypoint Dot (matches intermediate junction dots in screenshot)
+const createGoogleWaypointDotIcon = () => {
+  return L.divIcon({
+    className: 'custom-google-waypoint-dot',
+    html: `
+      <div style="
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #ffffff;
+        border: 2px solid #1a73e8;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.65);
+        pointer-events: none;
+      "></div>
+    `,
+    iconSize: [8, 8],
+    iconAnchor: [4, 4]
+  });
+};
+
+// Google Maps Floating On-Route ETA Tooltip (matches the white 18 min / 7.9 km card in screenshot)
+const createRouteEtaBadgeIcon = (durationMins: number | null, distanceKm: string | null) => {
+  const timeText = durationMins ? `${durationMins} min` : '18 min';
+  const distText = distanceKm ? `${distanceKm} km` : '7.9 km';
+  return L.divIcon({
+    className: 'custom-google-route-eta-badge',
+    html: `
+      <div style="
+        position: relative;
+        transform: translate(-50%, -100%);
+        background: #ffffff;
+        color: #202124;
+        padding: 5px 11px;
+        border-radius: 8px;
+        box-shadow: 0 3px 10px rgba(0,0,0,0.4);
+        border: 1px solid rgba(0,0,0,0.12);
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        text-align: center;
+        white-space: nowrap;
+        pointer-events: auto;
+        cursor: pointer;
+        user-select: none;
+      ">
+        <div style="display: flex; align-items: center; justify-content: center; gap: 5px; font-weight: 700; font-size: 13px; line-height: 1.2;">
+          <span style="font-size: 13px;">🚗</span>
+          <span style="color: #202124;">${timeText}</span>
+        </div>
+        ${distText ? `<div style="font-size: 11px; font-weight: 500; color: #5f6368; line-height: 1.1; margin-top: 1px;">${distText}</div>` : ''}
+        <div style="
+          position: absolute;
+          bottom: -6px;
+          left: 50%;
+          transform: translateX(-50%);
+          width: 0;
+          height: 0;
+          border-left: 6px solid transparent;
+          border-right: 6px solid transparent;
+          border-top: 6px solid #ffffff;
+        "></div>
+      </div>
+    `,
+    iconSize: [0, 0],
+    iconAnchor: [0, 0]
+  });
+};
+
 interface LeafletMapProps {
   emergencies: Emergency[];
   ambulances: Ambulance[];
@@ -662,6 +778,13 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
     return [origin, dest] as Array<[number, number]>;
   }, [activeEmergency, osrmRoutePoints, effectiveUserCoords, destinationCoords]);
 
+  // Midpoint coordinate along route for Google Maps floating ETA badge (like in screenshot)
+  const routeMidpoint = React.useMemo(() => {
+    if (!routePolyline || routePolyline.length === 0) return null;
+    const midIdx = Math.floor(routePolyline.length * 0.45);
+    return routePolyline[midIdx];
+  }, [routePolyline]);
+
   // Real-time ambulance road navigation traversal effect
   React.useEffect(() => {
     if (!isDriving || !routePolyline || routePolyline.length < 2) {
@@ -881,7 +1004,9 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
   const tileUrls: Record<string, string> = {
     dark: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
     street: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
-    satellite: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+    satellite: googleKey
+      ? `https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}&key=${googleKey}`
+      : 'https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}',
     'google-traffic': googleKey
       ? `https://mt1.google.com/vt/lyrs=m,traffic&x={x}&y={y}&z={z}&key=${googleKey}`
       : 'https://mt1.google.com/vt/lyrs=m,traffic&x={x}&y={y}&z={z}',
@@ -1464,60 +1589,104 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
           }}
         />
 
-        {/* Turn-by-Turn Road Route Multi-Color Traffic Polylines (interactive: false) */}
+        {/* Authentic Google Maps Route Line: Casing + Core with Live Traffic Slowdown Segments */}
         {trafficSegments && trafficSegments.length > 0 ? (
-          trafficSegments.map((seg, idx) => (
-            <React.Fragment key={`traffic-seg-${idx}`}>
-              {/* Traffic Speed Ambient Glow */}
-              <Polyline
-                positions={seg.points}
-                pathOptions={{
-                  color: seg.color,
-                  weight: 8,
-                  opacity: 0.40,
-                  lineCap: 'round',
-                  interactive: false
-                }}
-              />
-              {/* Traffic Speed Core Line */}
-              <Polyline
-                positions={seg.points}
-                pathOptions={{
-                  color: seg.color,
-                  weight: 4.5,
-                  opacity: 0.95,
-                  lineCap: 'round',
-                  interactive: false
-                }}
-              />
-            </React.Fragment>
-          ))
+          trafficSegments.map((seg, idx) => {
+            const casingColor =
+              seg.casingColor || (seg.level === 'heavy' ? '#8A180E' : seg.level === 'moderate' ? '#B06000' : '#185ABC');
+            const coreColor =
+              seg.color || (seg.level === 'heavy' ? '#D93025' : seg.level === 'moderate' ? '#FA7B17' : '#4285F4');
+
+            return (
+              <React.Fragment key={`traffic-seg-${idx}`}>
+                {/* 1. Google Route Outer Casing Border (dark blue / dark amber outline) */}
+                <Polyline
+                  positions={seg.points}
+                  pathOptions={{
+                    color: casingColor,
+                    weight: 9.5,
+                    opacity: 0.95,
+                    lineCap: 'round',
+                    lineJoin: 'round',
+                    interactive: false
+                  }}
+                />
+                {/* 2. Google Route Inner Core (Google royal blue or slowdown orange/red) */}
+                <Polyline
+                  positions={seg.points}
+                  pathOptions={{
+                    color: coreColor,
+                    weight: 6,
+                    opacity: 1,
+                    lineCap: 'round',
+                    lineJoin: 'round',
+                    interactive: false
+                  }}
+                />
+              </React.Fragment>
+            );
+          })
         ) : routePolyline ? (
           <>
             <Polyline
               positions={routePolyline}
-              pathOptions={{ color: '#06b6d4', weight: 8, opacity: 0.45, lineCap: 'round', interactive: false }}
+              pathOptions={{
+                color: '#185ABC',
+                weight: 9.5,
+                opacity: 0.95,
+                lineCap: 'round',
+                lineJoin: 'round',
+                interactive: false
+              }}
             />
             <Polyline
               positions={routePolyline}
-              pathOptions={{ color: '#14b8a6', weight: 4.5, opacity: 0.95, dashArray: '10, 10', lineCap: 'round', interactive: false }}
+              pathOptions={{
+                color: '#4285F4',
+                weight: 6,
+                opacity: 1,
+                lineCap: 'round',
+                lineJoin: 'round',
+                interactive: false
+              }}
             />
           </>
         ) : null}
 
-        {/* Animated Directional Transit Flow Pulse Overlay */}
-        {routePolyline && (
-          <Polyline
-            positions={routePolyline}
-            pathOptions={{
-              color: '#ffffff',
-              weight: 2,
-              opacity: 0.85,
-              dashArray: '6, 18',
-              lineCap: 'round',
-              interactive: false
-            }}
-          />
+        {/* Google Maps Turn Waypoint Dots at Junctions */}
+        {navigationManeuvers && navigationManeuvers.length > 0 &&
+          navigationManeuvers.map((m, mIdx) => {
+            if (!m.location) return null;
+            return (
+              <Marker
+                key={`maneuver-dot-${mIdx}`}
+                position={m.location}
+                icon={createGoogleWaypointDotIcon()}
+                interactive={false}
+                zIndexOffset={1200}
+              />
+            );
+          })}
+
+        {/* Floating Google Maps On-Route ETA Card (like in screenshot: 18 min / 7.9 km) */}
+        {routePolyline && routeMidpoint && (
+          <Marker
+            position={routeMidpoint}
+            icon={createRouteEtaBadgeIcon(sirenDurationMins || routeDurationMins, routeDistanceKm)}
+            zIndexOffset={2500}
+          >
+            <Popup>
+              <div className="text-white font-sans p-1 min-w-[170px]">
+                <div className="flex items-center gap-1.5 font-bold text-xs text-white">
+                  <span>🚗 Fast Route Corridor</span>
+                </div>
+                <div className="mt-1 text-xs text-slate-300">
+                  Estimated duration: <strong className="text-emerald-400">{sirenDurationMins || routeDurationMins} min</strong>
+                  {routeDistanceKm && <div className="text-slate-400 mt-0.5">Total distance: {routeDistanceKm} km</div>}
+                </div>
+              </div>
+            </Popup>
+          </Marker>
         )}
 
         {/* Dynamic Moving Siren Ambulance Marker (rendered both in emergency and overview when in motion) */}
@@ -1561,11 +1730,11 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
         {/* TACTICAL EMERGENCY MODE: When taking an emergency, ONLY user location and destination show! */}
         {isEmergencyFocusActive ? (
           <>
-            {/* 1. User's Origin Location Marker (when not actively driving along route) */}
+            {/* 1. User's Origin Location Marker (Google Maps Concentric Blue Origin Dot) */}
             {effectiveUserCoords && (!isDriving && driveProgress === 0) && (
               <Marker
                 position={effectiveUserCoords}
-                icon={createPulsingLeafletIcon('#0284c7', '🚑', true)}
+                icon={createGoogleOriginIcon()}
                 zIndexOffset={1000}
               >
                 <Popup>
@@ -1592,12 +1761,12 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
               </Marker>
             )}
 
-            {/* 2. Destination Hospital Marker */}
+            {/* 2. Destination Hospital Marker (Google Maps Red Teardrop Pin) */}
             {destinationCoords && activeHospital && (
               <Marker
                 position={destinationCoords}
-                icon={createPulsingLeafletIcon('#10b981', '🏥', true)}
-                zIndexOffset={999}
+                icon={createGoogleDestinationIcon()}
+                zIndexOffset={1100}
               >
                 <Popup>
                   <div className="text-white font-sans p-1 min-w-[240px]">
@@ -1670,7 +1839,7 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
             {userLocation && (
               <Marker
                 position={userLocation}
-                icon={createPulsingLeafletIcon('#3b82f6', '📍', true)}
+                icon={routePolyline ? createGoogleOriginIcon() : createPulsingLeafletIcon('#3b82f6', '📍', true)}
               >
                 <Popup>
                   <div className="text-white font-sans p-1 min-w-[210px]">
@@ -1724,6 +1893,7 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
             {hospitals.map(hospital => {
               const coords = extractCoordinates(hospital);
               if (!coords) return null;
+              const isTargetFacility = activeHospital && hospital.id === activeHospital.id && Boolean(routePolyline);
               const bedCount = hospital.availableBeds ?? 0;
               const pinColor = bedCount > 5 ? '#10b981' : bedCount > 0 ? '#f59e0b' : '#ef4444';
 
@@ -1731,7 +1901,8 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
                 <Marker
                   key={hospital.id}
                   position={coords}
-                  icon={createPulsingLeafletIcon(pinColor, '🏥', bedCount <= 2)}
+                  icon={isTargetFacility ? createGoogleDestinationIcon() : createPulsingLeafletIcon(pinColor, '🏥', bedCount <= 2)}
+                  zIndexOffset={isTargetFacility ? 1100 : undefined}
                 >
                   <Popup>
                     <div className="text-white font-sans p-1 min-w-[220px]">
