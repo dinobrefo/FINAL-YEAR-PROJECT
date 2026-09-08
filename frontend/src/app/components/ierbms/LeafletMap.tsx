@@ -32,7 +32,8 @@ import {
   RotateCcw,
   Gauge,
   Compass,
-  Eye
+  Eye,
+  X
 } from 'lucide-react';
 import { useTheme } from './ThemeProvider';
 import {
@@ -81,6 +82,15 @@ export const calculateDistanceKm = (c1: [number, number], c2: [number, number]):
       Math.sin(dLng / 2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   return R * c;
+};
+
+/**
+ * Clock arrival time formatter for Google Maps Navigation HUD
+ */
+export const formatArrivalTime = (durationMins: number | null): string => {
+  if (!durationMins || durationMins <= 0) return '';
+  const arrival = new Date(Date.now() + durationMins * 60000);
+  return arrival.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
 };
 
 // SVG Markers with pulsing animation support
@@ -885,141 +895,204 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
 
   return (
     <div className="h-full w-full relative z-0 overflow-hidden select-none">
-      {/* Top Floating Bar: Tactical Mission Bar when taking emergency, standard search in overview */}
-      {isTakingEmergency ? (
-        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[1000] w-full max-w-xl px-4 flex flex-col items-center gap-2">
-          <div className="w-full bg-slate-900/95 backdrop-blur-md border border-teal-500/40 rounded-2xl shadow-2xl p-3 flex items-center justify-between gap-3 text-white">
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="h-9 w-9 rounded-xl bg-teal-500/20 border border-teal-500/40 flex items-center justify-center shrink-0">
-                <Navigation className="h-5 w-5 text-teal-400 animate-pulse" />
+      {/* 1. Google Maps Authentic Turn-by-Turn Navigation Header */}
+      {isTakingEmergency || (routePolyline && activeHospital) ? (
+        <div className="absolute top-3 left-1/2 -translate-x-1/2 z-[1000] w-[95%] max-w-xl px-2">
+          <div className="w-full bg-[#0f5132]/95 backdrop-blur-md border border-emerald-500/40 rounded-2xl shadow-2xl p-3 sm:p-3.5 flex items-center justify-between gap-3 text-white">
+            <div className="flex items-center gap-3 min-w-0 flex-1">
+              {/* High-visibility Google Turn Maneuver Icon */}
+              <div className="h-11 w-11 sm:h-12 sm:w-12 rounded-xl bg-emerald-700/70 border border-emerald-400/40 flex items-center justify-center shrink-0 shadow-lg">
+                {navigationManeuvers.length > 0 ? (
+                  navigationManeuvers[0].maneuver?.toLowerCase().includes('left') ? (
+                    <ArrowUpLeft className="h-6 w-6 sm:h-7 sm:w-7 text-white" />
+                  ) : navigationManeuvers[0].maneuver?.toLowerCase().includes('right') ? (
+                    <ArrowUpRight className="h-6 w-6 sm:h-7 sm:w-7 text-white" />
+                  ) : navigationManeuvers[0].maneuver?.toLowerCase().includes('roundabout') ? (
+                    <RotateCw className="h-6 w-6 sm:h-7 sm:w-7 text-white" />
+                  ) : (
+                    <ArrowUp className="h-6 w-6 sm:h-7 sm:w-7 text-white" />
+                  )
+                ) : (
+                  <Navigation className="h-6 w-6 sm:h-7 sm:w-7 text-white animate-pulse" />
+                )}
               </div>
-              <div className="min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-400 border border-rose-500/30">
-                    Emergency Mission
+
+              {/* Maneuver Distance & Street Name */}
+              <div className="min-w-0 flex-1">
+                <div className="text-lg sm:text-xl font-black tracking-tight text-white leading-tight">
+                  {navigationManeuvers.length > 0 && navigationManeuvers[0].distanceText
+                    ? `In ${navigationManeuvers[0].distanceText}`
+                    : routeDurationMins
+                    ? `${routeDurationMins} min remaining`
+                    : "Navigating..."}
+                </div>
+                <div className="text-xs sm:text-sm font-semibold text-emerald-100 truncate mt-0.5">
+                  {navigationManeuvers.length > 0
+                    ? navigationManeuvers[0].instruction
+                    : routeSummary
+                    ? `Follow ${routeSummary}`
+                    : `Head towards ${activeHospital?.name || "facility"}`}
+                </div>
+                <div className="flex items-center gap-2 mt-1 text-[11px] text-emerald-200/90 truncate">
+                  <span className="truncate">
+                    To: <strong className="text-white font-bold">{activeHospital?.name || "Target Facility"}</strong>
                   </span>
                   {routeTrafficSource === 'google_live' && (
-                    <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center gap-1">
-                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-ping" />
-                      Google Live Traffic
+                    <span className="px-1.5 py-0.2 rounded bg-emerald-400/25 text-emerald-200 text-[10px] font-bold border border-emerald-400/40 shrink-0 flex items-center gap-1">
+                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-300 animate-ping" />
+                      Live Traffic
                     </span>
                   )}
-                  <span className="text-xs font-bold text-white truncate">
-                    Destination: {activeHospital?.name || "Target Facility"}
-                  </span>
                 </div>
-                <p className="text-[11px] text-slate-300 truncate mt-0.5">
-                  {routeDurationMins ? `ETA ~${routeDurationMins} mins` : "Computing route..."}
-                  {routeDistanceKm ? ` • ${routeDistanceKm} km` : ""}
-                  {" • "}
-                  <span className={showOnlyEmergencyRoute ? "text-teal-400 font-semibold" : "text-amber-300 font-semibold"}>
-                    {showOnlyEmergencyRoute ? "Focus: User, Route & Destination Only" : "Showing All Regional Pins"}
-                  </span>
-                </p>
               </div>
             </div>
 
+            {/* Navigation Header Actions */}
             <div className="flex items-center gap-1.5 shrink-0">
               <button
                 onClick={() => setShowOnlyEmergencyRoute(prev => !prev)}
                 className={cn(
-                  "px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer border shadow",
+                  "px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1 cursor-pointer border shadow",
                   showOnlyEmergencyRoute
-                    ? "bg-teal-600 hover:bg-teal-500 text-white border-teal-400 shadow-teal-500/20"
-                    : "bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700"
+                    ? "bg-emerald-600 hover:bg-emerald-500 text-white border-emerald-400 shadow-emerald-500/20"
+                    : "bg-black/30 hover:bg-black/40 text-emerald-200 border-emerald-600/40"
                 )}
-                title={showOnlyEmergencyRoute ? "Click to view all regional hospital & unit pins" : "Click to focus on emergency route only"}
+                title={showOnlyEmergencyRoute ? "Click to view all regional pins" : "Click to focus on emergency route only"}
               >
                 {showOnlyEmergencyRoute ? (
                   <>
                     <Crosshair className="h-3.5 w-3.5" />
-                    <span>Route Only</span>
+                    <span className="hidden sm:inline">Route Only</span>
                   </>
                 ) : (
                   <>
                     <Layers className="h-3.5 w-3.5" />
-                    <span>Show All</span>
+                    <span className="hidden sm:inline">Show All</span>
                   </>
                 )}
               </button>
+
+              {onExitEmergencyMode && (
+                <button
+                  onClick={onExitEmergencyMode}
+                  className="h-8 w-8 rounded-full bg-black/30 hover:bg-black/50 text-white flex items-center justify-center transition-colors cursor-pointer border border-emerald-500/30"
+                  title="Exit Navigation"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              )}
             </div>
           </div>
         </div>
       ) : (
-        <div ref={searchContainerRef} className="absolute top-4 left-1/2 -translate-x-1/2 z-[1000] w-full max-w-xl px-4 flex flex-col gap-2">
+        /* 2. Google Maps Floating Search Bar & Quick Filter Pills */
+        <div ref={searchContainerRef} className="absolute top-3 left-1/2 -translate-x-1/2 z-[1000] w-[95%] max-w-md flex flex-col gap-2">
+          {/* Google Search Card */}
           <div className="relative">
-            <div className="relative flex items-center">
-              <Search className="absolute left-3.5 h-4 w-4 text-teal-500 shrink-0" />
+            <div className="relative flex items-center bg-[#202124]/95 backdrop-blur-md border border-[#3c4043] rounded-full shadow-2xl hover:border-[#5f6368] focus-within:border-[#4285f4] focus-within:ring-2 focus-within:ring-[#4285f4]/30 transition-all px-3.5 py-1.5">
+              <Search className="h-4 w-4 text-[#8ab4f8] shrink-0 mr-2.5" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onFocus={() => setIsSearchFocused(true)}
-                placeholder="Search hospitals, ambulances, or emergency cases..."
-                className="w-full pl-10 pr-9 py-2.5 bg-slate-900/95 backdrop-blur-md border border-slate-700/80 focus:border-teal-500 rounded-xl shadow-2xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-teal-500/40 text-white transition-all placeholder:text-slate-400"
+                placeholder="Search Google Maps or facilities..."
+                className="w-full py-1 text-xs sm:text-sm font-medium text-white placeholder-[#9aa0a6] bg-transparent focus:outline-none"
               />
-              {searchQuery && (
+              {searchQuery ? (
                 <button
                   onClick={() => setSearchQuery("")}
-                  className="absolute right-3 text-slate-400 hover:text-white text-xs cursor-pointer"
+                  className="p-1 text-[#9aa0a6] hover:text-white transition-colors cursor-pointer"
+                  title="Clear Search"
                 >
-                  ✕
+                  <X className="h-3.5 w-3.5" />
                 </button>
+              ) : (
+                <div className="flex items-center gap-1.5 shrink-0 pl-1">
+                  <span className="h-2 w-2 rounded-full bg-emerald-400" title="Google Maps Connected" />
+                </div>
               )}
             </div>
 
             {/* Autocomplete Results Dropdown */}
             {isSearchFocused && searchResults.length > 0 && (
-              <div className="absolute top-full left-0 right-0 mt-1.5 bg-slate-900/95 backdrop-blur-md border border-slate-700 rounded-xl shadow-2xl overflow-hidden divide-y divide-slate-800 z-[1001] max-h-72 overflow-y-auto">
-                <div className="px-3 py-1.5 bg-slate-950/80 text-[10px] font-bold uppercase tracking-wider text-slate-400 flex justify-between items-center">
-                  <span>{searchQuery ? "Search Matches" : "Quick Hospital Suggestions"}</span>
-                  <span className="text-teal-400 text-[10px]">
-                    {isGoogleMapsConfigured() ? "Google Maps + OSM" : "OSM Live"}
+              <div className="absolute top-full left-0 right-0 mt-2 bg-[#202124]/98 backdrop-blur-md border border-[#3c4043] rounded-2xl shadow-2xl overflow-hidden divide-y divide-[#303134] z-[1001] max-h-72 overflow-y-auto">
+                <div className="px-3.5 py-2 bg-[#171717] text-[10px] font-bold uppercase tracking-wider text-[#9aa0a6] flex justify-between items-center">
+                  <span>{searchQuery ? "Places & Facilities" : "Suggested Hospitals"}</span>
+                  <span className="text-[#8ab4f8] text-[10px] flex items-center gap-1">
+                    <span className="h-1.5 w-1.5 rounded-full bg-[#8ab4f8] animate-pulse" />
+                    {isGoogleMapsConfigured() ? "Google Places Live" : "OSM Live"}
                   </span>
                 </div>
                 {searchResults.map((res) => (
                   <button
                     key={res.type + res.id}
                     onClick={() => handleSelectResult(res)}
-                    className="w-full text-left p-3 hover:bg-slate-800/80 transition-colors flex items-center justify-between gap-3 cursor-pointer group"
+                    className="w-full text-left p-3 hover:bg-[#303134] transition-colors flex items-center justify-between gap-3 cursor-pointer group"
                   >
                     <div className="flex items-center gap-2.5 min-w-0">
                       <span className="text-base shrink-0">
                         {res.type === 'hospital' ? '🏥' : res.type === 'ambulance' ? '🚑' : res.type === 'place' ? '📍' : '⚠️'}
                       </span>
                       <div className="min-w-0">
-                        <p className="font-semibold text-xs text-white group-hover:text-teal-300 truncate">
+                        <p className="font-semibold text-xs text-white group-hover:text-[#8ab4f8] truncate">
                           {res.title}
                         </p>
-                        <p className="text-[11px] text-slate-400 truncate">{res.subtitle}</p>
+                        <p className="text-[11px] text-[#9aa0a6] truncate">{res.subtitle}</p>
                       </div>
                     </div>
-                    <Crosshair className="h-3.5 w-3.5 text-slate-400 group-hover:text-teal-400 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <Crosshair className="h-3.5 w-3.5 text-[#9aa0a6] group-hover:text-[#8ab4f8] shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
                   </button>
                 ))}
               </div>
             )}
           </div>
 
-          {/* Quick Regional Focus Pills */}
-          <div className="flex items-center justify-center gap-1.5 overflow-x-auto py-1">
+          {/* Google Category Quick Filter Chips */}
+          <div className="flex items-center gap-1.5 overflow-x-auto py-1 scrollbar-none">
             <button
-              onClick={handleLocateMe}
-              className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-blue-600/30 hover:bg-blue-600/50 text-blue-300 border border-blue-500/40 shadow backdrop-blur-md transition-all flex items-center gap-1 cursor-pointer shrink-0"
+              onClick={() => {
+                setSearchQuery("hospital");
+                setIsSearchFocused(true);
+              }}
+              className="px-3 py-1 rounded-full text-[11px] font-semibold bg-[#202124]/90 hover:bg-[#303134] text-[#e8eaed] border border-[#3c4043] shadow-md backdrop-blur-md transition-all flex items-center gap-1.5 cursor-pointer shrink-0"
             >
-              <LocateFixed className="h-3 w-3" />
-              My Location
+              <span>🏥</span>
+              <span>Hospitals</span>
             </button>
             <button
               onClick={() => {
-                setFlyTarget([6.6961, -1.6310]);
-                setInspectedPoint([6.6961, -1.6310]);
-                audioTelemetry.speak("Viewing Kumasi Metropolitan Area.");
+                userManuallyChangedMapTheme.current = true;
+                const nextTheme = mapTheme === 'google-traffic' ? 'dark' : 'google-traffic';
+                setMapTheme(nextTheme);
+                audioTelemetry.speak(`Switched to ${nextTheme === 'google-traffic' ? 'Google live traffic' : 'dark'} layer.`);
               }}
-              className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-slate-900/80 hover:bg-slate-800 text-teal-300 border border-teal-500/30 shadow backdrop-blur-md transition-all flex items-center gap-1 cursor-pointer shrink-0"
+              className={cn(
+                "px-3 py-1 rounded-full text-[11px] font-semibold border shadow-md backdrop-blur-md transition-all flex items-center gap-1.5 cursor-pointer shrink-0",
+                mapTheme === 'google-traffic'
+                  ? "bg-emerald-600/30 text-emerald-300 border-emerald-500/50"
+                  : "bg-[#202124]/90 hover:bg-[#303134] text-[#e8eaed] border-[#3c4043]"
+              )}
             >
-              <Building2 className="h-3 w-3 text-teal-400" />
-              Kumasi Metro
+              <span>🚦</span>
+              <span>Traffic</span>
+            </button>
+            <button
+              onClick={() => {
+                userManuallyChangedMapTheme.current = true;
+                const nextTheme = mapTheme === 'satellite' ? 'dark' : 'satellite';
+                setMapTheme(nextTheme);
+                audioTelemetry.speak("Switched to satellite view.");
+              }}
+              className={cn(
+                "px-3 py-1 rounded-full text-[11px] font-semibold border shadow-md backdrop-blur-md transition-all flex items-center gap-1.5 cursor-pointer shrink-0",
+                mapTheme === 'satellite'
+                  ? "bg-sky-600/30 text-sky-300 border-sky-500/50"
+                  : "bg-[#202124]/90 hover:bg-[#303134] text-[#e8eaed] border-[#3c4043]"
+              )}
+            >
+              <span>🛰️</span>
+              <span>Satellite</span>
             </button>
             <button
               onClick={() => {
@@ -1027,107 +1100,119 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
                 setInspectedPoint([5.6037, -0.1870]);
                 audioTelemetry.speak("Viewing Greater Accra Metropolitan Area.");
               }}
-              className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-slate-900/80 hover:bg-slate-800 text-emerald-300 border border-emerald-500/30 shadow backdrop-blur-md transition-all flex items-center gap-1 cursor-pointer shrink-0"
+              className="px-3 py-1 rounded-full text-[11px] font-semibold bg-[#202124]/90 hover:bg-[#303134] text-[#e8eaed] border border-[#3c4043] shadow-md backdrop-blur-md transition-all flex items-center gap-1 cursor-pointer shrink-0"
             >
-              <Building2 className="h-3 w-3 text-emerald-400" />
-              Accra Metro
+              <span>📍</span>
+              <span>Accra</span>
+            </button>
+            <button
+              onClick={() => {
+                setFlyTarget([6.6961, -1.6310]);
+                setInspectedPoint([6.6961, -1.6310]);
+                audioTelemetry.speak("Viewing Kumasi Metropolitan Area.");
+              }}
+              className="px-3 py-1 rounded-full text-[11px] font-semibold bg-[#202124]/90 hover:bg-[#303134] text-[#e8eaed] border border-[#3c4043] shadow-md backdrop-blur-md transition-all flex items-center gap-1 cursor-pointer shrink-0"
+            >
+              <span>📍</span>
+              <span>Kumasi</span>
             </button>
             <button
               onClick={() => {
                 setFlyTarget([7.95, -1.03]);
                 audioTelemetry.speak("National facilities overview active.");
               }}
-              className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-slate-900/80 hover:bg-slate-800 text-purple-300 border border-purple-500/30 shadow backdrop-blur-md transition-all flex items-center gap-1 cursor-pointer shrink-0"
+              className="px-3 py-1 rounded-full text-[11px] font-semibold bg-[#202124]/90 hover:bg-[#303134] text-[#e8eaed] border border-[#3c4043] shadow-md backdrop-blur-md transition-all flex items-center gap-1 cursor-pointer shrink-0"
             >
-              <Globe className="h-3 w-3 text-purple-400" />
-              All Ghana
+              <span>🇬🇭</span>
+              <span>All Ghana</span>
             </button>
           </div>
         </div>
       )}
 
-      {/* Tactical Turn-by-Turn Navigation & Siren Maneuver HUD Banner */}
+      {/* 3. Google Maps Authentic Bottom ETA & Trip Sheet */}
       {routePolyline && activeHospital && (
-        <div className="absolute bottom-4 left-4 z-[1000] bg-slate-900/95 backdrop-blur-md border border-slate-700/80 p-3.5 rounded-2xl shadow-2xl flex flex-col gap-2.5 text-xs max-w-md animate-in fade-in slide-in-from-bottom-2 duration-300">
-          {/* Header Row: Maneuver & Road Instruction */}
-          <div className="flex items-start gap-3">
-            <div className="h-10 w-10 rounded-xl bg-teal-500/15 border border-teal-500/30 flex items-center justify-center shrink-0 shadow-inner">
-              {navigationManeuvers.length > 0 ? (
-                navigationManeuvers[0].maneuver?.toLowerCase().includes('left') ? (
-                  <ArrowUpLeft className="h-5 w-5 text-teal-400 shrink-0" />
-                ) : navigationManeuvers[0].maneuver?.toLowerCase().includes('right') ? (
-                  <ArrowUpRight className="h-5 w-5 text-teal-400 shrink-0" />
-                ) : navigationManeuvers[0].maneuver?.toLowerCase().includes('roundabout') ? (
-                  <RotateCw className="h-5 w-5 text-teal-400 shrink-0" />
-                ) : (
-                  <ArrowUp className="h-5 w-5 text-teal-400 shrink-0" />
-                )
-              ) : (
-                <Navigation className="h-5 w-5 text-teal-400 animate-pulse" />
-              )}
-            </div>
-
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-1.5 flex-wrap">
-                <span className="font-bold text-white text-[13px] leading-tight truncate">
-                  {navigationManeuvers.length > 0
-                    ? navigationManeuvers[0].instruction
-                    : routeSummary || `Route to ${activeHospital.name}`}
+        <div className="absolute bottom-4 left-3 right-3 sm:left-6 sm:right-auto sm:w-[440px] z-[1000] bg-[#202124]/95 backdrop-blur-md border border-[#3c4043] p-4 rounded-2xl shadow-2xl flex flex-col gap-3 text-white animate-in fade-in slide-in-from-bottom-3 duration-300">
+          {/* Big Bold Google Green ETA Header Row */}
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <div className="flex items-baseline gap-2">
+                <span className="text-3xl sm:text-4xl font-black text-[#34a853] leading-none tracking-tight">
+                  {sirenDurationMins || routeDurationMins || 8}
                 </span>
-              </div>
-              <div className="flex items-center gap-2 mt-1 text-slate-300 text-[11px]">
-                {navigationManeuvers.length > 0 && navigationManeuvers[0].distanceText && (
-                  <span className="font-bold text-teal-300 bg-teal-500/15 px-1.5 py-0.5 rounded">
-                    Next in {navigationManeuvers[0].distanceText}
+                <span className="text-base sm:text-lg font-bold text-[#34a853]">min</span>
+                {routeDurationMins && sirenDurationMins && routeDurationMins > sirenDurationMins && (
+                  <span className="text-xs text-[#9aa0a6] line-through ml-1">
+                    {routeDurationMins} min
                   </span>
                 )}
-                <span>To: <strong className="text-white">{activeHospital.name}</strong></span>
-                {routeDistanceKm && <span>• {routeDistanceKm} km</span>}
+              </div>
+              <div className="flex items-center gap-2 text-xs text-[#9aa0a6] font-medium mt-1">
+                <span>{routeDistanceKm || "4.2"} km</span>
+                <span>•</span>
+                <span>ETA {formatArrivalTime(sirenDurationMins || routeDurationMins) || "10:45 AM"}</span>
+                {routeTrafficSource === 'google_live' && (
+                  <>
+                    <span>•</span>
+                    <span className="text-emerald-400 font-semibold">Live Traffic</span>
+                  </>
+                )}
               </div>
             </div>
-          </div>
 
-          {/* Metrics & Siren Dynamics Bar */}
-          <div className="flex items-center justify-between gap-2 pt-2 border-t border-slate-800 text-[11px]">
-            <div className="flex items-center gap-2">
-              {/* Emergency Siren Clearance ETA */}
-              <div className="flex items-center gap-1.5 bg-rose-500/15 border border-rose-500/30 px-2 py-0.5 rounded-lg text-rose-300 font-bold">
-                <Siren className="h-3.5 w-3.5 text-rose-400 animate-pulse" />
-                <span>Siren ETA: ~{sirenDurationMins || routeDurationMins}m</span>
-              </div>
-
-              {/* Standard Consumer Car Time */}
-              {routeDurationMins && sirenDurationMins && routeDurationMins > sirenDurationMins && (
-                <span className="text-slate-400 text-[10px]">
-                  (Car: {routeDurationMins}m • Saves {routeDurationMins - sirenDurationMins}m)
+            {/* Siren Emergency Clearance Savings Badge */}
+            {routeDurationMins && sirenDurationMins && routeDurationMins > sirenDurationMins ? (
+              <div className="flex flex-col items-end shrink-0">
+                <span className="px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-rose-500/20 text-rose-300 border border-rose-500/30 flex items-center gap-1 shadow-sm animate-pulse">
+                  <Siren className="h-3 w-3 text-rose-400" />
+                  Siren -{routeDurationMins - sirenDurationMins}m
                 </span>
-              )}
-            </div>
-
-            {/* Live Traffic Badge */}
-            {routeTrafficSource === 'google_live' ? (
-              <span className="px-2 py-0.5 rounded-md font-bold text-[10px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-ping" />
-                Google Live Traffic
-              </span>
+                <span className="text-[10px] text-emerald-400 font-bold mt-1">Fastest route</span>
+              </div>
             ) : (
-              <span className="px-2 py-0.5 rounded-md font-bold text-[10px] bg-teal-500/20 text-teal-300">
-                Road Snapped
-              </span>
+              <div className="flex flex-col items-end shrink-0">
+                <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-ping" />
+                  Optimal Corridor
+                </span>
+              </div>
             )}
           </div>
 
-          {/* Alternative Route Corridor Selector */}
+          {/* Google Maps Multi-Color Mini Congestion Ribbon */}
+          <div className="flex flex-col gap-1">
+            <div className="w-full bg-[#303134] rounded-full h-2 overflow-hidden flex shadow-inner">
+              {trafficSegments.length > 0 ? (
+                trafficSegments.map((seg, sIdx) => {
+                  const segColor = seg.level === 'heavy' ? '#ea4335' : seg.level === 'moderate' ? '#fbbc04' : '#34a853';
+                  return (
+                    <div
+                      key={sIdx}
+                      style={{ width: `${100 / trafficSegments.length}%`, backgroundColor: segColor }}
+                      className="h-full first:rounded-l-full last:rounded-r-full"
+                    />
+                  );
+                })
+              ) : (
+                <div className="w-full h-full bg-gradient-to-r from-[#34a853] via-[#fbbc04] to-[#34a853]" />
+              )}
+            </div>
+            <div className="flex items-center justify-between text-[10px] text-[#9aa0a6] px-0.5">
+              <span>Traffic condition on route</span>
+              <span className="text-[#34a853] font-semibold">Mostly typical traffic</span>
+            </div>
+          </div>
+
+          {/* Alternative Route Corridor Chips */}
           {routeAlternatives.length > 0 && (
-            <div className="flex items-center gap-1.5 pt-1.5 border-t border-slate-800/80 overflow-x-auto">
-              <span className="text-[10px] uppercase font-bold text-slate-400 shrink-0">Routes:</span>
+            <div className="flex items-center gap-1.5 overflow-x-auto py-0.5 scrollbar-none">
               <button
                 onClick={() => handleSelectRouteAlternative(0)}
                 className={cn(
-                  "px-2 py-0.5 rounded-lg text-[10px] font-bold transition-all cursor-pointer shrink-0 border",
+                  "px-3 py-1 rounded-full text-[11px] font-semibold transition-all cursor-pointer shrink-0 border",
                   selectedAltIndex === 0
-                    ? "bg-teal-600 text-white border-teal-400 shadow-sm shadow-teal-500/30"
-                    : "bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700"
+                    ? "bg-[#1e8e3e] text-white border-[#34a853] shadow-sm"
+                    : "bg-[#303134] hover:bg-[#3c4043] text-[#e8eaed] border-[#3c4043]"
                 )}
               >
                 Primary ({sirenDurationMins || routeDurationMins}m)
@@ -1137,47 +1222,47 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
                   key={alt.id}
                   onClick={() => handleSelectRouteAlternative(idx + 1)}
                   className={cn(
-                    "px-2 py-0.5 rounded-lg text-[10px] font-bold transition-all cursor-pointer shrink-0 border truncate max-w-[140px]",
+                    "px-3 py-1 rounded-full text-[11px] font-semibold transition-all cursor-pointer shrink-0 border truncate max-w-[150px]",
                     selectedAltIndex === idx + 1
-                      ? "bg-teal-600 text-white border-teal-400 shadow-sm shadow-teal-500/30"
-                      : "bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700"
+                      ? "bg-[#1e8e3e] text-white border-[#34a853] shadow-sm"
+                      : "bg-[#303134] hover:bg-[#3c4043] text-[#e8eaed] border-[#3c4043]"
                   )}
                   title={`Alternative via ${alt.summary}`}
                 >
-                  Alt {idx + 1}: {alt.summary} ({alt.sirenDurationMins}m)
+                  Via {alt.summary} ({alt.sirenDurationMins}m)
                 </button>
               ))}
             </div>
           )}
 
-          {/* Real-time En-Route Trip Progress & Telemetry Controller */}
-          <div className="pt-2 border-t border-slate-800 flex flex-col gap-1.5">
+          {/* Real-time Drive Simulation Progress & Cockpit Controls */}
+          <div className="pt-2 border-t border-[#303134] flex flex-col gap-2">
             <div className="flex items-center justify-between text-[11px]">
               <div className="flex items-center gap-1.5 font-bold text-white">
-                <Gauge className="h-3.5 w-3.5 text-teal-400" />
+                <Gauge className="h-3.5 w-3.5 text-[#34a853]" />
                 <span>{isDriving ? `${currentSpeedKmh} km/h` : driveProgress > 0 ? "Drive Paused" : "Ready to Dispatch"}</span>
                 {isDriving && (
-                  <span className="text-[10px] text-teal-300 font-mono">
+                  <span className="text-[10px] text-emerald-400 font-mono">
                     • 🧭 {Math.round(animatedHeading)}°
                   </span>
                 )}
               </div>
-              <span className="font-mono text-slate-300 font-bold text-[10px]">
+              <span className="font-mono text-[#9aa0a6] font-bold text-[10px]">
                 {Math.round(driveProgress * 100)}% Traversed
               </span>
             </div>
 
             {/* Dynamic Transit Progress Bar */}
-            <div className="w-full bg-slate-800/90 rounded-full h-2 overflow-hidden border border-slate-700/60 shadow-inner">
+            <div className="w-full bg-[#303134] rounded-full h-1.5 overflow-hidden">
               <div
-                className="bg-gradient-to-r from-teal-500 via-sky-400 to-rose-500 h-full transition-all duration-150 rounded-full"
+                className="bg-gradient-to-r from-[#34a853] via-[#4285f4] to-rose-500 h-full transition-all duration-150 rounded-full"
                 style={{ width: `${Math.max(2, Math.round(driveProgress * 100))}%` }}
               />
             </div>
 
-            {/* Interactive Simulation Action Controls */}
-            <div className="flex items-center justify-between gap-1.5 pt-0.5">
-              <div className="flex items-center gap-1.5">
+            {/* Navigation Action Buttons (Google Style) */}
+            <div className="flex items-center justify-between gap-2 pt-0.5">
+              <div className="flex items-center gap-2">
                 <button
                   onClick={() => {
                     const nextDriving = !isDriving;
@@ -1187,36 +1272,36 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
                     }
                   }}
                   className={cn(
-                    "px-2.5 py-1 rounded-lg font-bold text-[11px] flex items-center gap-1 transition-all cursor-pointer shadow border",
+                    "px-4 py-1.5 rounded-full font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer shadow-md",
                     isDriving
-                      ? "bg-amber-600 hover:bg-amber-500 text-white border-amber-400"
-                      : "bg-teal-600 hover:bg-teal-500 text-white border-teal-400"
+                      ? "bg-[#ea4335] hover:bg-[#d93025] text-white"
+                      : "bg-[#1e8e3e] hover:bg-[#34a853] text-white"
                   )}
-                  title={isDriving ? "Pause simulated drive" : "Start animated drive along route"}
+                  title={isDriving ? "Pause drive simulation" : "Start simulated drive along route"}
                 >
                   {isDriving ? (
                     <>
-                      <Pause className="h-3 w-3 fill-current" />
-                      <span>Pause Drive</span>
+                      <Pause className="h-3.5 w-3.5 fill-current" />
+                      <span>Pause</span>
                     </>
                   ) : (
                     <>
-                      <Play className="h-3 w-3 fill-current" />
-                      <span>{driveProgress > 0 ? "Resume" : "Simulate Drive"}</span>
+                      <Play className="h-3.5 w-3.5 fill-current" />
+                      <span>{driveProgress > 0 ? "Resume" : "Start Drive"}</span>
                     </>
                   )}
                 </button>
 
-                {/* Simulation Playback Rate (1x / 2x / 4x) */}
+                {/* Simulation Speed Pill (1x, 2x, 4x) */}
                 <button
                   onClick={() => setPlaybackRate(r => (r === 1 ? 2 : r === 2 ? 4 : 1))}
-                  className="px-2 py-1 rounded-lg text-[10px] font-bold bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 cursor-pointer"
-                  title="Cycle Drive Simulation Speed (1x, 2x, 4x)"
+                  className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-[#303134] hover:bg-[#3c4043] text-[#e8eaed] border border-[#3c4043] cursor-pointer"
+                  title="Cycle Drive Simulation Speed"
                 >
                   {playbackRate}x
                 </button>
 
-                {/* Auto-Follow / Chase Camera Toggle */}
+                {/* Auto-follow / Chase Cam Toggle */}
                 <button
                   onClick={() => {
                     const next = !isChaseActive;
@@ -1224,10 +1309,10 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
                     if (next) audioTelemetry.speak("Camera locked to ambulance cockpit.");
                   }}
                   className={cn(
-                    "px-2 py-1 rounded-lg text-[10px] font-bold transition-all flex items-center gap-1 cursor-pointer border",
+                    "px-3 py-1 rounded-full text-[10px] font-bold transition-all flex items-center gap-1 cursor-pointer border",
                     isChaseActive
-                      ? "bg-sky-600 text-white border-sky-400 shadow-sm"
-                      : "bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700"
+                      ? "bg-[#1a73e8] text-white border-[#4285f4] shadow-sm"
+                      : "bg-[#303134] hover:bg-[#3c4043] text-[#e8eaed] border-[#3c4043]"
                   )}
                   title="Auto-pan camera to follow moving ambulance"
                 >
@@ -1246,7 +1331,7 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
                     setCurrentSpeedKmh(0);
                     audioTelemetry.speak("Drive simulation reset to start point.");
                   }}
-                  className="p-1 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition-colors cursor-pointer border border-transparent hover:border-slate-700"
+                  className="p-1.5 rounded-full bg-[#303134] hover:bg-[#3c4043] text-[#9aa0a6] hover:text-white transition-colors cursor-pointer border border-[#3c4043]"
                   title="Reset drive simulation"
                 >
                   <RotateCcw className="h-3.5 w-3.5" />
@@ -1254,28 +1339,35 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
               )}
             </div>
           </div>
-
-          {/* Real-time Traffic Color Legend */}
-          <div className="flex items-center justify-between text-[9px] text-slate-400 pt-1">
-            <div className="flex items-center gap-3">
-              <span className="flex items-center gap-1">
-                <span className="h-2 w-2 rounded-full bg-emerald-500" /> Free Flow
-              </span>
-              <span className="flex items-center gap-1">
-                <span className="h-2 w-2 rounded-full bg-amber-500" /> Moderate
-              </span>
-              <span className="flex items-center gap-1">
-                <span className="h-2 w-2 rounded-full bg-rose-500" /> Bottleneck
-              </span>
-            </div>
-            <span className="text-[10px] text-teal-400/80 font-medium">Auto-updating</span>
-          </div>
         </div>
       )}
 
-      {/* Floating Tactical Controls Toolbar (Right Side) */}
-      <div className="absolute top-24 right-4 z-[1000] flex flex-col gap-2 bg-slate-900/90 backdrop-blur-md p-1.5 rounded-xl border border-slate-700 shadow-2xl">
-        {/* Layer Switcher */}
+      {/* 4. Google Maps Circular Floating Action Controls (Right Side) */}
+      <div className="absolute top-20 right-4 z-[1000] flex flex-col gap-2.5">
+        {/* North Compass Button */}
+        <button
+          onClick={() => {
+            setAnimatedHeading(0);
+          }}
+          className="h-10 w-10 rounded-full bg-[#202124]/90 hover:bg-[#303134] border border-[#3c4043] text-white shadow-xl flex items-center justify-center transition-all cursor-pointer"
+          title="North Compass"
+        >
+          <Compass
+            className="h-5 w-5 text-rose-400 transition-transform duration-300"
+            style={{ transform: `rotate(${-animatedHeading}deg)` }}
+          />
+        </button>
+
+        {/* Locate Me (Google Blue) */}
+        <button
+          onClick={handleLocateMe}
+          className="h-10 w-10 rounded-full bg-[#202124]/90 hover:bg-[#303134] border border-[#3c4043] text-[#4285f4] shadow-xl flex items-center justify-center transition-all cursor-pointer"
+          title="Your Location"
+        >
+          <LocateFixed className="h-5 w-5" />
+        </button>
+
+        {/* Google Layer Switcher */}
         <button
           onClick={() => {
             userManuallyChangedMapTheme.current = true;
@@ -1287,53 +1379,48 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
             setMapTheme(nextTheme);
             audioTelemetry.speak(`Switched to ${nextTheme.replace('-', ' ')} layer.`);
           }}
-          className="p-2 rounded-lg hover:bg-slate-800 text-white transition-colors cursor-pointer flex items-center justify-center"
-          title={`Current Layer: ${mapTheme.toUpperCase()} (Click to cycle layers)`}
+          className="h-10 w-10 rounded-full bg-[#202124]/90 hover:bg-[#303134] border border-[#3c4043] text-white shadow-xl flex items-center justify-center transition-all cursor-pointer"
+          title={`Layers (Current: ${mapTheme.toUpperCase()})`}
         >
-          <Layers className="h-4 w-4 text-teal-400" />
+          <Layers className="h-5 w-5 text-[#8ab4f8]" />
         </button>
 
-        {/* Hotspot Toggle */}
+        {/* Accident Hotspots Toggle */}
         <button
           onClick={() => setShowHotspots(prev => !prev)}
           className={cn(
-            "p-2 rounded-lg transition-colors cursor-pointer flex items-center justify-center",
-            showHotspots ? "bg-amber-500/20 text-amber-300" : "hover:bg-slate-800 text-slate-400"
+            "h-10 w-10 rounded-full border shadow-xl flex items-center justify-center transition-all cursor-pointer",
+            showHotspots
+              ? "bg-amber-500/20 text-amber-300 border-amber-500/40"
+              : "bg-[#202124]/90 hover:bg-[#303134] text-[#9aa0a6] border-[#3c4043]"
           )}
-          title="Toggle Accident Hotspots"
+          title="Toggle High-Risk Corridors"
         >
-          <Flame className="h-4 w-4" />
+          <Flame className="h-5 w-5" />
         </button>
 
-        {/* Audio Telemetry Toggle */}
+        {/* Voice HUD / Audio Telemetry Toggle */}
         <button
           onClick={toggleAudio}
           className={cn(
-            "p-2 rounded-lg transition-colors cursor-pointer flex items-center justify-center",
-            !isAudioMuted ? "bg-teal-500/20 text-teal-300" : "hover:bg-slate-800 text-slate-400"
+            "h-10 w-10 rounded-full border shadow-xl flex items-center justify-center transition-all cursor-pointer",
+            !isAudioMuted
+              ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/40"
+              : "bg-[#202124]/90 hover:bg-[#303134] text-[#9aa0a6] border-[#3c4043]"
           )}
-          title={isAudioMuted ? "Unmute Voice HUD" : "Mute Voice HUD"}
+          title={isAudioMuted ? "Unmute Voice Guidance" : "Mute Voice Guidance"}
         >
-          {isAudioMuted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
-        </button>
-
-        {/* Locate Me */}
-        <button
-          onClick={handleLocateMe}
-          className="p-2 rounded-lg hover:bg-slate-800 text-white transition-colors cursor-pointer flex items-center justify-center"
-          title="Center on My Location"
-        >
-          <LocateFixed className="h-4 w-4 text-blue-400" />
+          {isAudioMuted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
         </button>
 
         {/* Focus Active Dispatch Unit */}
         {activeAmbulance && (
           <button
             onClick={handleFocusActiveDispatch}
-            className="p-2 rounded-lg hover:bg-slate-800 text-white transition-colors cursor-pointer flex items-center justify-center"
+            className="h-10 w-10 rounded-full bg-[#202124]/90 hover:bg-[#303134] border border-[#3c4043] text-rose-400 shadow-xl flex items-center justify-center transition-all cursor-pointer"
             title="Track Active Ambulance"
           >
-            <Crosshair className="h-4 w-4 text-rose-400" />
+            <Crosshair className="h-5 w-5" />
           </button>
         )}
       </div>
