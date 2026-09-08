@@ -10,6 +10,7 @@ import { useNavigate, useSearchParams } from "react-router";
 import { offlineQueue } from "../utils/offlineQueue";
 import { audioTelemetry } from "../utils/audioTelemetry";
 import { calculateTEWS, MobilityStatus, AvpuStatus } from "../utils/tewsCalculator";
+import { searchGooglePlaces, isGoogleMapsConfigured, GooglePlaceResult } from "../utils/googleMapsLoader";
 
 // Mathematical Haversine Geodesic Distance (km)
 export const computeHaversineKm = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
@@ -67,6 +68,46 @@ export const NewEmergency: React.FC = () => {
   const [recommendedHospitals, setRecommendedHospitals] = React.useState<any[]>([]);
   const [showRecommendations, setShowRecommendations] = React.useState(false);
   const [pendingOfflineCount, setPendingOfflineCount] = React.useState(0);
+
+  // Google Places search states for Ghana location geocoding
+  const [placeSearchQuery, setPlaceSearchQuery] = React.useState("");
+  const [googlePlacesList, setGooglePlacesList] = React.useState<GooglePlaceResult[]>([]);
+  const [isSearchingPlaces, setIsSearchingPlaces] = React.useState(false);
+  const [showPlacesDropdown, setShowPlacesDropdown] = React.useState(false);
+
+  // Debounced Google Places search across Ghana
+  React.useEffect(() => {
+    if (!isGoogleMapsConfigured() || !placeSearchQuery.trim() || placeSearchQuery.trim().length < 2) {
+      setGooglePlacesList([]);
+      setShowPlacesDropdown(false);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      setIsSearchingPlaces(true);
+      try {
+        const places = await searchGooglePlaces(placeSearchQuery);
+        setGooglePlacesList(places);
+        setShowPlacesDropdown(places.length > 0);
+      } catch (err) {
+        console.warn("Places search error:", err);
+      } finally {
+        setIsSearchingPlaces(false);
+      }
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [placeSearchQuery]);
+
+  const handleSelectGooglePlace = (place: GooglePlaceResult) => {
+    setFormData(prev => ({
+      ...prev,
+      location: `${place.coords[0].toFixed(6)}, ${place.coords[1].toFixed(6)}`
+    }));
+    setPlaceSearchQuery(`${place.title} (${place.subtitle})`);
+    setShowPlacesDropdown(false);
+    audioTelemetry.speak(`Location locked to ${place.title}`);
+  };
 
   // Auto-detect user's physical GPS location & check offline queue on mount
   React.useEffect(() => {
@@ -186,7 +227,13 @@ export const NewEmergency: React.FC = () => {
         const recs = data.recommended_hospitals.map((rec: any) => {
           const h = hospitals.find(h => h.id === rec.hospital_id);
           const normalizedScore = Math.max(0, Math.min(100, Math.round(rec.score ?? 85)));
-          return h ? { ...h, score: normalizedScore, distance_estimate: rec.distance_estimate } : null;
+          return h ? {
+            ...h,
+            score: normalizedScore,
+            distance_estimate: rec.distance_estimate,
+            estimated_travel_time_mins: rec.estimated_travel_time_mins,
+            traffic_source: rec.traffic_source
+          } : null;
         }).filter(Boolean);
         
         // Priority 1: Reachable hospitals in current geographic cluster (score > 0 and distance <= 60km)
@@ -227,7 +274,9 @@ export const NewEmergency: React.FC = () => {
         return {
           ...h,
           score,
-          distance_estimate: Math.round(distKm * 100) / 100
+          distance_estimate: Math.round(distKm * 100) / 100,
+          estimated_travel_time_mins: Math.ceil(distKm * 2.2),
+          traffic_source: 'haversine_estimate'
         };
       });
 
@@ -409,6 +458,43 @@ export const NewEmergency: React.FC = () => {
                 </div>
 
                 <div>
+                  {isGoogleMapsConfigured() && (
+                    <div className="mb-3 relative">
+                      <label className="block text-xs font-semibold text-muted-foreground mb-1">
+                        Search Ghana Location (Google Places)
+                      </label>
+                      <div className="relative">
+                        <Input
+                          value={placeSearchQuery}
+                          onChange={(e) => setPlaceSearchQuery(e.target.value)}
+                          placeholder="Search town, landmark, street, or junction across Ghana..."
+                          className="text-xs pr-8"
+                        />
+                        {isSearchingPlaces && (
+                          <div className="absolute right-2.5 top-2.5 h-3.5 w-3.5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                        )}
+                      </div>
+                      {showPlacesDropdown && googlePlacesList.length > 0 && (
+                        <div className="absolute top-full left-0 right-0 mt-1 bg-card border border-border rounded-lg shadow-xl z-50 divide-y divide-border overflow-hidden max-h-48 overflow-y-auto">
+                          {googlePlacesList.map((place) => (
+                            <button
+                              key={place.id}
+                              type="button"
+                              onClick={() => handleSelectGooglePlace(place)}
+                              className="w-full text-left p-2.5 hover:bg-muted/80 text-xs flex items-center justify-between gap-2 cursor-pointer"
+                            >
+                              <div className="min-w-0">
+                                <p className="font-semibold text-foreground truncate">{place.title}</p>
+                                <p className="text-[11px] text-muted-foreground truncate">{place.subtitle}</p>
+                              </div>
+                              <span className="text-[10px] text-primary shrink-0 font-medium">Select</span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
                       <label className="block text-sm font-medium">GPS Coordinates</label>
@@ -662,10 +748,18 @@ export const NewEmergency: React.FC = () => {
                           )}
                           <h3 className="text-xl font-bold text-foreground">{hospital.name}</h3>
                         </div>
-                        <p className="text-xs text-muted-foreground flex items-center gap-1">
-                          <MapPin className="h-3.5 w-3.5 text-red-500" />
-                          {hospital.location?.address || `${hospital.name}, Ghana`} • {hospital.distance_estimate?.toFixed(2) || "3.5"} km away
-                        </p>
+                        <div className="flex items-center gap-2 flex-wrap text-xs text-muted-foreground mt-1">
+                          <span className="flex items-center gap-1">
+                            <MapPin className="h-3.5 w-3.5 text-red-500" />
+                            {hospital.location?.address || `${hospital.name}, Ghana`} • {hospital.distance_estimate?.toFixed(2) || "3.5"} km away
+                          </span>
+                          {hospital.traffic_source === 'google_live_traffic' && (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-ping" />
+                              Google Live Traffic
+                            </span>
+                          )}
+                        </div>
                       </div>
                       <div className="text-right">
                         <div className="text-3xl font-extrabold text-blue-500">{displayScore}%</div>
@@ -687,8 +781,12 @@ export const NewEmergency: React.FC = () => {
                         <p className="text-[10px] text-muted-foreground font-semibold">Specialists</p>
                       </div>
                       <div className="text-center p-3 bg-muted/60 rounded-lg border border-border/40">
-                        <p className="text-lg font-bold text-emerald-500">{Math.round((hospital.distance_estimate || 3) * 1.5)} min</p>
-                        <p className="text-[10px] text-muted-foreground font-semibold">ETA</p>
+                        <p className="text-lg font-bold text-emerald-500">
+                          {hospital.estimated_travel_time_mins ? `${Math.round(hospital.estimated_travel_time_mins)} min` : `${Math.round((hospital.distance_estimate || 3) * 1.5)} min`}
+                        </p>
+                        <p className="text-[10px] text-muted-foreground font-semibold">
+                          {hospital.traffic_source === 'google_live_traffic' ? 'Live Traffic ETA' : 'ETA'}
+                        </p>
                       </div>
                     </div>
 

@@ -17,9 +17,18 @@ import {
   MapPin,
   Phone,
   Building2,
-  Globe
+  Globe,
+  Radio
 } from 'lucide-react';
 import { useTheme } from './ThemeProvider';
+import {
+  isGoogleMapsConfigured,
+  loadGoogleMapsScript,
+  searchGooglePlaces,
+  fetchGoogleDirections,
+  getGoogleMapsApiKey,
+  GooglePlaceResult
+} from '../../utils/googleMapsLoader';
 import 'leaflet/dist/leaflet.css';
 
 /**
@@ -206,11 +215,11 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
   userCoords = null,
   onExitEmergencyMode
 }) => {
-  // Tile Layer options: dark (CartoDB Dark Matter), street (CartoDB Voyager), satellite (Esri World Imagery)
+  // Tile Layer options: dark, street, satellite, google-traffic, google-hybrid, google-streets
   const { effectiveTheme } = useTheme();
-  const [mapTheme, setMapTheme] = React.useState<'dark' | 'street' | 'satellite'>(
-    effectiveTheme === 'light' ? 'street' : 'dark'
-  );
+  const [mapTheme, setMapTheme] = React.useState<
+    'dark' | 'street' | 'satellite' | 'google-traffic' | 'google-hybrid' | 'google-streets'
+  >(effectiveTheme === 'light' ? 'street' : 'dark');
   const userManuallyChangedMapTheme = React.useRef(false);
 
   React.useEffect(() => {
@@ -230,9 +239,39 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
   const [osrmRoutePoints, setOsrmRoutePoints] = React.useState<Array<[number, number]> | null>(null);
   const [routeDistanceKm, setRouteDistanceKm] = React.useState<string | null>(null);
   const [routeDurationMins, setRouteDurationMins] = React.useState<number | null>(null);
+  const [routeTrafficSource, setRouteTrafficSource] = React.useState<'google_live' | 'osrm' | 'direct' | null>(null);
+
+  // Google Places search results for live Ghana geocoding
+  const [googlePlacesResults, setGooglePlacesResults] = React.useState<GooglePlaceResult[]>([]);
 
   // Emergency Focus Mode: when taking an emergency, default to showing ONLY user's location, route and destination
   const [showOnlyEmergencyRoute, setShowOnlyEmergencyRoute] = React.useState<boolean>(true);
+
+  // Auto-load Google Maps SDK on mount if key configured
+  React.useEffect(() => {
+    if (isGoogleMapsConfigured()) {
+      loadGoogleMapsScript();
+    }
+  }, []);
+
+  // Debounced Google Places autocomplete search across Ghana
+  React.useEffect(() => {
+    if (!isGoogleMapsConfigured() || !searchQuery.trim() || searchQuery.trim().length < 2) {
+      setGooglePlacesResults([]);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      try {
+        const places = await searchGooglePlaces(searchQuery);
+        setGooglePlacesResults(places);
+      } catch (err) {
+        console.warn("Google Places lookup error:", err);
+      }
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   // Auto-acquire device GPS on mount if permitted
   React.useEffect(() => {
@@ -343,7 +382,7 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
     return null;
   }, [isEmergencyFocusActive, effectiveUserCoords, destinationCoords]);
 
-  // Turn-by-turn road snapping via OSRM
+  // Turn-by-turn road snapping via Google Directions (with Live Traffic) or OSRM Fallback
   React.useEffect(() => {
     const origin = effectiveUserCoords;
     const dest = destinationCoords;
@@ -352,33 +391,70 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
       setOsrmRoutePoints(null);
       setRouteDistanceKm(null);
       setRouteDurationMins(null);
+      setRouteTrafficSource(null);
       return;
     }
 
-    const url = `https://router.project-osrm.org/route/v1/driving/${origin[1]},${origin[0]};${dest[1]},${dest[0]}?overview=full&geometries=geojson`;
+    let isCancelled = false;
 
-    fetch(url)
-      .then(res => res.json())
-      .then(data => {
-        if (data.routes && data.routes[0]) {
+    const computeTurnByTurnRoute = async () => {
+      // 1. Primary Tier: Google Directions API with Live Traffic
+      if (isGoogleMapsConfigured()) {
+        try {
+          const gResult = await fetchGoogleDirections(origin, dest);
+          if (!isCancelled && gResult && gResult.points.length > 0) {
+            setOsrmRoutePoints(gResult.points);
+            setRouteDistanceKm(gResult.distanceKm);
+            setRouteDurationMins(gResult.durationMins);
+            setRouteTrafficSource('google_live');
+            audioTelemetry.speak(`Google live traffic route locked to ${activeHospital?.name || 'facility'}. ETA: ${gResult.durationMins} minutes.`);
+            return;
+          }
+        } catch (err) {
+          console.warn("Google Directions error, falling back to OSRM:", err);
+        }
+      }
+
+      // 2. Secondary Tier: OSRM Public Driving Routing Machine
+      const url = `https://router.project-osrm.org/route/v1/driving/${origin[1]},${origin[0]};${dest[1]},${dest[0]}?overview=full&geometries=geojson`;
+
+      try {
+        const res = await fetch(url);
+        const data = await res.json();
+        if (!isCancelled && data.routes && data.routes[0]) {
           const route = data.routes[0];
           if (route.geometry?.coordinates) {
             const points = route.geometry.coordinates.map((c: [number, number]) => [c[1], c[0]] as [number, number]);
             setOsrmRoutePoints(points);
             setRouteDistanceKm((route.distance / 1000).toFixed(1));
-            setRouteDurationMins(Math.ceil(route.duration / 60));
-            audioTelemetry.speak(`Emergency route locked to ${activeHospital?.name || 'facility'}. Estimated driving time: ${Math.ceil(route.duration / 60)} minutes.`);
+            const dur = Math.ceil(route.duration / 60);
+            setRouteDurationMins(dur);
+            setRouteTrafficSource('osrm');
+            audioTelemetry.speak(`Emergency route locked to ${activeHospital?.name || 'facility'}. Estimated driving time: ${dur} minutes.`);
+            return;
           }
         }
-      })
-      .catch(err => {
+      } catch (err) {
         console.warn("OSRM road route fetch fallback error:", err);
+      }
+
+      // 3. Tertiary Tier: Direct Geodesic Distance Fallback
+      if (!isCancelled) {
         const distKm = calculateDistanceKm(origin, dest);
         const durMins = Math.max(4, Math.ceil(distKm * 2.2));
+        setOsrmRoutePoints(null);
         setRouteDistanceKm(distKm.toFixed(1));
         setRouteDurationMins(durMins);
+        setRouteTrafficSource('direct');
         audioTelemetry.speak(`Direct dispatch route active to ${activeHospital?.name || 'facility'}. Estimated transit time: ${durMins} minutes.`);
-      });
+      }
+    };
+
+    computeTurnByTurnRoute();
+
+    return () => {
+      isCancelled = true;
+    };
   }, [effectiveUserCoords, destinationCoords, activeHospital]);
 
   // Direct line fallback if OSRM is unreachable
@@ -424,7 +500,7 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
 
     const q = searchQuery.toLowerCase();
     const results: Array<{
-      type: 'hospital' | 'ambulance' | 'emergency';
+      type: 'hospital' | 'ambulance' | 'emergency' | 'place';
       id: string;
       title: string;
       subtitle: string;
@@ -471,8 +547,21 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
       }
     });
 
-    return results.slice(0, 8);
-  }, [searchQuery, hospitals, ambulances, emergencies]);
+    // Append Google Places geocoded results across Ghana
+    if (googlePlacesResults && googlePlacesResults.length > 0) {
+      googlePlacesResults.forEach((place) => {
+        results.push({
+          type: 'place',
+          id: place.id,
+          title: place.title,
+          subtitle: `Google Places • ${place.subtitle}`,
+          coords: place.coords
+        });
+      });
+    }
+
+    return results.slice(0, 10);
+  }, [searchQuery, hospitals, ambulances, emergencies, googlePlacesResults]);
 
   const handleSelectResult = (res: { coords: [number, number]; title: string }) => {
     setFlyTarget(res.coords);
@@ -525,11 +614,21 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
     }
   };
 
-  // Map Tile URLs
-  const tileUrls = {
+  // Map Tile URLs (Supports CartoDB, Esri Satellite, and Google Maps Live Traffic & Hybrid)
+  const googleKey = getGoogleMapsApiKey();
+  const tileUrls: Record<string, string> = {
     dark: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
     street: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
-    satellite: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
+    satellite: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+    'google-traffic': googleKey
+      ? `https://mt1.google.com/vt/lyrs=m,traffic&x={x}&y={y}&z={z}&key=${googleKey}`
+      : 'https://mt1.google.com/vt/lyrs=m,traffic&x={x}&y={y}&z={z}',
+    'google-hybrid': googleKey
+      ? `https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}&key=${googleKey}`
+      : 'https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}',
+    'google-streets': googleKey
+      ? `https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}&key=${googleKey}`
+      : 'https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}'
   };
 
   return (
@@ -547,6 +646,12 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
                   <span className="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-400 border border-rose-500/30">
                     Emergency Mission
                   </span>
+                  {routeTrafficSource === 'google_live' && (
+                    <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center gap-1">
+                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-ping" />
+                      Google Live Traffic
+                    </span>
+                  )}
                   <span className="text-xs font-bold text-white truncate">
                     Destination: {activeHospital?.name || "Target Facility"}
                   </span>
@@ -616,7 +721,9 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
               <div className="absolute top-full left-0 right-0 mt-1.5 bg-slate-900/95 backdrop-blur-md border border-slate-700 rounded-xl shadow-2xl overflow-hidden divide-y divide-slate-800 z-[1001] max-h-72 overflow-y-auto">
                 <div className="px-3 py-1.5 bg-slate-950/80 text-[10px] font-bold uppercase tracking-wider text-slate-400 flex justify-between items-center">
                   <span>{searchQuery ? "Search Matches" : "Quick Hospital Suggestions"}</span>
-                  <span className="text-teal-400 text-[10px]">OSM Live</span>
+                  <span className="text-teal-400 text-[10px]">
+                    {isGoogleMapsConfigured() ? "Google Maps + OSM" : "OSM Live"}
+                  </span>
                 </div>
                 {searchResults.map((res) => (
                   <button
@@ -626,7 +733,7 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
                   >
                     <div className="flex items-center gap-2.5 min-w-0">
                       <span className="text-base shrink-0">
-                        {res.type === 'hospital' ? '🏥' : res.type === 'ambulance' ? '🚑' : '⚠️'}
+                        {res.type === 'hospital' ? '🏥' : res.type === 'ambulance' ? '🚑' : res.type === 'place' ? '📍' : '⚠️'}
                       </span>
                       <div className="min-w-0">
                         <p className="font-semibold text-xs text-white group-hover:text-teal-300 truncate">
@@ -695,9 +802,14 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
           </div>
           <div>
             <div className="flex items-center gap-2 font-semibold text-white">
-              <span>Road Snapped Route</span>
+              <span>{routeTrafficSource === 'google_live' ? "Google Live Traffic Route" : "Road Snapped Route"}</span>
               {routeDurationMins && (
-                <span className="px-1.5 py-0.5 rounded bg-teal-500/20 text-teal-300 font-bold text-[10px]">
+                <span className={cn(
+                  "px-1.5 py-0.5 rounded font-bold text-[10px]",
+                  routeTrafficSource === 'google_live'
+                    ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30"
+                    : "bg-teal-500/20 text-teal-300"
+                )}>
                   ~{routeDurationMins} mins
                 </span>
               )}
@@ -716,10 +828,16 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
         <button
           onClick={() => {
             userManuallyChangedMapTheme.current = true;
-            setMapTheme(prev => prev === 'dark' ? 'street' : prev === 'street' ? 'satellite' : 'dark');
+            const themes: Array<'dark' | 'street' | 'google-traffic' | 'google-hybrid' | 'satellite'> = isGoogleMapsConfigured()
+              ? ['dark', 'street', 'google-traffic', 'google-hybrid', 'satellite']
+              : ['dark', 'street', 'satellite'];
+            const currentIndex = themes.indexOf(mapTheme as any);
+            const nextTheme = themes[(currentIndex + 1) % themes.length];
+            setMapTheme(nextTheme);
+            audioTelemetry.speak(`Switched to ${nextTheme.replace('-', ' ')} layer.`);
           }}
           className="p-2 rounded-lg hover:bg-slate-800 text-white transition-colors cursor-pointer flex items-center justify-center"
-          title={`Current Layer: ${mapTheme.toUpperCase()} (Click to toggle)`}
+          title={`Current Layer: ${mapTheme.toUpperCase()} (Click to cycle layers)`}
         >
           <Layers className="h-4 w-4 text-teal-400" />
         </button>
@@ -777,9 +895,16 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
         zoomControl={false}
       >
         <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/">CARTO</a>'
-          url={tileUrls[mapTheme]}
-          maxZoom={19}
+          key={mapTheme}
+          attribution={
+            mapTheme.startsWith('google')
+              ? '&copy; <a href="https://www.google.com/maps" target="_blank" rel="noreferrer">Google Maps Platform</a>'
+              : mapTheme === 'satellite'
+              ? '&copy; <a href="https://www.esri.com/">Esri</a>, Maxar'
+              : '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/">CARTO</a>'
+          }
+          url={tileUrls[mapTheme] || tileUrls.dark}
+          maxZoom={mapTheme.startsWith('google') ? 20 : 19}
         />
 
         <MapController

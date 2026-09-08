@@ -24,7 +24,6 @@ import {
   Wifi,
   WifiOff
 } from "lucide-react";
-import { DefenseDemoBar } from "./DefenseDemoBar";
 import { offlineQueue } from "../../utils/offlineQueue";
 
 export interface NavItem {
@@ -447,9 +446,6 @@ export const AppShell: React.FC<AppShellProps> = ({ role, userName, children }) 
           </div>
         </div>
       )}
-
-      {/* Global Examiner Defense Presentation Bar */}
-      <DefenseDemoBar />
     </div>
   );
 };

@@ -41,6 +41,92 @@ def get_traffic_multiplier(hour: int) -> float:
         return 1.2
     return 1.0
 
+def get_google_maps_api_key():
+    """
+    Safely retrieves the Google Maps API key from environment variables or local .env files.
+    Checks GOOGLE_MAPS_API_KEY, VITE_GOOGLE_MAPS_API_KEY, and common project locations.
+    """
+    key = os.getenv("GOOGLE_MAPS_API_KEY") or os.getenv("VITE_GOOGLE_MAPS_API_KEY")
+    if key and key.strip():
+        return key.strip().strip('"').strip("'")
+    
+    # Check possible .env file locations
+    env_paths = [
+        os.path.join(os.getcwd(), ".env"),
+        os.path.join(os.getcwd(), "backend", ".env"),
+        os.path.join(os.getcwd(), "frontend", ".env"),
+        os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".env"),
+        os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "backend", ".env"),
+        os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "frontend", ".env"),
+    ]
+    for p in env_paths:
+        if os.path.exists(p):
+            try:
+                with open(p, "r", encoding="utf-8") as f:
+                    for line in f:
+                        line = line.strip()
+                        if line.startswith("GOOGLE_MAPS_API_KEY=") or line.startswith("VITE_GOOGLE_MAPS_API_KEY="):
+                            parts = line.split("=", 1)
+                            if len(parts) > 1:
+                                val = parts[1].strip().strip('"').strip("'")
+                                if val:
+                                    return val
+            except Exception:
+                pass
+    return None
+
+def get_google_distance_matrix(amb_lat, amb_lon, hospitals, api_key=None):
+    """
+    Calls Google Maps Distance Matrix API with departure_time=now and traffic_model=best_guess
+    to calculate real-time driving durations factoring in live road traffic congestion.
+    Returns a dictionary mapping hospital_id -> { "duration_mins": float, "distance_km": float, "in_traffic": bool }.
+    """
+    if not api_key:
+        api_key = get_google_maps_api_key()
+    if not api_key:
+        return None
+
+    # Google allows up to 25 destinations per distance matrix request
+    batch_hospitals = hospitals[:25] if len(hospitals) > 25 else hospitals
+    destinations = "|".join(f"{h.latitude},{h.longitude}" for h in batch_hospitals)
+    origin = f"{amb_lat},{amb_lon}"
+
+    url = "https://maps.googleapis.com/maps/api/distancematrix/json"
+    params = {
+        "origins": origin,
+        "destinations": destinations,
+        "mode": "driving",
+        "departure_time": "now",
+        "traffic_model": "best_guess",
+        "key": api_key
+    }
+
+    try:
+        response = requests.get(url, params=params, timeout=6)
+        if response.status_code == 200:
+            data = response.json()
+            if data.get("status") == "OK":
+                results = {}
+                elements = data.get("rows", [{}])[0].get("elements", [])
+                for i, h in enumerate(batch_hospitals):
+                    if i < len(elements) and elements[i].get("status") == "OK":
+                        elem = elements[i]
+                        # Prefer duration_in_traffic if available
+                        dur_sec = elem.get("duration_in_traffic", {}).get("value") or elem.get("duration", {}).get("value")
+                        dist_m = elem.get("distance", {}).get("value")
+                        if dur_sec is not None:
+                            results[h.id] = {
+                                "duration_mins": dur_sec / 60.0,
+                                "distance_km": (dist_m / 1000.0) if dist_m is not None else None,
+                                "in_traffic": "duration_in_traffic" in elem
+                            }
+                if results:
+                    return results
+    except Exception as e:
+        print(f"Google Maps Distance Matrix fallback error: {e}")
+
+    return None
+
 def get_osrm_distance_matrix(amb_lat, amb_lon, hospitals):
     """
     Calls the free public OSRM API to get base travel times (driving durations)
@@ -146,20 +232,36 @@ def recommend_hospitals(amb_lat, amb_lon, trauma_level, emergency_type, hospital
         current_hour = datetime.now().hour
     traffic_multiplier = get_traffic_multiplier(current_hour)
     
-    # Try fetching base OSRM driving durations
-    osrm_travel_times = get_osrm_distance_matrix(amb_lat, amb_lon, hospitals)
+    # Multi-tier routing resolution:
+    # Tier 1: Google Maps Distance Matrix API (Live traffic condition)
+    # Tier 2: OSRM Public Matrix API (Road-snapped + hour-of-day traffic model)
+    # Tier 3: Haversine mathematical geodesic calculation
+    google_matrix = get_google_distance_matrix(amb_lat, amb_lon, hospitals)
+    osrm_travel_times = None
+    if not google_matrix:
+        osrm_travel_times = get_osrm_distance_matrix(amb_lat, amb_lon, hospitals)
     
     model = load_ml_model(weights_path)
     
     for h in hospitals:
-        distance_km = calculate_distance(amb_lat, amb_lon, h.latitude, h.longitude)
-        
-        # Calculate base estimated travel time
-        if osrm_travel_times and h.id in osrm_travel_times:
+        traffic_source = "haversine_estimate"
+        if google_matrix and h.id in google_matrix:
+            g_data = google_matrix[h.id]
+            estimated_travel_time = g_data["duration_mins"]
+            if g_data.get("distance_km") is not None:
+                distance_km = g_data["distance_km"]
+            else:
+                distance_km = calculate_distance(amb_lat, amb_lon, h.latitude, h.longitude)
+            traffic_source = "google_live_traffic" if g_data.get("in_traffic") else "google_typical_traffic"
+        elif osrm_travel_times and h.id in osrm_travel_times:
+            distance_km = calculate_distance(amb_lat, amb_lon, h.latitude, h.longitude)
             base_travel_time = osrm_travel_times[h.id]
             estimated_travel_time = base_travel_time * traffic_multiplier
+            traffic_source = "osrm_simulated"
         else:
+            distance_km = calculate_distance(amb_lat, amb_lon, h.latitude, h.longitude)
             estimated_travel_time = distance_km * 2.5 * traffic_multiplier
+            traffic_source = "haversine_estimate"
 
         avail_gen = max(0, h.total_general_beds - h.occupied_general_beds)
         avail_icu = max(0, h.total_icu_beds - h.occupied_icu_beds)
@@ -211,14 +313,13 @@ def recommend_hospitals(amb_lat, amb_lon, trauma_level, emergency_type, hospital
         composite_score = (s_dist * 0.35) + (s_cap * 0.35) + (s_ml * 0.20) + (s_res * 0.10)
         
         # Hard clinical safety guardrails:
+        # - Hospital beyond Golden Hour radius (60 km) is disqualified (score = 0.0)
         # - Hospital with 0 available beds of required type is strictly disqualified (score = 0.0)
-        # - Hospitals beyond 60 km receive distance penalty scaling
-        if (trauma_level >= 4 and avail_icu <= 0) or (trauma_level < 4 and avail_gen <= 0):
+        if distance_km > 60.0 or (trauma_level >= 4 and avail_icu <= 0) or (trauma_level < 4 and avail_gen <= 0):
             score = 0.0
             ml_predicted = False
         else:
-            distance_scale = 1.0 if distance_km <= 60.0 else max(0.25, 1.0 - ((distance_km - 60.0) / 80.0))
-            score = round(max(10.0, min(99.0, composite_score * distance_scale)), 1)
+            score = round(max(10.0, min(99.0, composite_score)), 1)
             
         scored_hospitals.append({
             "hospital_id": h.id,
@@ -226,6 +327,7 @@ def recommend_hospitals(amb_lat, amb_lon, trauma_level, emergency_type, hospital
             "distance_estimate": round(distance_km, 2),
             "distance_km": round(distance_km, 2),
             "estimated_travel_time_mins": round(estimated_travel_time, 1),
+            "traffic_source": traffic_source,
             "ml_used": ml_predicted
         })
         
