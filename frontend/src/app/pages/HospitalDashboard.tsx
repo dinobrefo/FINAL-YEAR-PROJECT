@@ -56,11 +56,15 @@ export const HospitalDashboard: React.FC = () => {
     }
   };
 
+  const generalReserved = hospital.reservedBeds ?? 0;
+  const icuReserved = hospital.icuBeds.reserved ?? 0;
+  const generalTotal = hospital.totalBeds - hospital.icuBeds.total;
+
   const bedData = [
-    { name: "General", total: hospital.totalBeds - hospital.icuBeds.total, occupied: (hospital.totalBeds - hospital.icuBeds.total) - hospital.availableBeds, available: hospital.availableBeds },
-    { name: "ICU", total: hospital.icuBeds.total, occupied: hospital.icuBeds.total - hospital.icuBeds.available, available: hospital.icuBeds.available },
-    { name: "ER Queue", total: 40, occupied: 28, available: 12 },
-    { name: "Maternity", total: 30, occupied: 22, available: 8 },
+    { name: "General", total: generalTotal, occupied: Math.max(0, generalTotal - hospital.availableBeds - generalReserved), incoming: generalReserved, available: hospital.availableBeds },
+    { name: "ICU", total: hospital.icuBeds.total, occupied: Math.max(0, hospital.icuBeds.total - hospital.icuBeds.available - icuReserved), incoming: icuReserved, available: hospital.icuBeds.available },
+    { name: "ER Queue", total: 40, occupied: 28, incoming: 0, available: 12 },
+    { name: "Maternity", total: 30, occupied: 22, incoming: 0, available: 8 },
   ];
 
   const occupancyRate = Math.round((hospital.totalBeds - hospital.availableBeds) / hospital.totalBeds * 100);
@@ -115,6 +119,7 @@ export const HospitalDashboard: React.FC = () => {
                 }}
               />
               <Bar dataKey="occupied" stackId="a" fill="var(--chart-1)" />
+              <Bar dataKey="incoming" stackId="a" fill="var(--chart-3)" />
               <Bar dataKey="available" stackId="a" fill="var(--chart-2)" />
             </BarChart>
           </ResponsiveContainer>
@@ -323,13 +328,13 @@ export const HospitalDashboard: React.FC = () => {
             title="Available Beds"
             value={hospital.availableBeds}
             icon={BedDouble}
-            trend={{ value: `${occupancyRate}% occupied`, isPositive: occupancyRate < 85 }}
+            trend={{ value: `${occupancyRate}% occupied · ${generalReserved} incoming`, isPositive: occupancyRate < 85 }}
           />
           <StatCard
             title="ICU Beds"
             value={`${hospital.icuBeds.available} / ${hospital.icuBeds.total}`}
             icon={Activity}
-            description="Critical Care Capacity"
+            description={`Critical Care Capacity · ${icuReserved} incoming`}
           />
           <StatCard
             title="Incoming Ambulances"

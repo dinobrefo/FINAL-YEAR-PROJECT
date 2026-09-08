@@ -29,8 +29,10 @@ export const useRealTime = () => {
 const mapHospital = (h: any): Hospital => {
   const totalGen = Number(h.total_general_beds ?? h.totalBeds ?? 50);
   const occGen = Number(h.occupied_general_beds ?? (h.totalBeds ? h.totalBeds - (h.availableBeds ?? 0) : 0));
+  const resGen = Number(h.reserved_general_beds ?? h.reservedBeds ?? 0);
   const totalIcu = Number(h.total_icu_beds ?? h.icuBeds?.total ?? 10);
   const occIcu = Number(h.occupied_icu_beds ?? (h.icuBeds ? h.icuBeds.total - (h.icuBeds.available ?? 0) : 0));
+  const resIcu = Number(h.reserved_icu_beds ?? h.icuBeds?.reserved ?? 0);
 
   return {
     id: String(h.id),
@@ -41,10 +43,14 @@ const mapHospital = (h: any): Hospital => {
       address: h.address || h.location?.address || `${h.name || "Facility"} Area`
     },
     totalBeds: totalGen,
-    availableBeds: Math.max(0, totalGen - occGen),
+    // "available" now means genuinely free right now: total minus patients in a
+    // bed minus beds held for en-route ("incoming") patients.
+    availableBeds: Math.max(0, totalGen - occGen - resGen),
+    reservedBeds: Math.max(0, resGen),
     icuBeds: {
       total: totalIcu,
-      available: Math.max(0, totalIcu - occIcu)
+      available: Math.max(0, totalIcu - occIcu - resIcu),
+      reserved: Math.max(0, resIcu)
     },
     specialists: Array.isArray(h.specialists) && h.specialists.length > 0 ? h.specialists : ["General Practitioner", "Emergency Medicine"],
     equipment: h.equipment || { ventilators: 5, ctScanners: 1, mriMachines: 0, oxygenUnits: 15 }

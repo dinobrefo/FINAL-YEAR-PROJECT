@@ -14,8 +14,10 @@ CREATE TABLE IF NOT EXISTS hospitals (
     address TEXT DEFAULT '',
     total_general_beds INTEGER NOT NULL DEFAULT 0,
     occupied_general_beds INTEGER NOT NULL DEFAULT 0,
+    reserved_general_beds INTEGER NOT NULL DEFAULT 0, -- beds held for en-route ("incoming") patients
     total_icu_beds INTEGER NOT NULL DEFAULT 0,
     occupied_icu_beds INTEGER NOT NULL DEFAULT 0,
+    reserved_icu_beds INTEGER NOT NULL DEFAULT 0, -- ICU beds held for en-route ("incoming") patients
     specialists TEXT[] DEFAULT '{}',
     equipment JSONB DEFAULT '{}',
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,

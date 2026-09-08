@@ -33,9 +33,13 @@ export interface Hospital {
   };
   totalBeds: number;
   availableBeds: number;
+  /** General beds held for en-route ("incoming") patients not yet arrived. */
+  reservedBeds?: number;
   icuBeds: {
     total: number;
     available: number;
+    /** ICU beds held for en-route ("incoming") patients not yet arrived. */
+    reserved?: number;
   };
   specialists: string[];
   equipment: {
