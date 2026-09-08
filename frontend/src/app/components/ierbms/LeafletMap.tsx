@@ -18,7 +18,15 @@ import {
   Phone,
   Building2,
   Globe,
-  Radio
+  Radio,
+  ArrowUp,
+  ArrowUpLeft,
+  ArrowUpRight,
+  CornerUpRight,
+  CornerUpLeft,
+  RotateCw,
+  Zap,
+  Siren
 } from 'lucide-react';
 import { useTheme } from './ThemeProvider';
 import {
@@ -27,7 +35,10 @@ import {
   searchGooglePlaces,
   fetchGoogleDirections,
   getGoogleMapsApiKey,
-  GooglePlaceResult
+  GooglePlaceResult,
+  TrafficSegment,
+  NavigationManeuver,
+  RouteAlternative
 } from '../../utils/googleMapsLoader';
 import 'leaflet/dist/leaflet.css';
 
@@ -239,7 +250,13 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
   const [osrmRoutePoints, setOsrmRoutePoints] = React.useState<Array<[number, number]> | null>(null);
   const [routeDistanceKm, setRouteDistanceKm] = React.useState<string | null>(null);
   const [routeDurationMins, setRouteDurationMins] = React.useState<number | null>(null);
+  const [sirenDurationMins, setSirenDurationMins] = React.useState<number | null>(null);
   const [routeTrafficSource, setRouteTrafficSource] = React.useState<'google_live' | 'osrm' | 'direct' | null>(null);
+  const [trafficSegments, setTrafficSegments] = React.useState<TrafficSegment[]>([]);
+  const [navigationManeuvers, setNavigationManeuvers] = React.useState<NavigationManeuver[]>([]);
+  const [routeAlternatives, setRouteAlternatives] = React.useState<RouteAlternative[]>([]);
+  const [selectedAltIndex, setSelectedAltIndex] = React.useState<number>(0);
+  const [routeSummary, setRouteSummary] = React.useState<string | null>(null);
 
   // Google Places search results for live Ghana geocoding
   const [googlePlacesResults, setGooglePlacesResults] = React.useState<GooglePlaceResult[]>([]);
@@ -382,6 +399,41 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
     return null;
   }, [isEmergencyFocusActive, effectiveUserCoords, destinationCoords]);
 
+  const primaryRouteRef = React.useRef<{
+    points: Array<[number, number]>;
+    distanceKm: string;
+    durationMins: number;
+    sirenDurationMins: number;
+    summary: string;
+    trafficSegments: TrafficSegment[];
+    maneuvers: NavigationManeuver[];
+  } | null>(null);
+
+  const handleSelectRouteAlternative = (altIdx: number) => {
+    setSelectedAltIndex(altIdx);
+    if (altIdx === 0 && primaryRouteRef.current) {
+      const p = primaryRouteRef.current;
+      setOsrmRoutePoints(p.points);
+      setTrafficSegments(p.trafficSegments);
+      setNavigationManeuvers(p.maneuvers);
+      setRouteDistanceKm(p.distanceKm);
+      setRouteDurationMins(p.durationMins);
+      setSirenDurationMins(p.sirenDurationMins);
+      setRouteSummary(p.summary);
+      audioTelemetry.speak(`Primary route via ${p.summary} active.`);
+    } else if (routeAlternatives[altIdx - 1]) {
+      const alt = routeAlternatives[altIdx - 1];
+      setOsrmRoutePoints(alt.points);
+      setTrafficSegments(alt.trafficSegments);
+      setNavigationManeuvers(alt.maneuvers);
+      setRouteDistanceKm(alt.distanceKm);
+      setRouteDurationMins(alt.durationMins);
+      setSirenDurationMins(alt.sirenDurationMins);
+      setRouteSummary(alt.summary);
+      audioTelemetry.speak(`Switched to alternate corridor via ${alt.summary}.`);
+    }
+  };
+
   // Turn-by-turn road snapping via Google Directions (with Live Traffic) or OSRM Fallback
   React.useEffect(() => {
     const origin = effectiveUserCoords;
@@ -391,23 +443,45 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
       setOsrmRoutePoints(null);
       setRouteDistanceKm(null);
       setRouteDurationMins(null);
+      setSirenDurationMins(null);
       setRouteTrafficSource(null);
+      setTrafficSegments([]);
+      setNavigationManeuvers([]);
+      setRouteAlternatives([]);
+      setRouteSummary(null);
+      primaryRouteRef.current = null;
       return;
     }
 
     let isCancelled = false;
 
     const computeTurnByTurnRoute = async () => {
-      // 1. Primary Tier: Google Directions API with Live Traffic
+      // 1. Primary Tier: Google Directions API with Live Traffic & Alternatives
       if (isGoogleMapsConfigured()) {
         try {
           const gResult = await fetchGoogleDirections(origin, dest);
           if (!isCancelled && gResult && gResult.points.length > 0) {
+            primaryRouteRef.current = {
+              points: gResult.points,
+              distanceKm: gResult.distanceKm,
+              durationMins: gResult.durationMins,
+              sirenDurationMins: gResult.sirenDurationMins,
+              summary: gResult.summary || 'Fastest Route',
+              trafficSegments: gResult.trafficSegments || [],
+              maneuvers: gResult.maneuvers || []
+            };
+
             setOsrmRoutePoints(gResult.points);
+            setTrafficSegments(gResult.trafficSegments || []);
+            setNavigationManeuvers(gResult.maneuvers || []);
+            setRouteAlternatives(gResult.alternatives || []);
+            setSelectedAltIndex(0);
             setRouteDistanceKm(gResult.distanceKm);
             setRouteDurationMins(gResult.durationMins);
+            setSirenDurationMins(gResult.sirenDurationMins);
+            setRouteSummary(gResult.summary || null);
             setRouteTrafficSource('google_live');
-            audioTelemetry.speak(`Google live traffic route locked to ${activeHospital?.name || 'facility'}. ETA: ${gResult.durationMins} minutes.`);
+            audioTelemetry.speak(`Google live traffic route locked to ${activeHospital?.name || 'facility'}. Siren ETA: ${gResult.sirenDurationMins} minutes.`);
             return;
           }
         } catch (err) {
@@ -425,10 +499,24 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
           const route = data.routes[0];
           if (route.geometry?.coordinates) {
             const points = route.geometry.coordinates.map((c: [number, number]) => [c[1], c[0]] as [number, number]);
-            setOsrmRoutePoints(points);
-            setRouteDistanceKm((route.distance / 1000).toFixed(1));
+            const distKm = (route.distance / 1000).toFixed(1);
             const dur = Math.ceil(route.duration / 60);
+            const sirenDur = Math.max(1, Math.round(dur * 0.85));
+
+            setOsrmRoutePoints(points);
+            setTrafficSegments([{
+              points,
+              level: 'moderate',
+              color: '#06b6d4',
+              speedKmh: 35
+            }]);
+            setNavigationManeuvers([]);
+            setRouteAlternatives([]);
+            setSelectedAltIndex(0);
+            setRouteDistanceKm(distKm);
             setRouteDurationMins(dur);
+            setSirenDurationMins(sirenDur);
+            setRouteSummary('OSRM Road Route');
             setRouteTrafficSource('osrm');
             audioTelemetry.speak(`Emergency route locked to ${activeHospital?.name || 'facility'}. Estimated driving time: ${dur} minutes.`);
             return;
@@ -443,8 +531,14 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
         const distKm = calculateDistanceKm(origin, dest);
         const durMins = Math.max(4, Math.ceil(distKm * 2.2));
         setOsrmRoutePoints(null);
+        setTrafficSegments([]);
+        setNavigationManeuvers([]);
+        setRouteAlternatives([]);
+        setSelectedAltIndex(0);
         setRouteDistanceKm(distKm.toFixed(1));
         setRouteDurationMins(durMins);
+        setSirenDurationMins(durMins);
+        setRouteSummary('Direct Line');
         setRouteTrafficSource('direct');
         audioTelemetry.speak(`Direct dispatch route active to ${activeHospital?.name || 'facility'}. Estimated transit time: ${durMins} minutes.`);
       }
@@ -794,30 +888,124 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
         </div>
       )}
 
-      {/* Turn-by-Turn Road Route HUD Banner */}
+      {/* Tactical Turn-by-Turn Navigation & Siren Maneuver HUD Banner */}
       {routePolyline && activeHospital && (
-        <div className="absolute bottom-4 left-4 z-[1000] bg-slate-900/95 backdrop-blur-md border border-slate-700 px-4 py-3 rounded-xl shadow-2xl flex items-center gap-3 text-xs max-w-sm">
-          <div className="h-9 w-9 rounded-lg bg-teal-500/15 border border-teal-500/30 flex items-center justify-center shrink-0">
-            <Navigation className="h-5 w-5 text-teal-400 animate-pulse" />
+        <div className="absolute bottom-4 left-4 z-[1000] bg-slate-900/95 backdrop-blur-md border border-slate-700/80 p-3.5 rounded-2xl shadow-2xl flex flex-col gap-2.5 text-xs max-w-md animate-in fade-in slide-in-from-bottom-2 duration-300">
+          {/* Header Row: Maneuver & Road Instruction */}
+          <div className="flex items-start gap-3">
+            <div className="h-10 w-10 rounded-xl bg-teal-500/15 border border-teal-500/30 flex items-center justify-center shrink-0 shadow-inner">
+              {navigationManeuvers.length > 0 ? (
+                navigationManeuvers[0].maneuver?.toLowerCase().includes('left') ? (
+                  <ArrowUpLeft className="h-5 w-5 text-teal-400 shrink-0" />
+                ) : navigationManeuvers[0].maneuver?.toLowerCase().includes('right') ? (
+                  <ArrowUpRight className="h-5 w-5 text-teal-400 shrink-0" />
+                ) : navigationManeuvers[0].maneuver?.toLowerCase().includes('roundabout') ? (
+                  <RotateCw className="h-5 w-5 text-teal-400 shrink-0" />
+                ) : (
+                  <ArrowUp className="h-5 w-5 text-teal-400 shrink-0" />
+                )
+              ) : (
+                <Navigation className="h-5 w-5 text-teal-400 animate-pulse" />
+              )}
+            </div>
+
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span className="font-bold text-white text-[13px] leading-tight truncate">
+                  {navigationManeuvers.length > 0
+                    ? navigationManeuvers[0].instruction
+                    : routeSummary || `Route to ${activeHospital.name}`}
+                </span>
+              </div>
+              <div className="flex items-center gap-2 mt-1 text-slate-300 text-[11px]">
+                {navigationManeuvers.length > 0 && navigationManeuvers[0].distanceText && (
+                  <span className="font-bold text-teal-300 bg-teal-500/15 px-1.5 py-0.5 rounded">
+                    Next in {navigationManeuvers[0].distanceText}
+                  </span>
+                )}
+                <span>To: <strong className="text-white">{activeHospital.name}</strong></span>
+                {routeDistanceKm && <span>• {routeDistanceKm} km</span>}
+              </div>
+            </div>
           </div>
-          <div>
-            <div className="flex items-center gap-2 font-semibold text-white">
-              <span>{routeTrafficSource === 'google_live' ? "Google Live Traffic Route" : "Road Snapped Route"}</span>
-              {routeDurationMins && (
-                <span className={cn(
-                  "px-1.5 py-0.5 rounded font-bold text-[10px]",
-                  routeTrafficSource === 'google_live'
-                    ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30"
-                    : "bg-teal-500/20 text-teal-300"
-                )}>
-                  ~{routeDurationMins} mins
+
+          {/* Metrics & Siren Dynamics Bar */}
+          <div className="flex items-center justify-between gap-2 pt-2 border-t border-slate-800 text-[11px]">
+            <div className="flex items-center gap-2">
+              {/* Emergency Siren Clearance ETA */}
+              <div className="flex items-center gap-1.5 bg-rose-500/15 border border-rose-500/30 px-2 py-0.5 rounded-lg text-rose-300 font-bold">
+                <Siren className="h-3.5 w-3.5 text-rose-400 animate-pulse" />
+                <span>Siren ETA: ~{sirenDurationMins || routeDurationMins}m</span>
+              </div>
+
+              {/* Standard Consumer Car Time */}
+              {routeDurationMins && sirenDurationMins && routeDurationMins > sirenDurationMins && (
+                <span className="text-slate-400 text-[10px]">
+                  (Car: {routeDurationMins}m • Saves {routeDurationMins - sirenDurationMins}m)
                 </span>
               )}
             </div>
-            <p className="text-[11px] text-slate-300 truncate">
-              To: <span className="font-medium text-white">{activeHospital.name}</span>
-              {routeDistanceKm && ` • ${routeDistanceKm} km`}
-            </p>
+
+            {/* Live Traffic Badge */}
+            {routeTrafficSource === 'google_live' ? (
+              <span className="px-2 py-0.5 rounded-md font-bold text-[10px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-ping" />
+                Google Live Traffic
+              </span>
+            ) : (
+              <span className="px-2 py-0.5 rounded-md font-bold text-[10px] bg-teal-500/20 text-teal-300">
+                Road Snapped
+              </span>
+            )}
+          </div>
+
+          {/* Alternative Route Corridor Selector */}
+          {routeAlternatives.length > 0 && (
+            <div className="flex items-center gap-1.5 pt-1.5 border-t border-slate-800/80 overflow-x-auto">
+              <span className="text-[10px] uppercase font-bold text-slate-400 shrink-0">Routes:</span>
+              <button
+                onClick={() => handleSelectRouteAlternative(0)}
+                className={cn(
+                  "px-2 py-0.5 rounded-lg text-[10px] font-bold transition-all cursor-pointer shrink-0 border",
+                  selectedAltIndex === 0
+                    ? "bg-teal-600 text-white border-teal-400 shadow-sm shadow-teal-500/30"
+                    : "bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700"
+                )}
+              >
+                Primary ({sirenDurationMins || routeDurationMins}m)
+              </button>
+              {routeAlternatives.map((alt, idx) => (
+                <button
+                  key={alt.id}
+                  onClick={() => handleSelectRouteAlternative(idx + 1)}
+                  className={cn(
+                    "px-2 py-0.5 rounded-lg text-[10px] font-bold transition-all cursor-pointer shrink-0 border truncate max-w-[140px]",
+                    selectedAltIndex === idx + 1
+                      ? "bg-teal-600 text-white border-teal-400 shadow-sm shadow-teal-500/30"
+                      : "bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700"
+                  )}
+                  title={`Alternative via ${alt.summary}`}
+                >
+                  Alt {idx + 1}: {alt.summary} ({alt.sirenDurationMins}m)
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* Real-time Traffic Color Legend */}
+          <div className="flex items-center justify-between text-[9px] text-slate-400 pt-1">
+            <div className="flex items-center gap-3">
+              <span className="flex items-center gap-1">
+                <span className="h-2 w-2 rounded-full bg-emerald-500" /> Free Flow
+              </span>
+              <span className="flex items-center gap-1">
+                <span className="h-2 w-2 rounded-full bg-amber-500" /> Moderate
+              </span>
+              <span className="flex items-center gap-1">
+                <span className="h-2 w-2 rounded-full bg-rose-500" /> Bottleneck
+              </span>
+            </div>
+            <span className="text-[10px] text-teal-400/80 font-medium">Auto-updating</span>
           </div>
         </div>
       )}
@@ -924,8 +1112,35 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
           }}
         />
 
-        {/* Turn-by-Turn Road Route Polyline (interactive: false so clicks pass through) */}
-        {routePolyline && (
+        {/* Turn-by-Turn Road Route Multi-Color Traffic Polylines (interactive: false) */}
+        {trafficSegments && trafficSegments.length > 0 ? (
+          trafficSegments.map((seg, idx) => (
+            <React.Fragment key={`traffic-seg-${idx}`}>
+              {/* Traffic Speed Ambient Glow */}
+              <Polyline
+                positions={seg.points}
+                pathOptions={{
+                  color: seg.color,
+                  weight: 8,
+                  opacity: 0.40,
+                  lineCap: 'round',
+                  interactive: false
+                }}
+              />
+              {/* Traffic Speed Core Line */}
+              <Polyline
+                positions={seg.points}
+                pathOptions={{
+                  color: seg.color,
+                  weight: 4.5,
+                  opacity: 0.95,
+                  lineCap: 'round',
+                  interactive: false
+                }}
+              />
+            </React.Fragment>
+          ))
+        ) : routePolyline ? (
           <>
             <Polyline
               positions={routePolyline}
@@ -936,6 +1151,21 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
               pathOptions={{ color: '#14b8a6', weight: 4.5, opacity: 0.95, dashArray: '10, 10', lineCap: 'round', interactive: false }}
             />
           </>
+        ) : null}
+
+        {/* Animated Directional Transit Flow Pulse Overlay */}
+        {routePolyline && (
+          <Polyline
+            positions={routePolyline}
+            pathOptions={{
+              color: '#ffffff',
+              weight: 2,
+              opacity: 0.85,
+              dashArray: '6, 18',
+              lineCap: 'round',
+              interactive: false
+            }}
+          />
         )}
 
         {/* TACTICAL EMERGENCY MODE: When taking an emergency, ONLY user location and destination show! */}

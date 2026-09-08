@@ -84,7 +84,9 @@ class TestGoogleMapsMatrix(unittest.TestCase):
         self.assertEqual(len(recs), 2)
         h1 = next(r for r in recs if r["hospital_id"] == "hosp_1")
         self.assertEqual(h1["traffic_source"], "google_live_traffic")
-        self.assertEqual(h1["estimated_travel_time_mins"], 14.5)
+        self.assertEqual(h1["estimated_travel_time_mins"], 12.8) # Siren-adjusted ETA
+        self.assertEqual(h1["normal_travel_time_mins"], 14.5)     # Unadjusted consumer car ETA
+        self.assertEqual(h1["siren_savings_mins"], 1.7)
         self.assertEqual(h1["distance_km"], 4.8)
 
 if __name__ == "__main__":

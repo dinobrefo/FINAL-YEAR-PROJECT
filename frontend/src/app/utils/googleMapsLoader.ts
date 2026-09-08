@@ -19,12 +19,41 @@ export interface GooglePlaceResult {
   coords: [number, number];
 }
 
+export interface TrafficSegment {
+  points: Array<[number, number]>;
+  level: 'fast' | 'moderate' | 'heavy';
+  color: string;
+  speedKmh: number;
+}
+
+export interface NavigationManeuver {
+  instruction: string;
+  distanceText: string;
+  durationText?: string;
+  maneuver?: string;
+}
+
+export interface RouteAlternative {
+  id: number;
+  summary: string;
+  distanceKm: string;
+  durationMins: number;
+  sirenDurationMins: number;
+  points: Array<[number, number]>;
+  trafficSegments: TrafficSegment[];
+  maneuvers: NavigationManeuver[];
+}
+
 export interface GoogleDirectionsResult {
   points: Array<[number, number]>;
   distanceKm: string;
   durationMins: number;
+  sirenDurationMins: number;
   inTraffic: boolean;
   summary?: string;
+  trafficSegments: TrafficSegment[];
+  maneuvers: NavigationManeuver[];
+  alternatives: RouteAlternative[];
 }
 
 /**
@@ -202,13 +231,118 @@ export const searchGooglePlaces = async (
   });
 };
 
+export const stripHtml = (html: string): string => {
+  return html.replace(/<[^>]*>?/gm, '').replace(/&nbsp;/g, ' ').trim();
+};
+
+// High-Speed In-Memory TTL Cache for Directions (60-second sliding shield)
+const DIRECTIONS_CACHE = new Map<string, { expiresAt: number; data: GoogleDirectionsResult }>();
+const DIRECTIONS_CACHE_TTL_MS = 60 * 1000;
+
+const getDirectionsCacheKey = (origin: [number, number], dest: [number, number]): string => {
+  return `${origin[0].toFixed(4)},${origin[1].toFixed(4)}->${dest[0].toFixed(4)},${dest[1].toFixed(4)}`;
+};
+
+const parseRouteLeg = (route: any, leg: any) => {
+  let points: Array<[number, number]> = [];
+  if (route.overview_polyline) {
+    points = decodePolyline(route.overview_polyline);
+  } else if (route.overview_path) {
+    points = route.overview_path.map((p: any) => [p.lat(), p.lng()] as [number, number]);
+  }
+
+  const distMeters = leg?.distance?.value || 0;
+  const durSeconds = leg?.duration_in_traffic?.value || leg?.duration?.value || 0;
+  const inTraffic = Boolean(leg?.duration_in_traffic);
+  const durationMins = Math.max(1, Math.ceil(durSeconds / 60));
+
+  // Emergency Vehicle Dynamics: ~18% faster in traffic, ~25% in free-flow via siren right-of-way
+  const sirenFactor = inTraffic ? 0.82 : 0.75;
+  const sirenDurationMins = Math.max(1, Math.round(durationMins * sirenFactor));
+
+  // Extract Turn-by-Turn Navigation Maneuvers
+  const maneuvers: NavigationManeuver[] = (leg?.steps || []).map((s: any) => ({
+    instruction: stripHtml(s.instructions || ''),
+    distanceText: s.distance?.text || '',
+    durationText: s.duration?.text || '',
+    maneuver: s.maneuver || ''
+  })).filter((m: NavigationManeuver) => Boolean(m.instruction));
+
+  // Extract Traffic-Segmented Polylines (Green / Amber / Red based on step velocity)
+  const trafficSegments: TrafficSegment[] = [];
+  if (leg?.steps && leg.steps.length > 0) {
+    for (const s of leg.steps) {
+      let stepPoints: Array<[number, number]> = [];
+      if (s.path && s.path.length > 0) {
+        stepPoints = s.path.map((p: any) => [p.lat(), p.lng()] as [number, number]);
+      } else if (s.lat_lngs && s.lat_lngs.length > 0) {
+        stepPoints = s.lat_lngs.map((p: any) => [p.lat(), p.lng()] as [number, number]);
+      } else if (s.polyline) {
+        stepPoints = decodePolyline(s.polyline);
+      }
+
+      if (stepPoints.length > 0) {
+        const sDist = s.distance?.value || 0;
+        const sDur = s.duration_in_traffic?.value || s.duration?.value || 1;
+        const speedKmh = sDur > 0 ? (sDist / sDur) * 3.6 : 35;
+
+        let level: 'fast' | 'moderate' | 'heavy' = 'fast';
+        let color = '#10b981'; // Green: Free flow > 42 km/h
+
+        if (speedKmh < 20) {
+          level = 'heavy';
+          color = '#ef4444'; // Red: Severe bottleneck < 20 km/h
+        } else if (speedKmh < 42) {
+          level = 'moderate';
+          color = '#f59e0b'; // Amber: Moderate flow 20-42 km/h
+        }
+
+        trafficSegments.push({
+          points: stepPoints,
+          level,
+          color,
+          speedKmh: Math.round(speedKmh)
+        });
+      }
+    }
+  }
+
+  // Fallback segment if steps lacked individual coordinate arrays
+  if (trafficSegments.length === 0 && points.length > 0) {
+    trafficSegments.push({
+      points,
+      level: inTraffic ? 'moderate' : 'fast',
+      color: inTraffic ? '#f59e0b' : '#10b981',
+      speedKmh: 35
+    });
+  }
+
+  return {
+    points,
+    distanceKm: (distMeters / 1000).toFixed(1),
+    durationMins,
+    sirenDurationMins,
+    inTraffic,
+    summary: route.summary || leg?.end_address || 'Optimal Route',
+    trafficSegments,
+    maneuvers
+  };
+};
+
 /**
- * Requests turn-by-turn driving directions with live traffic from Google Directions Service.
+ * Requests turn-by-turn driving directions with live traffic, alternative corridors,
+ * and high-speed in-memory TTL caching from Google Directions Service.
  */
 export const fetchGoogleDirections = async (
   origin: [number, number],
   dest: [number, number]
 ): Promise<GoogleDirectionsResult | null> => {
+  const cacheKey = getDirectionsCacheKey(origin, dest);
+  const cached = DIRECTIONS_CACHE.get(cacheKey);
+  if (cached && Date.now() < cached.expiresAt) {
+    return cached.data;
+  }
+
   const google = await loadGoogleMapsScript();
   if (!google?.maps?.DirectionsService) {
     return null;
@@ -227,31 +361,37 @@ export const fetchGoogleDirections = async (
             departureTime: new Date(),
             trafficModel: google.maps.TrafficModel.BEST_GUESS
           },
-          provideRouteAlternatives: false
+          provideRouteAlternatives: true // Evaluate multi-corridor alternatives
         },
         (result: any, status: any) => {
           if (status === google.maps.DirectionsStatus.OK && result?.routes?.[0]) {
-            const route = result.routes[0];
-            const leg = route.legs?.[0];
+            const primaryLeg = parseRouteLeg(result.routes[0], result.routes[0].legs?.[0]);
 
-            let points: Array<[number, number]> = [];
-            if (route.overview_polyline) {
-              points = decodePolyline(route.overview_polyline);
-            } else if (route.overview_path) {
-              points = route.overview_path.map((p: any) => [p.lat(), p.lng()] as [number, number]);
-            }
-
-            const distMeters = leg?.distance?.value || 0;
-            const durSeconds = leg?.duration_in_traffic?.value || leg?.duration?.value || 0;
-            const inTraffic = Boolean(leg?.duration_in_traffic);
-
-            resolve({
-              points,
-              distanceKm: (distMeters / 1000).toFixed(1),
-              durationMins: Math.max(1, Math.ceil(durSeconds / 60)),
-              inTraffic,
-              summary: route.summary || leg?.end_address
+            const alternatives: RouteAlternative[] = result.routes.slice(1).map((r: any, idx: number) => {
+              const parsed = parseRouteLeg(r, r.legs?.[0]);
+              return {
+                id: idx + 1,
+                summary: parsed.summary,
+                distanceKm: parsed.distanceKm,
+                durationMins: parsed.durationMins,
+                sirenDurationMins: parsed.sirenDurationMins,
+                points: parsed.points,
+                trafficSegments: parsed.trafficSegments,
+                maneuvers: parsed.maneuvers
+              };
             });
+
+            const finalResult: GoogleDirectionsResult = {
+              ...primaryLeg,
+              alternatives
+            };
+
+            DIRECTIONS_CACHE.set(cacheKey, {
+              expiresAt: Date.now() + DIRECTIONS_CACHE_TTL_MS,
+              data: finalResult
+            });
+
+            resolve(finalResult);
           } else {
             console.warn("Google Directions service status not OK:", status);
             resolve(null);
