@@ -78,8 +78,17 @@ export const RealTimeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       })
       .catch(err => console.error('Failed to fetch overview data, using mock data:', err));
 
-    // 2. Connect Socket.IO
-    const socket: Socket = io();
+    // 2. Connect Socket.IO directly to Render backend in production (bypasses Vercel serverless proxy limits)
+    const socketBackendUrl = typeof window !== 'undefined' && window.location.hostname !== 'localhost'
+      ? 'https://ierbms-backend.onrender.com'
+      : undefined;
+
+    const socket: Socket = io(socketBackendUrl, {
+      transports: ['websocket', 'polling'],
+      reconnection: true,
+      reconnectionAttempts: 15,
+      reconnectionDelay: 2000
+    });
 
     socket.on('connect', () => setConnected(true));
     socket.on('disconnect', () => setConnected(false));
