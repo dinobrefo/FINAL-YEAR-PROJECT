@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db');
+const { applyCaseTransition } = require('../services/bedLifecycle');
 
 // Get all ambulances
 router.get('/', async (req, res) => {
@@ -80,6 +81,17 @@ router.post('/cases', async (req, res) => {
         [ambulance_id]
       );
     }
+
+    // Hold an "incoming" bed at the assigned hospital straight away, so its
+    // capacity reflects the en-route patient rather than only updating on arrival.
+    await applyCaseTransition(req.io, {
+      oldStatus: null,
+      newStatus: result.rows[0].status,
+      oldHospitalId: null,
+      newHospitalId: assigned_hospital_id || null,
+      oldBedType: null,
+      newBedType: finalBedType,
+    });
 
     req.io.emit('new_emergency_case', result.rows[0]);
     res.status(201).json(result.rows[0]);
@@ -165,44 +177,17 @@ router.put('/cases/:id/status', async (req, res) => {
     const updatedCase = result.rows[0];
 
     // 3. Automated Bed Capacity Lifecycle Management
-    if (targetHospitalId) {
-      // If arriving, occupy a bed
-      if (oldStatus !== 'arrived' && status === 'arrived') {
-        if (resolvedBedType === 'icu') {
-          await db.query(
-            'UPDATE hospitals SET occupied_icu_beds = LEAST(total_icu_beds, occupied_icu_beds + 1), updated_at = CURRENT_TIMESTAMP WHERE id = $1',
-            [targetHospitalId]
-          );
-        } else {
-          await db.query(
-            'UPDATE hospitals SET occupied_general_beds = LEAST(total_general_beds, occupied_general_beds + 1), updated_at = CURRENT_TIMESTAMP WHERE id = $1',
-            [targetHospitalId]
-          );
-        }
-        const updatedHosp = await db.query('SELECT * FROM hospitals WHERE id = $1', [targetHospitalId]);
-        if (updatedHosp.rows.length > 0) {
-          req.io.emit('hospital_capacity_update', updatedHosp.rows[0]);
-        }
-      } 
-      // If resolved from arrived, free the occupied bed
-      else if (oldStatus === 'arrived' && status === 'resolved') {
-        if (resolvedBedType === 'icu') {
-          await db.query(
-            'UPDATE hospitals SET occupied_icu_beds = GREATEST(0, occupied_icu_beds - 1), updated_at = CURRENT_TIMESTAMP WHERE id = $1',
-            [targetHospitalId]
-          );
-        } else {
-          await db.query(
-            'UPDATE hospitals SET occupied_general_beds = GREATEST(0, occupied_general_beds - 1), updated_at = CURRENT_TIMESTAMP WHERE id = $1',
-            [targetHospitalId]
-          );
-        }
-        const updatedHosp = await db.query('SELECT * FROM hospitals WHERE id = $1', [targetHospitalId]);
-        if (updatedHosp.rows.length > 0) {
-          req.io.emit('hospital_capacity_update', updatedHosp.rows[0]);
-        }
-      }
-    }
+    //    reserved ("incoming") -> occupied on arrival -> freed on resolve.
+    //    Also handles cancelling before arrival and re-homing to another hospital
+    //    or bed type in the same request.
+    await applyCaseTransition(req.io, {
+      oldStatus,
+      newStatus: status,
+      oldHospitalId: existingCase.assigned_hospital_id,
+      newHospitalId: targetHospitalId,
+      oldBedType: existingCase.bed_type_assigned,
+      newBedType: resolvedBedType,
+    });
 
     // 4. Free ambulance unit when emergency is resolved
     if (status === 'resolved' && existingCase.ambulance_id) {
@@ -238,14 +223,27 @@ router.put('/cases/:id/reroute', async (req, res) => {
       return res.status(404).json({ error: 'Target hospital not found' });
     }
 
+    const existingCaseRes = await db.query('SELECT * FROM emergency_cases WHERE id = $1', [id]);
+    if (existingCaseRes.rows.length === 0) {
+      return res.status(404).json({ error: 'Case not found' });
+    }
+    const existingCase = existingCaseRes.rows[0];
+
     const result = await db.query(
       'UPDATE emergency_cases SET assigned_hospital_id = $1 WHERE id = $2 RETURNING *',
       [hospital_id, id]
     );
 
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Case not found' });
-    }
+    // Move the held bed (incoming, or occupied if already arrived) from the
+    // previous hospital to the new one.
+    await applyCaseTransition(req.io, {
+      oldStatus: existingCase.status,
+      newStatus: existingCase.status,
+      oldHospitalId: existingCase.assigned_hospital_id,
+      newHospitalId: hospital_id,
+      oldBedType: existingCase.bed_type_assigned,
+      newBedType: existingCase.bed_type_assigned,
+    });
 
     req.io.emit('emergency_status_update', result.rows[0]);
     res.json(result.rows[0]);

@@ -1,4 +1,5 @@
 const db = require('./db');
+const { applyCaseTransition } = require('./services/bedLifecycle');
 
 function startSimulator(io) {
   console.log('Starting Ambulance GPS Simulator...');
@@ -62,7 +63,7 @@ function startSimulator(io) {
           status: ambStatus
         });
 
-        // If ambulance reached destination, automatically transition case to arrived and occupy bed
+        // If ambulance reached destination, automatically transition case to arrived
         if (hasArrived) {
           const caseRes = await db.query(
             'UPDATE emergency_cases SET status = \'arrived\' WHERE id = $1 RETURNING *',
@@ -70,22 +71,16 @@ function startSimulator(io) {
           );
 
           const bedType = transit.bed_type_assigned || (transit.trauma_level >= 4 ? 'icu' : 'general');
-          if (bedType === 'icu') {
-            await db.query(
-              'UPDATE hospitals SET occupied_icu_beds = LEAST(total_icu_beds, occupied_icu_beds + 1), updated_at = CURRENT_TIMESTAMP WHERE id = $1',
-              [transit.assigned_hospital_id]
-            );
-          } else {
-            await db.query(
-              'UPDATE hospitals SET occupied_general_beds = LEAST(total_general_beds, occupied_general_beds + 1), updated_at = CURRENT_TIMESTAMP WHERE id = $1',
-              [transit.assigned_hospital_id]
-            );
-          }
 
-          const hospRes = await db.query('SELECT * FROM hospitals WHERE id = $1', [transit.assigned_hospital_id]);
-          if (hospRes.rows.length > 0) {
-            io.emit('hospital_capacity_update', hospRes.rows[0]);
-          }
+          // Convert the held "incoming" bed into an occupied one.
+          await applyCaseTransition(io, {
+            oldStatus: 'in-transit',
+            newStatus: 'arrived',
+            oldHospitalId: transit.assigned_hospital_id,
+            newHospitalId: transit.assigned_hospital_id,
+            oldBedType: bedType,
+            newBedType: bedType,
+          });
 
           if (caseRes.rows.length > 0) {
             io.emit('emergency_status_update', caseRes.rows[0]);
