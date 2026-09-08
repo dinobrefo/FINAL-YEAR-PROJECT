@@ -1,9 +1,10 @@
 import * as React from 'react';
-import { MapContainer, TileLayer, Marker, Popup, Polyline, Circle, useMap, useMapEvents } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, Polyline, Circle, Polygon, useMap, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import { Emergency, Ambulance, Hospital } from '../../utils/mockData';
 import { StatusBadge } from './StatusBadge';
 import { audioTelemetry } from '../../utils/audioTelemetry';
+import { cartoService } from '../../services/cartoService';
 import { cn } from '../ui/utils';
 import {
   Search,
@@ -546,6 +547,12 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
   // Google Places search results for live Ghana geocoding
   const [googlePlacesResults, setGooglePlacesResults] = React.useState<GooglePlaceResult[]>([]);
 
+  // CARTO 15-minute emergency catchment isolines
+  const [showCartoCatchment, setShowCartoCatchment] = React.useState<boolean>(false);
+  const [cartoCatchmentData, setCartoCatchmentData] = React.useState<any | null>(null);
+  const [isLoadingCatchment, setIsLoadingCatchment] = React.useState<boolean>(false);
+  const [catchmentHospitalName, setCatchmentHospitalName] = React.useState<string>("");
+
   // Emergency Focus Mode: when taking an emergency, default to showing ONLY user's location, route and destination
   const [showOnlyEmergencyRoute, setShowOnlyEmergencyRoute] = React.useState<boolean>(true);
 
@@ -662,6 +669,50 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
 
     return ambulances[0] || null;
   }, [activeEmergency, ambulances]);
+
+  // Fetch CARTO 15-Minute Emergency Catchment Isoline when toggled
+  React.useEffect(() => {
+    if (!showCartoCatchment) {
+      setCartoCatchmentData(null);
+      return;
+    }
+
+    const targetHospital = activeHospital || hospitals[0];
+    if (!targetHospital || !targetHospital.latitude || !targetHospital.longitude) {
+      return;
+    }
+
+    let isMounted = true;
+    setIsLoadingCatchment(true);
+    setCatchmentHospitalName(targetHospital.name);
+
+    cartoService.fetchHospitalIsoline(targetHospital.latitude, targetHospital.longitude, 900)
+      .then(res => {
+        if (!isMounted) return;
+        setIsLoadingCatchment(false);
+        if (res && res.geoJson && res.geoJson.features && res.geoJson.features[0]) {
+          const geom = res.geoJson.features[0].geometry as any;
+          if (geom.type === 'Polygon') {
+            const leafCoords = geom.coordinates[0].map(([lng, lat]: [number, number]) => [lat, lng]);
+            setCartoCatchmentData(leafCoords);
+          } else if (geom.type === 'MultiPolygon') {
+            const leafCoords = geom.coordinates.map((poly: any) => 
+              poly[0].map(([lng, lat]: [number, number]) => [lat, lng])
+            );
+            setCartoCatchmentData(leafCoords);
+          }
+        }
+      })
+      .catch(err => {
+        if (!isMounted) return;
+        setIsLoadingCatchment(false);
+        console.warn('CARTO catchment fetch failed:', err);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [showCartoCatchment, activeHospital, hospitals]);
 
   const effectiveUserCoords = React.useMemo<[number, number] | null>(() => {
     if (userCoords && !isNaN(userCoords[0]) && !isNaN(userCoords[1])) return userCoords;
@@ -1347,6 +1398,30 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
             </button>
             <button
               onClick={() => {
+                const nextState = !showCartoCatchment;
+                setShowCartoCatchment(nextState);
+                if (nextState) {
+                  audioTelemetry.speak("Displaying CARTO 15-minute emergency catchment area.");
+                } else {
+                  audioTelemetry.speak("Catchment layer hidden.");
+                }
+              }}
+              className={cn(
+                "px-3 py-1 rounded-full text-[11px] font-semibold border shadow-md backdrop-blur-md transition-all flex items-center gap-1.5 cursor-pointer shrink-0",
+                showCartoCatchment
+                  ? "bg-emerald-600 text-white border-emerald-400 shadow-emerald-500/20"
+                  : "bg-white/90 dark:bg-[#202124]/90 hover:bg-slate-100 dark:hover:bg-[#303134] text-slate-700 dark:text-[#e8eaed] border-slate-200 dark:border-[#3c4043]"
+              )}
+              title="Toggle CARTO 15-Minute TravelTime Emergency Catchment"
+            >
+              <Globe className="h-3 w-3" />
+              <span>15-Min Catchment</span>
+              {isLoadingCatchment && (
+                <span className="h-1.5 w-1.5 rounded-full bg-white animate-ping" />
+              )}
+            </button>
+            <button
+              onClick={() => {
                 setFlyTarget([5.6037, -0.1870]);
                 setInspectedPoint([5.6037, -0.1870]);
                 audioTelemetry.speak("Viewing Greater Accra Metropolitan Area.");
@@ -1778,6 +1853,38 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
             />
           </>
         ) : null}
+
+        {/* CARTO 15-Minute Emergency Isochrone / Catchment Area Polygon */}
+        {showCartoCatchment && cartoCatchmentData && (
+          <Polygon
+            positions={cartoCatchmentData}
+            pathOptions={{
+              color: '#10b981',
+              weight: 2,
+              dashArray: '6, 6',
+              fillColor: '#10b981',
+              fillOpacity: 0.18
+            }}
+          >
+            <Popup>
+              <div className="text-slate-900 dark:text-white font-sans p-1 min-w-[180px]">
+                <div className="flex items-center gap-1.5 font-bold text-xs text-emerald-600 dark:text-emerald-400 mb-1">
+                  <span>🌐 15-Min Reach Zone</span>
+                </div>
+                <p className="text-xs font-semibold text-slate-800 dark:text-slate-200">
+                  {catchmentHospitalName || 'Hospital'}
+                </p>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                  15-minute emergency drive catchment
+                </p>
+                <div className="mt-1.5 pt-1 border-t border-slate-200 dark:border-slate-700 flex items-center justify-between text-[10px] text-slate-400">
+                  <span>CARTO TravelTime LDS</span>
+                  <span className="text-emerald-500 font-bold">15m Isochrone</span>
+                </div>
+              </div>
+            </Popup>
+          </Polygon>
+        )}
 
         {/* Google Maps Turn Waypoint Dots at Junctions */}
         {navigationManeuvers && navigationManeuvers.length > 0 &&

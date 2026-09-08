@@ -11,6 +11,7 @@ import { offlineQueue } from "../utils/offlineQueue";
 import { audioTelemetry } from "../utils/audioTelemetry";
 import { calculateTEWS, MobilityStatus, AvpuStatus } from "../utils/tewsCalculator";
 import { searchGooglePlaces, isGoogleMapsConfigured, GooglePlaceResult } from "../utils/googleMapsLoader";
+import { cartoService } from "../services/cartoService";
 
 // Mathematical Haversine Geodesic Distance (km)
 export const computeHaversineKm = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
@@ -75,9 +76,9 @@ export const NewEmergency: React.FC = () => {
   const [isSearchingPlaces, setIsSearchingPlaces] = React.useState(false);
   const [showPlacesDropdown, setShowPlacesDropdown] = React.useState(false);
 
-  // Debounced Google Places search across Ghana
+  // Debounced Ghana places search via Google Places and CARTO LDS Geocoding
   React.useEffect(() => {
-    if (!isGoogleMapsConfigured() || !placeSearchQuery.trim() || placeSearchQuery.trim().length < 2) {
+    if (!placeSearchQuery.trim() || placeSearchQuery.trim().length < 2) {
       setGooglePlacesList([]);
       setShowPlacesDropdown(false);
       return;
@@ -86,9 +87,31 @@ export const NewEmergency: React.FC = () => {
     const timer = setTimeout(async () => {
       setIsSearchingPlaces(true);
       try {
-        const places = await searchGooglePlaces(placeSearchQuery);
-        setGooglePlacesList(places);
-        setShowPlacesDropdown(places.length > 0);
+        let results: GooglePlaceResult[] = [];
+        if (isGoogleMapsConfigured()) {
+          results = await searchGooglePlaces(placeSearchQuery);
+        }
+
+        // Augment with CARTO TomTom Geocoding LDS
+        if (results.length < 3) {
+          const cartoResults = await cartoService.searchGhanaPlaces(placeSearchQuery);
+          const existingCoords = new Set(results.map(r => `${r.coords[0].toFixed(3)},${r.coords[1].toFixed(3)}`));
+          for (const cr of cartoResults) {
+            const coordKey = `${cr.coords[0].toFixed(3)},${cr.coords[1].toFixed(3)}`;
+            if (!existingCoords.has(coordKey)) {
+              results.push({
+                id: cr.id,
+                title: cr.title,
+                subtitle: cr.subtitle,
+                coords: cr.coords
+              });
+              existingCoords.add(coordKey);
+            }
+          }
+        }
+
+        setGooglePlacesList(results);
+        setShowPlacesDropdown(results.length > 0);
       } catch (err) {
         console.warn("Places search error:", err);
       } finally {
@@ -485,42 +508,40 @@ export const NewEmergency: React.FC = () => {
                 </div>
 
                 <div>
-                  {isGoogleMapsConfigured() && (
-                    <div className="mb-3 relative">
-                      <label className="block text-xs font-semibold text-muted-foreground mb-1">
-                        Search Ghana Location (Google Places)
-                      </label>
-                      <div className="relative">
-                        <Input
-                          value={placeSearchQuery}
-                          onChange={(e) => setPlaceSearchQuery(e.target.value)}
-                          placeholder="Search town, landmark, street, or junction across Ghana..."
-                          className="text-xs pr-8"
-                        />
-                        {isSearchingPlaces && (
-                          <div className="absolute right-2.5 top-2.5 h-3.5 w-3.5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-                        )}
-                      </div>
-                      {showPlacesDropdown && googlePlacesList.length > 0 && (
-                        <div className="absolute top-full left-0 right-0 mt-1 bg-card border border-border rounded-lg shadow-xl z-50 divide-y divide-border overflow-hidden max-h-48 overflow-y-auto">
-                          {googlePlacesList.map((place) => (
-                            <button
-                              key={place.id}
-                              type="button"
-                              onClick={() => handleSelectGooglePlace(place)}
-                              className="w-full text-left p-2.5 hover:bg-muted/80 text-xs flex items-center justify-between gap-2 cursor-pointer"
-                            >
-                              <div className="min-w-0">
-                                <p className="font-semibold text-foreground truncate">{place.title}</p>
-                                <p className="text-[11px] text-muted-foreground truncate">{place.subtitle}</p>
-                              </div>
-                              <span className="text-[10px] text-primary shrink-0 font-medium">Select</span>
-                            </button>
-                          ))}
-                        </div>
+                  <div className="mb-3 relative">
+                    <label className="block text-xs font-semibold text-muted-foreground mb-1">
+                      Search Ghana Location ({isGoogleMapsConfigured() ? "Google Places & CARTO LDS" : "CARTO Geocoding LDS"})
+                    </label>
+                    <div className="relative">
+                      <Input
+                        value={placeSearchQuery}
+                        onChange={(e) => setPlaceSearchQuery(e.target.value)}
+                        placeholder="Search town, landmark, university, or junction across Ghana..."
+                        className="text-xs pr-8"
+                      />
+                      {isSearchingPlaces && (
+                        <div className="absolute right-2.5 top-2.5 h-3.5 w-3.5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
                       )}
                     </div>
-                  )}
+                    {showPlacesDropdown && googlePlacesList.length > 0 && (
+                      <div className="absolute top-full left-0 right-0 mt-1 bg-card border border-border rounded-lg shadow-xl z-50 divide-y divide-border overflow-hidden max-h-48 overflow-y-auto">
+                        {googlePlacesList.map((place) => (
+                          <button
+                            key={place.id}
+                            type="button"
+                            onClick={() => handleSelectGooglePlace(place)}
+                            className="w-full text-left p-2.5 hover:bg-muted/80 text-xs flex items-center justify-between gap-2 cursor-pointer"
+                          >
+                            <div className="min-w-0">
+                              <p className="font-semibold text-foreground truncate">{place.title}</p>
+                              <p className="text-[11px] text-muted-foreground truncate">{place.subtitle}</p>
+                            </div>
+                            <span className="text-[10px] text-primary shrink-0 font-medium">Select</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
 
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">

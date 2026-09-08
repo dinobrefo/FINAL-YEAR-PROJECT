@@ -54,6 +54,7 @@ app.use('/api/ambulances', require('./routes/ambulanceRoutes'));
 app.use('/api/hospitals', require('./routes/hospitalRoutes'));
 app.use('/api/command-center', require('./routes/commandCenterRoutes'));
 app.use('/api/analytics', require('./routes/analyticsRoutes'));
+app.use('/api/carto', require('./routes/cartoRoutes'));
 
 // Error handling middleware
 app.use((err, req, res, next) => {

@@ -1,6 +1,7 @@
 import math
 import os
 import time
+import json
 import joblib
 import pandas as pd
 import requests
@@ -8,6 +9,7 @@ from datetime import datetime
 
 # High-Speed In-Memory TTL Cache for Distance Matrix queries (300-second / 5-min sliding window)
 _DISTANCE_MATRIX_CACHE = {}
+_CARTO_MATRIX_CACHE = {}
 _OSRM_MATRIX_CACHE = {}
 _MATRIX_CACHE_TTL_SECS = 300.0
 
@@ -235,6 +237,76 @@ def get_osrm_distance_matrix(amb_lat, amb_lon, hospitals):
         # Fallback cleanly to distance-based mathematical calculation
         return None
 
+def get_carto_distance_matrix(amb_lat, amb_lon, hospitals):
+    """
+    Calls CARTO Location Data Services (LDS) TomTom Routing API to compute high-accuracy
+    driving durations and road distances in Ghana.
+    Cached in-memory with 300s TTL.
+    """
+    if not hospitals:
+        return None
+
+    cache_key = _get_matrix_cache_key(amb_lat, amb_lon, hospitals)
+    now = time.time()
+    if cache_key in _CARTO_MATRIX_CACHE:
+        cached_time, cached_data = _CARTO_MATRIX_CACHE[cache_key]
+        if now - cached_time < _MATRIX_CACHE_TTL_SECS:
+            return cached_data
+
+    carto_account = os.environ.get("CARTO_ACCOUNT_ID", "ac_pn43q3s9")
+    carto_token = os.environ.get("CARTO_API_ACCESS_TOKEN", "eyJhbGciOiJIUzI1NiJ9.eyJhIjoiYWNfcG40M3EzczkiLCJqdGkiOiI1ODIwN2JhMiJ9.UQaHGYSWHJG2FWpgagJKtFzuQcpLrNzrRH2AMW6GNbs")
+    carto_url = f"https://gcp-us-east1.api.carto.com/mcp/{carto_account}"
+
+    results = {}
+    # Query top 4 closest hospitals to stay within sub-second latency
+    batch = hospitals[:4] if len(hospitals) > 4 else hospitals
+    try:
+        for h in batch:
+            payload = {
+                "jsonrpc": "2.0",
+                "id": int(time.time() * 1000),
+                "method": "tools/call",
+                "params": {
+                    "name": "route",
+                    "arguments": {
+                        "operation": "route",
+                        "origin": f"{amb_lon},{amb_lat}",
+                        "destination": f"{h.longitude},{h.latitude}",
+                        "mode": "car"
+                    }
+                }
+            }
+            headers = {
+                "Authorization": f"Bearer {carto_token}",
+                "Content-Type": "application/json",
+                "Accept": "application/json, text/event-stream"
+            }
+            resp = requests.post(carto_url, json=payload, headers=headers, timeout=2.0)
+            if resp.status_code == 200:
+                raw = resp.text
+                for line in raw.split("\n"):
+                    if line.startswith("data:"):
+                        data = json.loads(line[5:].strip())
+                        text_val = data.get("result", {}).get("content", [{}])[0].get("text", "")
+                        parsed = json.loads(text_val)
+                        val = parsed.get("data", {}).get("value", {})
+                        meta_routes = val.get("metadata", {}).get("routes", [])
+                        if meta_routes:
+                            summary = meta_routes[0].get("summary", {})
+                            dist_m = summary.get("lengthInMeters", 0)
+                            dur_s = summary.get("travelTimeInSeconds", 0)
+                            results[h.id] = {
+                                "duration_mins": dur_s / 60.0,
+                                "distance_km": dist_m / 1000.0,
+                                "in_traffic": summary.get("trafficDelayInSeconds", 0) > 0
+                            }
+        if results:
+            _CARTO_MATRIX_CACHE[cache_key] = (now, results)
+            return results
+    except Exception:
+        pass
+    return None
+
 def get_required_resources(emergency_type: str):
     """
     Map emergency types to required specialists and equipment.
@@ -296,11 +368,15 @@ def recommend_hospitals(amb_lat, amb_lon, trauma_level, emergency_type, hospital
     
     # Multi-tier routing resolution:
     # Tier 1: Google Maps Distance Matrix API (Live traffic condition)
-    # Tier 2: OSRM Public Matrix API (Road-snapped + hour-of-day traffic model)
-    # Tier 3: Haversine mathematical geodesic calculation
+    # Tier 2: CARTO LDS TomTom Routing (Enterprise Ghana road-snapping)
+    # Tier 3: OSRM Public Matrix API (Road-snapped + hour-of-day traffic model)
+    # Tier 4: Haversine mathematical geodesic calculation
     google_matrix = get_google_distance_matrix(amb_lat, amb_lon, hospitals)
+    carto_matrix = None
     osrm_travel_times = None
     if not google_matrix:
+        carto_matrix = get_carto_distance_matrix(amb_lat, amb_lon, hospitals)
+    if not google_matrix and not carto_matrix:
         osrm_travel_times = get_osrm_distance_matrix(amb_lat, amb_lon, hospitals)
     
     model = load_ml_model(weights_path)
@@ -330,6 +406,11 @@ def recommend_hospitals(amb_lat, amb_lon, trauma_level, emergency_type, hospital
             else:
                 distance_km = calculate_distance(amb_lat, amb_lon, h.latitude, h.longitude)
             traffic_source = "google_live_traffic" if g_data.get("in_traffic") else "google_typical_traffic"
+        elif carto_matrix and h.id in carto_matrix:
+            c_data = carto_matrix[h.id]
+            estimated_travel_time = c_data["duration_mins"]
+            distance_km = c_data.get("distance_km") or calculate_distance(amb_lat, amb_lon, h.latitude, h.longitude)
+            traffic_source = "carto_tomtom_traffic"
         elif osrm_travel_times and h.id in osrm_travel_times:
             distance_km = calculate_distance(amb_lat, amb_lon, h.latitude, h.longitude)
             base_travel_time = osrm_travel_times[h.id]
