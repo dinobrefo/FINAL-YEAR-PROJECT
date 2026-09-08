@@ -774,8 +774,8 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
         }
       }
 
-      // 2. Secondary Tier: OSRM Public Driving Routing Machine
-      const url = `https://router.project-osrm.org/route/v1/driving/${origin[1]},${origin[0]};${dest[1]},${dest[0]}?overview=full&geometries=geojson`;
+      // 2. Secondary Tier: OSRM Public Driving Routing Machine (with &steps=true)
+      const url = `https://router.project-osrm.org/route/v1/driving/${origin[1]},${origin[0]};${dest[1]},${dest[0]}?overview=full&geometries=geojson&steps=true`;
 
       try {
         const res = await fetch(url);
@@ -802,6 +802,49 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
             // Emergency Vehicle Dynamics (EVD): siren right-of-way yields ~18-22% savings
             const sirenDur = Math.max(1, Math.round(carDurationMins * 0.80));
 
+            // Parse OSRM steps into authentic turn-by-turn maneuvers
+            const maneuvers: NavigationManeuver[] = [];
+            const rawSteps = route.legs?.[0]?.steps || [];
+            for (const step of rawSteps) {
+              if (!step.maneuver) continue;
+              const type = step.maneuver.type;
+              const modifier = step.maneuver.modifier;
+              const name = step.name ? step.name.trim() : "";
+              let instruction = "";
+              if (type === 'depart') {
+                instruction = name ? `Head onto ${name}` : 'Depart towards destination';
+              } else if (type === 'arrive') {
+                instruction = `Arrive at ${activeHospital?.name || 'facility'}`;
+              } else if (type === 'roundabout') {
+                instruction = name ? `Enter roundabout onto ${name}` : 'Enter roundabout';
+              } else if (type === 'merge') {
+                instruction = name ? `Merge onto ${name}` : 'Merge ahead';
+              } else {
+                const turnStr = modifier ? modifier.replace(/-/g, ' ') : 'ahead';
+                instruction = name ? `Turn ${turnStr} onto ${name}` : `Continue ${turnStr}`;
+              }
+              const distMeters = step.distance || 0;
+              const distText = distMeters < 1000
+                ? `${Math.round(distMeters)} m`
+                : `${(distMeters / 1000).toFixed(1)} km`;
+
+              maneuvers.push({
+                instruction,
+                distanceText: distText,
+                maneuver: `${type} ${modifier || ''}`.trim(),
+                location: step.maneuver.location ? [step.maneuver.location[1], step.maneuver.location[0]] : undefined
+              });
+            }
+
+            // Extract primary corridor names for route summary (e.g., "via N6 / Ring Road")
+            const streetNames = rawSteps
+              .map((s: any) => s.name?.trim())
+              .filter((n: string) => Boolean(n && n.length > 0));
+            const uniqueStreets = Array.from(new Set(streetNames)) as string[];
+            const summaryText = uniqueStreets.length > 0
+              ? `via ${uniqueStreets.slice(0, 2).join(' / ')}`
+              : 'Primary Highway Route';
+
             setOsrmRoutePoints(points);
             setTrafficSegments([{
               points,
@@ -810,13 +853,13 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
               casingColor: '#185ABC',
               speedKmh: 28
             }]);
-            setNavigationManeuvers([]);
+            setNavigationManeuvers(maneuvers);
             setRouteAlternatives([]);
             setSelectedAltIndex(0);
             setRouteDistanceKm(distKm);
             setRouteDurationMins(carDurationMins);
             setSirenDurationMins(sirenDur);
-            setRouteSummary('Primary Highway Route');
+            setRouteSummary(summaryText);
             setRouteTrafficSource('osrm');
             audioTelemetry.speak(`Emergency route locked to ${activeHospital?.name || 'facility'}. Estimated driving time: ${carDurationMins} minutes, Siren ETA: ${sirenDur} minutes.`);
             return;
