@@ -53,7 +53,7 @@ export const DefenseDemoBar: React.FC = () => {
       role: "Paramedic Unit AS 112-21",
       route: "/ambulance?caseId=EMG-004&showOverlay=true",
       badge: "SATS RED / TEWS 8",
-      description: "Auto-dispatches Unit AS 112-21 from KNUST campus to Komfo Anokye Teaching Hospital (KATH) with road snapping & 3D HUD.",
+      description: "Auto-dispatches Unit AS 112-21 from KNUST campus to Komfo Anokye Teaching Hospital (KATH) with road snapping & navigation HUD.",
       execute: () => {
         audioTelemetry.speak("Defense Scenario 1 activated. High acuity polytrauma on Kumasi corridor. Routing unit AS 112-21 to Komfo Anokye Teaching Hospital.");
         navigate("/ambulance?caseId=EMG-004&showOverlay=true");

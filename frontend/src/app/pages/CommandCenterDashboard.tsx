@@ -613,8 +613,8 @@ export const CommandCenterDashboard: React.FC = () => {
             {/* 3D Hospital Occupancy Visualization */}
             <Card className="rounded-[28px] border border-border/50 shadow-xl">
               <CardHeader className="p-6">
-                <CardTitle className="text-lg font-bold">3D Hospital Occupancy</CardTitle>
-                <CardDescription>Interactive 3D visualization of hospital bed occupancy rates</CardDescription>
+                <CardTitle className="text-lg font-bold">Hospital Occupancy</CardTitle>
+                <CardDescription>Interactive visualization of hospital bed occupancy rates</CardDescription>
               </CardHeader>
               <CardContent className="p-6 pt-0">
                 <HospitalCapacityMesh analyticsData={analyticsData} hospitals={hospitals} height={400} />

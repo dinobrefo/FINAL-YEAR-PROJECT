@@ -163,7 +163,7 @@ export const HeroSection: React.FC = () => {
                   fallback={
                     <div className="w-full h-full flex flex-col items-center justify-center bg-[#06111F] text-ink-muted font-mono text-xs space-y-2">
                       <Activity className="h-5 w-5 text-primary animate-pulse" />
-                      <span>LOADING 3D ENGINE…</span>
+                      <span>LOADING ENGINE…</span>
                     </div>
                   }
                 >

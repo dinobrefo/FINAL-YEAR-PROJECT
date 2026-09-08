@@ -424,8 +424,8 @@ export const AppShell: React.FC<AppShellProps> = ({ role, userName, children }) 
 
               <div className="flex items-center justify-between border-t pt-4">
                 <div>
-                  <p className="text-sm font-semibold">3D Building Extrusions</p>
-                  <p className="text-xs text-muted-foreground">Enable 3D tilt & building structures on map</p>
+                  <p className="text-sm font-semibold">Building Extrusions</p>
+                  <p className="text-xs text-muted-foreground">Enable tilt & building structures on map</p>
                 </div>
                 <input 
                   type="checkbox" 

@@ -719,12 +719,12 @@ export const AmbulanceDashboard: React.FC = () => {
               <div className="h-3 w-3 rounded-full bg-red-500 animate-pulse" />
               <div>
                 <h3 className="font-bold text-lg text-slate-900 dark:text-white flex items-center gap-2">
-                  <span>🕹️ 3D Emergency Cockpit Navigation</span>
+                  <span>🕹️ Emergency Cockpit Navigation</span>
                   <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-blue-500/15 dark:bg-blue-500/20 text-blue-700 dark:text-blue-400 border border-blue-500/30">
                     60° Camera HUD Active
                   </span>
                 </h3>
-                <p className="text-xs text-slate-500 dark:text-slate-400">Turn-by-turn turn-around, 3D building extrusions, and live traffic telemetry</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">Turn-by-turn turn-around, building extrusions, and live traffic telemetry</p>
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -738,7 +738,7 @@ export const AmbulanceDashboard: React.FC = () => {
                   navigate(`${location.pathname}?${params.toString()}`);
                 }}
               >
-                Exit 3D HUD
+                Exit HUD
               </Button>
               <Button 
                 variant="danger" 
@@ -817,7 +817,7 @@ export const AmbulanceDashboard: React.FC = () => {
                   <CardTitle className="flex items-center justify-between text-base">
                     <span className="flex items-center gap-2">
                       <Gauge className="h-5 w-5 text-blue-500" />
-                      3D Cockpit Telemetry HUD
+                      Cockpit Telemetry HUD
                     </span>
                     <span className={`text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full border ${
                       isSimulatingDrive 
@@ -890,7 +890,7 @@ export const AmbulanceDashboard: React.FC = () => {
                   <div>
                     <CardTitle className="flex items-center gap-2 text-base">
                       <HospitalIcon className="h-5 w-5 text-emerald-500" />
-                      3D Hospital Capacity Mesh
+                      Hospital Capacity Mesh
                     </CardTitle>
                     <CardDescription>Real-time ER & ICU bed availability across regional hospitals</CardDescription>
                   </div>

@@ -333,7 +333,7 @@ export const NewEmergency: React.FC = () => {
       }
       
       const createdCase = await res.json();
-      audioTelemetry.speak(`Emergency registered. Launching 3D cockpit HUD.`);
+      audioTelemetry.speak(`Emergency registered. Launching cockpit HUD.`);
       navigate(`/ambulance?caseId=${createdCase.id}&showOverlay=true`);
     } catch (err: any) {
       console.warn("Server unavailable. Enqueuing emergency intake into offline storage:", err);
@@ -352,7 +352,7 @@ export const NewEmergency: React.FC = () => {
           <div>
             <h1 className="text-3xl font-bold mb-2">New Emergency Intake</h1>
             <p className="text-muted-foreground">
-              Enter patient telemetry to compute AI hospital matching scores & 3D route dispatches
+              Enter patient telemetry to compute AI hospital matching scores & route dispatches
             </p>
           </div>
           {pendingOfflineCount > 0 && (
@@ -796,7 +796,7 @@ export const NewEmergency: React.FC = () => {
                       onClick={() => handleConfirmHospital(hospital.id)}
                     >
                       <Check className="h-4 w-4" />
-                      Select {hospital.name} & Launch 3D Cockpit Navigation
+                      Select {hospital.name} & Launch Cockpit Navigation
                     </Button>
                   </div>
                 );

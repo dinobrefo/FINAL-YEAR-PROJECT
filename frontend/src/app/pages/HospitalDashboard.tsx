@@ -72,7 +72,7 @@ export const HospitalDashboard: React.FC = () => {
           <div className="flex items-center gap-2">
             <CardTitle>Bed Capacity & Department Allocation</CardTitle>
             <span className="text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-500 border border-blue-500/30">
-              Interactive 3D Viz
+              Interactive Viz
             </span>
           </div>
           <CardDescription>Real-time occupancy rendering across major hospital wards</CardDescription>
@@ -84,7 +84,7 @@ export const HospitalDashboard: React.FC = () => {
               vizMode === "3d" ? "bg-primary text-white shadow-sm" : "text-muted-foreground hover:text-foreground"
             }`}
           >
-            🏙️ 3D Bars
+            🏙️ Capacity Bars
           </button>
           <button
             onClick={() => setVizMode("2d")}
@@ -92,7 +92,7 @@ export const HospitalDashboard: React.FC = () => {
               vizMode === "2d" ? "bg-primary text-white shadow-sm" : "text-muted-foreground hover:text-foreground"
             }`}
           >
-            📊 Flat 2D
+            📊 Flat Bars
           </button>
         </div>
       </CardHeader>
@@ -298,7 +298,7 @@ export const HospitalDashboard: React.FC = () => {
               {isBedsView ? "Ward Census & Dynamic Capacity Allocations" :
                isErView ? "Emergency Department Triage & Admissions" :
                isArrivalsView ? "Live Ambulance Telemetry & Approaching Cases" :
-               "Real-time facility telemetry & 3D bed capacity"}
+               "Real-time facility telemetry & bed capacity"}
             </p>
           </div>
           <div className="flex gap-2">
@@ -345,7 +345,6 @@ export const HospitalDashboard: React.FC = () => {
           />
         </div>
 
-        {/* Sub-view Conditional Routing */}
         {isErView && renderERQueue()}
 
         {isBedsView && (
@@ -364,7 +363,7 @@ export const HospitalDashboard: React.FC = () => {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Map className="h-5 w-5 text-blue-500" />
-                    Live 3D Approaching Ambulances Map
+                    Live Approaching Ambulances Map
                   </CardTitle>
                   <CardDescription>GPS telemetry en-route to {hospital.name}</CardDescription>
                 </CardHeader>
@@ -384,7 +383,6 @@ export const HospitalDashboard: React.FC = () => {
 
         {!isErView && !isBedsView && !isArrivalsView && (
           <>
-            {/* Interactive 3D Bed Mesh & Incoming */}
             <div className="grid gap-6 lg:grid-cols-3">
               <div className="lg:col-span-2">
                 {renderBeds()}
@@ -394,15 +392,14 @@ export const HospitalDashboard: React.FC = () => {
               </div>
             </div>
 
-            {/* 3D Dispatch Map View */}
             <Card className="overflow-hidden border-2 border-primary/20">
               <CardHeader className="flex flex-row items-center justify-between">
                 <div>
                   <CardTitle className="flex items-center gap-2">
                     <Map className="h-5 w-5 text-blue-500" />
-                    Live 3D Dispatch Map
+                    Live Dispatch Map
                   </CardTitle>
-                  <CardDescription>3D building extrusions & ambulance telemetry en-route to {hospital.name}</CardDescription>
+                  <CardDescription>Building extrusions & ambulance telemetry en-route to {hospital.name}</CardDescription>
                 </div>
               </CardHeader>
               <CardContent className="p-0">

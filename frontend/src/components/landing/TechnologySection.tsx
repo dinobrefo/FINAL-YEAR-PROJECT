@@ -22,7 +22,7 @@ export const TechnologySection: React.FC = () => {
       id: 'client',
       name: 'Client Dashboard & HUD',
       subtitle: 'React 18 · TypeScript · Vite · Leaflet · R3F',
-      role: 'Hardware-tiered 3D operations console and mobile paramedic interface rendering real-time maps and bed capacity.',
+      role: 'Hardware-tiered operations console and mobile paramedic interface rendering real-time maps and bed capacity.',
       metrics: '60 FPS Target · Offline Cache Enabled',
       protocol: 'WSS (WebSocket) / HTTPS',
       latency: '< 16ms render frame',

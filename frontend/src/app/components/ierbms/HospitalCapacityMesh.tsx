@@ -139,7 +139,7 @@ export const HospitalCapacityMesh: React.FC<HospitalCapacityMeshProps> = ({ hosp
               <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-600 dark:bg-emerald-500"></span>
             </span>
             <span className="text-xs font-semibold tracking-wider uppercase text-emerald-600 dark:text-emerald-400">
-              3D Hospital Capacity Mesh
+              Hospital Capacity Mesh
             </span>
           </div>
           <div className="hidden sm:flex items-center gap-3 text-[11px] text-slate-500 dark:text-slate-400 pl-2 border-l border-slate-200 dark:border-slate-800">

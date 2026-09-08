@@ -160,10 +160,10 @@ export const StandardCapacityMesh: React.FC<{
             <button
               onClick={onSwitchTo3D}
               className="text-[11px] font-medium px-2.5 py-1 rounded bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white border border-slate-200 dark:border-slate-700 transition flex items-center gap-1.5 shadow-sm cursor-pointer"
-              title="Launch Three.js 3D WebGL Platform"
+              title="Launch WebGL Platform"
             >
               <span>🌐</span>
-              <span>Launch 3D WebGL</span>
+              <span>Launch WebGL</span>
             </button>
           )}
         </div>
@@ -405,7 +405,7 @@ export const Analytics3D: React.FC<Analytics3DProps> = ({ analyticsData, hospita
             <span className="relative inline-flex rounded-full h-2 w-2 bg-cyan-500"></span>
           </span>
           <span className="text-[11px] font-semibold text-cyan-300">
-            3D WebGL Orbital Mesh
+            WebGL Orbital Mesh
           </span>
         </div>
 

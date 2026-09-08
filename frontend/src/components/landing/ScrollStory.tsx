@@ -58,7 +58,7 @@ export const ScrollStory: React.FC = () => {
       fallback={
         <div className="h-screen w-full flex flex-col items-center justify-center bg-[#06111F] text-ink-muted font-mono text-xs space-y-2">
           <Activity className="h-6 w-6 text-primary animate-pulse" />
-          <span>INITIALIZING 3D MISSION ENGINE…</span>
+          <span>INITIALIZING MISSION ENGINE…</span>
         </div>
       }
     >

@@ -365,7 +365,7 @@ export const DoctorDashboard: React.FC = () => {
                 <CardHeader className="pb-3">
                   <CardTitle className="flex items-center gap-2">
                     <Map className="h-5 w-5 text-blue-500" />
-                    Live 3D Patient Route Tracking
+                    Live Patient Route Tracking
                   </CardTitle>
                   <CardDescription>Real-time GPS telemetry of arriving ambulances</CardDescription>
                 </CardHeader>

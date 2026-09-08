@@ -289,7 +289,7 @@ export const GlobeView: React.FC<GlobeViewProps> = ({
         />
       ) : (
         <div className="w-full h-full flex items-center justify-center text-muted-foreground">
-          Loading 3D Globe View...
+          Loading Globe View...
         </div>
       )}
     </div>
