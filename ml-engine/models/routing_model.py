@@ -253,8 +253,11 @@ def get_carto_distance_matrix(amb_lat, amb_lon, hospitals):
         if now - cached_time < _MATRIX_CACHE_TTL_SECS:
             return cached_data
 
-    carto_account = os.environ.get("CARTO_ACCOUNT_ID", "ac_pn43q3s9")
-    carto_token = os.environ.get("CARTO_API_ACCESS_TOKEN", "eyJhbGciOiJIUzI1NiJ9.eyJhIjoiYWNfcG40M3EzczkiLCJqdGkiOiI1ODIwN2JhMiJ9.UQaHGYSWHJG2FWpgagJKtFzuQcpLrNzrRH2AMW6GNbs")
+    carto_account = os.environ.get("CARTO_ACCOUNT_ID")
+    carto_token = os.environ.get("CARTO_API_ACCESS_TOKEN")
+    if not carto_account or not carto_token:
+        # No CARTO credentials configured - caller falls back to haversine estimates.
+        return None
     carto_url = f"https://gcp-us-east1.api.carto.com/mcp/{carto_account}"
 
     results = {}

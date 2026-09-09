@@ -1,8 +1,9 @@
 const express = require('express');
 const router = express.Router();
+const config = require('../config');
 
-const CARTO_ACCOUNT_ID = process.env.CARTO_ACCOUNT_ID || 'ac_pn43q3s9';
-const CARTO_API_ACCESS_TOKEN = process.env.CARTO_API_ACCESS_TOKEN || 'eyJhbGciOiJIUzI1NiJ9.eyJhIjoiYWNfcG40M3EzczkiLCJqdGkiOiI1ODIwN2JhMiJ9.UQaHGYSWHJG2FWpgagJKtFzuQcpLrNzrRH2AMW6GNbs';
+const CARTO_ACCOUNT_ID = config.carto.accountId;
+const CARTO_API_ACCESS_TOKEN = config.carto.accessToken;
 const CARTO_MCP_URL = `https://gcp-us-east1.api.carto.com/mcp/${CARTO_ACCOUNT_ID}`;
 
 // High-speed In-Memory TTL Caches (5-10 minute sliding windows)
@@ -16,6 +17,10 @@ const GEOCODE_CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
 
 // Helper to execute JSON-RPC calls against the CARTO MCP Server
 async function callCartoMcpTool(toolName, args, timeoutMs = 8000) {
+  if (!config.carto.enabled) {
+    // No credentials configured — callers fall back to keyless routing/geocoding.
+    throw new Error('CARTO integration is not configured (set CARTO_ACCOUNT_ID and CARTO_API_ACCESS_TOKEN)');
+  }
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
 

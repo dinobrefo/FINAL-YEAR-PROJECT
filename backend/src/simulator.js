@@ -1,96 +1,79 @@
 const db = require('./db');
-const { applyCaseTransition } = require('./services/bedLifecycle');
+const { withTransaction } = require('./db');
+const { applyCaseTransition, emitHospitalCapacity } = require('./services/bedLifecycle');
+
+const TICK_MS = 2000;
+const STEP = 0.0005; // ~50 m per tick
 
 function startSimulator(io) {
   console.log('Starting Ambulance GPS Simulator...');
-  
-  // Every 2 seconds, slightly move all "in-transit" ambulances toward their assigned hospitals
+
+  let running = false; // prevent overlapping ticks if a tick runs long
+
   setInterval(async () => {
+    if (running) return;
+    running = true;
     try {
-      // 1. Get all active emergency cases with 'in-transit' status that have an assigned hospital
-      const result = await db.query(`
-        SELECT 
-          c.id as case_id, 
-          c.ambulance_id, 
-          c.assigned_hospital_id,
-          c.trauma_level,
-          c.bed_type_assigned,
-          a.current_latitude, 
-          a.current_longitude,
-          h.latitude as target_lat,
-          h.longitude as target_lng
+      const { rows: transits } = await db.query(`
+        SELECT
+          c.id AS case_id, c.ambulance_id, c.assigned_hospital_id,
+          c.trauma_level, c.bed_type_assigned,
+          a.current_latitude, a.current_longitude,
+          h.latitude AS target_lat, h.longitude AS target_lng
         FROM emergency_cases c
         JOIN ambulances a ON c.ambulance_id = a.id
         JOIN hospitals h ON c.assigned_hospital_id = h.id
         WHERE c.status = 'in-transit'
       `);
-      
-      const activeTransits = result.rows;
 
-      for (const transit of activeTransits) {
-        // Simple interpolation logic
-        const speed = 0.0005; // roughly 50m per tick
-        
-        let dLat = transit.target_lat - transit.current_latitude;
-        let dLng = transit.target_lng - transit.current_longitude;
-        const dist = Math.sqrt(dLat*dLat + dLng*dLng);
-        
-        let newLat = transit.target_lat;
-        let newLng = transit.target_lng;
-        let hasArrived = false;
+      for (const t of transits) {
+        const dLat = t.target_lat - t.current_latitude;
+        const dLng = t.target_lng - t.current_longitude;
+        const dist = Math.sqrt(dLat * dLat + dLng * dLng);
+        const hasArrived = dist <= STEP;
 
-        if (dist > speed) {
-          dLat = (dLat / dist) * speed;
-          dLng = (dLng / dist) * speed;
-          newLat = transit.current_latitude + dLat;
-          newLng = transit.current_longitude + dLng;
-        } else {
-          hasArrived = true;
-        }
-        
-        // Update ambulance coordinates in DB
+        const newLat = hasArrived ? t.target_lat : t.current_latitude + (dLat / dist) * STEP;
+        const newLng = hasArrived ? t.target_lng : t.current_longitude + (dLng / dist) * STEP;
         const ambStatus = hasArrived ? 'at-hospital' : 'transporting';
+
         await db.query(
           'UPDATE ambulances SET current_latitude = $1, current_longitude = $2, status = $3, last_ping = CURRENT_TIMESTAMP WHERE id = $4',
-          [newLat, newLng, ambStatus, transit.ambulance_id]
+          [newLat, newLng, ambStatus, t.ambulance_id]
         );
-        
-        // Broadcast location update
         io.emit('ambulance_location_update', {
-          id: transit.ambulance_id,
-          current_latitude: newLat,
-          current_longitude: newLng,
-          status: ambStatus
+          id: t.ambulance_id, current_latitude: newLat, current_longitude: newLng, status: ambStatus,
         });
 
-        // If ambulance reached destination, automatically transition case to arrived
-        if (hasArrived) {
-          const caseRes = await db.query(
-            'UPDATE emergency_cases SET status = \'arrived\' WHERE id = $1 RETURNING *',
-            [transit.case_id]
+        if (!hasArrived) continue;
+
+        const bedType = t.bed_type_assigned || (t.trauma_level >= 4 ? 'icu' : 'general');
+        const { updatedCase, touched } = await withTransaction(async (tx) => {
+          // Only transition if still in-transit (guards against a manual "arrived" landing first).
+          const upd = await tx.query(
+            "UPDATE emergency_cases SET status = 'arrived' WHERE id = $1 AND status = 'in-transit' RETURNING *",
+            [t.case_id]
           );
-
-          const bedType = transit.bed_type_assigned || (transit.trauma_level >= 4 ? 'icu' : 'general');
-
-          // Convert the held "incoming" bed into an occupied one.
-          await applyCaseTransition(io, {
+          if (upd.rows.length === 0) return { updatedCase: null, touched: new Set() };
+          const touched = await applyCaseTransition(tx, {
             oldStatus: 'in-transit',
             newStatus: 'arrived',
-            oldHospitalId: transit.assigned_hospital_id,
-            newHospitalId: transit.assigned_hospital_id,
+            oldHospitalId: t.assigned_hospital_id,
+            newHospitalId: t.assigned_hospital_id,
             oldBedType: bedType,
             newBedType: bedType,
           });
+          return { updatedCase: upd.rows[0], touched };
+        });
 
-          if (caseRes.rows.length > 0) {
-            io.emit('emergency_status_update', caseRes.rows[0]);
-          }
-        }
+        await emitHospitalCapacity(db, io, touched);
+        if (updatedCase) io.emit('emergency_status_update', updatedCase);
       }
     } catch (err) {
-      console.error('Simulator error:', err);
+      console.error('Simulator error:', err.message);
+    } finally {
+      running = false;
     }
-  }, 2000);
+  }, TICK_MS);
 }
 
 module.exports = startSimulator;

@@ -63,22 +63,27 @@ docker-compose up -d
    ```bash
    npm install
    ```
-2. **Seed all 2,500 real Ghana facilities across all 16 regions:**
+2. **Configure environment:** copy `backend/.env.example` to `backend/.env` and fill in
+   `DATABASE_URL` (or the `POSTGRES_*` parts) and `JWT_SECRET`. In production the
+   backend refuses to start without `JWT_SECRET` and `CORS_ORIGINS`. Set
+   `ENABLE_SIMULATOR=true` on exactly one instance to run the GPS simulator.
+   Run the backend test suite any time with `npm test --workspace=backend`.
+3. **Seed all 2,500 real Ghana facilities across all 16 regions:**
    ```bash
    cd backend
    npm run seed:hotosm
    # Or with clear flag:
    node src/db/seed_hotosm_facilities.js --clear
    ```
-3. **Seed default authentication accounts:**
+4. **Seed default authentication accounts:**
    ```bash
    node src/db/seed_users.js
    ```
-4. **Seed historical cases (for analytics dashboards):**
+5. **Seed historical cases (for analytics dashboards):**
    ```bash
    node src/db/seed_analytics.js
    ```
-5. **Start the backend development server:**
+6. **Start the backend development server:**
    ```bash
    npm run dev
    # Or from root: npm run dev:backend
@@ -186,6 +191,6 @@ For final year project examination, presentation, and viva voce evaluation:
    - In the **Health Authority Portal** (`/authority`), click **"Official GHS Audit Dossier"** to open and print the statutory PDF dossier formatted with official Republic of Ghana and GHS headers.
 
 5. **Defense Documentation:**
-   - Master Capstone Defense Guide & Viva Voce Q&A: [`PROJECT_DEFENSE_DOSSIER.md`](PROJECT_DEFENSE_DOSSIER.md)
-   - Formal Mathematical Specification: [`ALGORITHMS.md`](ALGORITHMS.md)
+   - Master Capstone Defense Guide & Viva Voce Q&A: [`docs/PROJECT_DEFENSE_DOSSIER.md`](docs/PROJECT_DEFENSE_DOSSIER.md)
+   - Formal Mathematical Specification: [`docs/ALGORITHMS.md`](docs/ALGORITHMS.md)
 
