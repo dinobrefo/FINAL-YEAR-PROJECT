@@ -84,13 +84,48 @@ router.post('/login', async (req, res) => {
 // Get hospital logins (for demo purposes)
 router.get('/hospital-logins', async (req, res) => {
   try {
-    const result = await db.query(`
-      SELECT u.email, h.name as hospital_name 
+    const { region, search, limit = 200 } = req.query;
+    let query = `
+      SELECT u.email, h.name as hospital_name, h.region, h.id as hospital_id,
+             h.total_general_beds, h.total_icu_beds
       FROM users u 
       JOIN hospitals h ON u.hospital_id = h.id 
       WHERE u.role = 'hospital'
-      ORDER BY h.name
-    `);
+    `;
+    const params = [];
+    let paramIndex = 1;
+
+    if (region && region !== 'all' && region !== 'All') {
+      query += ` AND LOWER(h.region) = LOWER($${paramIndex})`;
+      params.push(region);
+      paramIndex++;
+    }
+
+    if (search) {
+      query += ` AND (LOWER(h.name) LIKE LOWER($${paramIndex}) OR LOWER(u.email) LIKE LOWER($${paramIndex}))`;
+      params.push(`%${search}%`);
+      paramIndex++;
+    }
+
+    query += `
+      ORDER BY 
+        CASE 
+          WHEN h.name ILIKE '%teaching%' THEN 1
+          WHEN h.name ILIKE '%regional%' THEN 2
+          WHEN h.name ILIKE '%military%' THEN 3
+          WHEN h.total_general_beds > 100 THEN 4
+          ELSE 5
+        END,
+        h.total_general_beds DESC,
+        h.name ASC
+    `;
+
+    if (limit && Number(limit) > 0) {
+      query += ` LIMIT $${paramIndex}`;
+      params.push(Number(limit));
+    }
+
+    const result = await db.query(query, params);
     res.json(result.rows);
   } catch (err) {
     console.error(err);

@@ -19,8 +19,39 @@ export const HospitalDashboard: React.FC = () => {
   const { emergencies, hospitals, ambulances, updateEmergencyLocally } = useRealTime();
 
   const [vizMode, setVizMode] = React.useState<"3d" | "2d">("3d");
+  const [dbHospital, setDbHospital] = React.useState<any>(null);
 
-  const hospital = hospitals.find(h => h.id === hospitalId) || hospitals[0] || {
+  React.useEffect(() => {
+    if (hospitalId && !hospitals.some(h => h.id === hospitalId)) {
+      fetch(`/api/hospitals/${hospitalId}`)
+        .then(res => res.ok ? res.json() : null)
+        .then(data => {
+          if (data) {
+            const totalGen = Number(data.total_general_beds ?? 50);
+            const occGen = Number(data.occupied_general_beds ?? 0);
+            const totalIcu = Number(data.total_icu_beds ?? 10);
+            const occIcu = Number(data.occupied_icu_beds ?? 0);
+            setDbHospital({
+              id: String(data.id),
+              name: data.name,
+              totalBeds: totalGen,
+              availableBeds: Math.max(0, totalGen - occGen),
+              reservedBeds: 0,
+              icuBeds: {
+                total: totalIcu,
+                available: Math.max(0, totalIcu - occIcu),
+                reserved: 0
+              },
+              specialists: data.specialists || ["General Practitioner", "Emergency Medicine"],
+              equipment: data.equipment || { ventilators: 5, ctScanners: 1, mriMachines: 0, oxygenUnits: 15 }
+            });
+          }
+        })
+        .catch(err => console.error("Error fetching single hospital", err));
+    }
+  }, [hospitalId, hospitals]);
+
+  const hospital = hospitals.find(h => h.id === hospitalId) || dbHospital || hospitals[0] || {
     id: "h1",
     name: "Ridge Hospital",
     availableBeds: 50,
@@ -57,14 +88,38 @@ export const HospitalDashboard: React.FC = () => {
   };
 
   const generalReserved = hospital.reservedBeds ?? 0;
-  const icuReserved = hospital.icuBeds.reserved ?? 0;
-  const generalTotal = hospital.totalBeds - hospital.icuBeds.total;
+  const icuReserved = hospital.icuBeds?.reserved ?? 0;
+  const icuTotal = hospital.icuBeds?.total || 10;
+  const icuAvail = hospital.icuBeds?.available ?? 2;
+  const generalTotal = Math.max(10, hospital.totalBeds - icuTotal);
+  const generalAvail = hospital.availableBeds;
+  const generalOcc = Math.max(0, generalTotal - generalAvail - generalReserved);
+  const icuOcc = Math.max(0, icuTotal - icuAvail - icuReserved);
+
+  // Proportional ward distribution based on this facility's actual size:
+  const erTotal = Math.max(6, Math.round(hospital.totalBeds * 0.15));
+  const erAvail = Math.max(1, Math.round(erTotal * 0.35));
+  const erOcc = Math.max(0, erTotal - erAvail);
+
+  const surgTotal = Math.max(6, Math.round(hospital.totalBeds * 0.20));
+  const surgAvail = Math.max(1, Math.round(surgTotal * 0.25));
+  const surgOcc = Math.max(0, surgTotal - surgAvail);
+
+  const matTotal = Math.max(6, Math.round(hospital.totalBeds * 0.15));
+  const matAvail = Math.max(1, Math.round(matTotal * 0.30));
+  const matOcc = Math.max(0, matTotal - matAvail);
+
+  const pedTotal = Math.max(4, Math.round(hospital.totalBeds * 0.10));
+  const pedAvail = Math.max(1, Math.round(pedTotal * 0.40));
+  const pedOcc = Math.max(0, pedTotal - pedAvail);
 
   const bedData = [
-    { name: "General", total: generalTotal, occupied: Math.max(0, generalTotal - hospital.availableBeds - generalReserved), incoming: generalReserved, available: hospital.availableBeds },
-    { name: "ICU", total: hospital.icuBeds.total, occupied: Math.max(0, hospital.icuBeds.total - hospital.icuBeds.available - icuReserved), incoming: icuReserved, available: hospital.icuBeds.available },
-    { name: "ER Queue", total: 40, occupied: 28, incoming: 0, available: 12 },
-    { name: "Maternity", total: 30, occupied: 22, incoming: 0, available: 8 },
+    { name: "General Ward", shortName: "General", total: generalTotal, occupied: generalOcc, incoming: generalReserved, available: generalAvail },
+    { name: "ICU Bay", shortName: "ICU Bay", total: icuTotal, occupied: icuOcc, incoming: icuReserved, available: icuAvail },
+    { name: "ER Trauma Bay", shortName: "Trauma Bay", total: erTotal, occupied: erOcc, incoming: 0, available: erAvail },
+    { name: "Surgical Ward", shortName: "Surgical", total: surgTotal, occupied: surgOcc, incoming: 0, available: surgAvail },
+    { name: "Maternity", shortName: "Maternity", total: matTotal, occupied: matOcc, incoming: 0, available: matAvail },
+    { name: "Pediatrics", shortName: "Pediatrics", total: pedTotal, occupied: pedOcc, incoming: 0, available: pedAvail },
   ];
 
   const occupancyRate = Math.round((hospital.totalBeds - hospital.availableBeds) / hospital.totalBeds * 100);
@@ -103,7 +158,7 @@ export const HospitalDashboard: React.FC = () => {
       <CardContent>
         {vizMode === "3d" ? (
           <div className="w-full rounded-xl overflow-hidden border border-border bg-slate-100 dark:bg-slate-950/60 p-2">
-            <HospitalCapacityMesh hospitals={hospitals} height={340} />
+            <HospitalCapacityMesh wards={bedData} hospitalName={hospital.name} height={340} />
           </div>
         ) : (
           <ResponsiveContainer width="100%" height={300}>

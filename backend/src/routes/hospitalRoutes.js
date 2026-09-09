@@ -78,6 +78,21 @@ router.get('/', async (req, res) => {
   }
 });
 
+// Get single hospital by ID
+router.get('/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const result = await db.query('SELECT * FROM hospitals WHERE id = $1', [id]);
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Hospital not found' });
+    }
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error('Error fetching hospital by id:', err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 // Add a new hospital
 router.post('/', async (req, res) => {
   const { name, latitude, longitude, total_general_beds, total_icu_beds } = req.body;

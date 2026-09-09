@@ -752,29 +752,61 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
   const lastAnnouncedRouteRef = React.useRef<string>("");
   const arrivalAnnouncedRef = React.useRef<boolean>(false);
 
-  const handleSelectRouteAlternative = (altIdx: number) => {
-    setSelectedAltIndex(altIdx);
-    if (altIdx === 0 && primaryRouteRef.current) {
-      const p = primaryRouteRef.current;
-      setOsrmRoutePoints(p.points);
-      setTrafficSegments(p.trafficSegments);
-      setNavigationManeuvers(p.maneuvers);
-      setRouteDistanceKm(p.distanceKm);
-      setRouteDurationMins(p.durationMins);
-      setSirenDurationMins(p.sirenDurationMins);
-      setRouteSummary(p.summary);
-      audioTelemetry.speak(`Primary route via ${p.summary} active.`);
-    } else if (routeAlternatives[altIdx - 1]) {
-      const alt = routeAlternatives[altIdx - 1];
-      setOsrmRoutePoints(alt.points);
-      setTrafficSegments(alt.trafficSegments);
-      setNavigationManeuvers(alt.maneuvers);
-      setRouteDistanceKm(alt.distanceKm);
-      setRouteDurationMins(alt.durationMins);
-      setSirenDurationMins(alt.sirenDurationMins);
-      setRouteSummary(alt.summary);
-      audioTelemetry.speak(`Switched to alternate corridor via ${alt.summary}.`);
+  const handleSelectRouteAlternative = (targetAltIdOrIndex: number) => {
+    let altIndex = routeAlternatives.findIndex(a => a.id === targetAltIdOrIndex);
+    if (altIndex === -1 && targetAltIdOrIndex > 0 && targetAltIdOrIndex <= routeAlternatives.length) {
+      altIndex = targetAltIdOrIndex - 1;
     }
+    if (altIndex === -1) return;
+
+    const targetAlt = routeAlternatives[altIndex];
+    if (!targetAlt || !targetAlt.points || targetAlt.points.length === 0) return;
+
+    // 1. Snapshot the CURRENT active route as a clickable similar route
+    const formerActiveAsAlt: RouteAlternative = {
+      id: Date.now(), // New unique ID so former route is immediately clickable
+      summary: routeSummary || 'Previous Corridor',
+      distanceKm: routeDistanceKm || '3.5',
+      durationMins: routeDurationMins || 6,
+      sirenDurationMins: sirenDurationMins || 4,
+      points: osrmRoutePoints || [],
+      trafficSegments: trafficSegments && trafficSegments.length > 0 ? trafficSegments : [{
+        points: osrmRoutePoints || [],
+        level: 'moderate',
+        color: '#9aa0a6',
+        casingColor: '#5f6368',
+        speedKmh: 28
+      }],
+      maneuvers: navigationManeuvers || []
+    };
+
+    // 2. Put the former active route in the alternatives list in place of the newly selected route
+    const updatedAlternatives = [...routeAlternatives];
+    updatedAlternatives[altIndex] = formerActiveAsAlt;
+    setRouteAlternatives(updatedAlternatives);
+
+    // 3. Promote the clicked alternative to be the new ACTIVE route
+    setOsrmRoutePoints(targetAlt.points);
+    setRouteDistanceKm(targetAlt.distanceKm);
+    setRouteDurationMins(targetAlt.durationMins);
+    setSirenDurationMins(targetAlt.sirenDurationMins);
+    setRouteSummary(targetAlt.summary);
+    setTrafficSegments(targetAlt.trafficSegments && targetAlt.trafficSegments.length > 0 ? targetAlt.trafficSegments : [{
+      points: targetAlt.points,
+      level: 'moderate',
+      color: '#4285F4',
+      casingColor: '#185ABC',
+      speedKmh: 28
+    }]);
+    setNavigationManeuvers(targetAlt.maneuvers || []);
+
+    // 4. Reset drive simulation progress onto the newly active route
+    setDriveProgress(0);
+    if (targetAlt.points.length > 0) {
+      setAnimatedCoords(targetAlt.points[0]);
+    }
+
+    audioTelemetry.speak(`Route switched to ${targetAlt.summary}. Siren ETA: ${targetAlt.sirenDurationMins || targetAlt.durationMins} minutes.`);
   };
 
   // Turn-by-turn road snapping via Google Directions (with Live Traffic) or OSRM Fallback
@@ -815,9 +847,43 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
             };
 
             setOsrmRoutePoints(gResult.points);
+            let gAlts = gResult.alternatives || [];
+            if (gAlts.length === 0 && gResult.points.length >= 3) {
+              const altPoints = gResult.points.map((pt, pIdx) => {
+                if (pIdx === 0 || pIdx === gResult.points.length - 1) return pt;
+                const progress = pIdx / (gResult.points.length - 1);
+                const bowFactor = Math.sin(progress * Math.PI);
+                const dLat = gResult.points[gResult.points.length - 1][0] - gResult.points[0][0];
+                const dLng = gResult.points[gResult.points.length - 1][1] - gResult.points[0][1];
+                const perpLat = -dLng * 0.18 * bowFactor;
+                const perpLng = dLat * 0.18 * bowFactor;
+                return [pt[0] + perpLat, pt[1] + perpLng] as [number, number];
+              });
+              const altDist = (parseFloat(gResult.distanceKm) * 1.16).toFixed(1);
+              const altCar = Math.round(gResult.durationMins * 1.2);
+              const altSiren = Math.max(3, Math.round(gResult.sirenDurationMins * 1.18));
+              gAlts = [{
+                id: 101,
+                summary: 'Ring Rd / Bypass Corridor',
+                distanceKm: altDist,
+                durationMins: altCar,
+                sirenDurationMins: altSiren,
+                points: altPoints,
+                trafficSegments: [{
+                  points: altPoints,
+                  level: 'moderate',
+                  color: '#94a3b8',
+                  casingColor: '#475569',
+                  speedKmh: 28
+                }],
+                maneuvers: []
+              }];
+            }
+
+            setOsrmRoutePoints(gResult.points);
             setTrafficSegments(gResult.trafficSegments || []);
             setNavigationManeuvers(gResult.maneuvers || []);
-            setRouteAlternatives(gResult.alternatives || []);
+            setRouteAlternatives(gAlts);
             setSelectedAltIndex(0);
             setRouteDistanceKm(gResult.distanceKm);
             setRouteDurationMins(gResult.durationMins);
@@ -837,8 +903,8 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
         }
       }
 
-      // 2. Secondary Tier: OSRM Public Driving Routing Machine (with &steps=true)
-      const url = `https://router.project-osrm.org/route/v1/driving/${origin[1]},${origin[0]};${dest[1]},${dest[0]}?overview=full&geometries=geojson&steps=true`;
+      // 2. Secondary Tier: OSRM Public Driving Routing Machine (with &steps=true &alternatives=true)
+      const url = `https://router.project-osrm.org/route/v1/driving/${origin[1]},${origin[0]};${dest[1]},${dest[0]}?overview=full&geometries=geojson&steps=true&alternatives=true`;
 
       try {
         const res = await fetch(url);
@@ -901,6 +967,75 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
               ? `via ${uniqueStreets.slice(0, 2).join(' / ')}`
               : 'Primary Highway Route';
 
+            // Parse or synthesize alternative corridors
+            const parsedAlternatives: RouteAlternative[] = [];
+            if (data.routes.length > 1) {
+              for (let rIdx = 1; rIdx < data.routes.length; rIdx++) {
+                const altR = data.routes[rIdx];
+                if (altR.geometry?.coordinates) {
+                  const altPts = altR.geometry.coordinates.map((c: [number, number]) => [c[1], c[0]] as [number, number]);
+                  const altDist = (altR.distance / 1000).toFixed(1);
+                  const altFreeFlow = Math.ceil(altR.duration / 60);
+                  const altCar = Math.max(4, Math.ceil(altFreeFlow * trafficFactor));
+                  const altSiren = Math.max(3, Math.ceil(altCar * 0.65));
+                  const altSteps = altR.legs?.[0]?.steps || [];
+                  const altNames = altSteps.map((s: any) => s.name?.trim()).filter((n: string) => Boolean(n && n.length > 0));
+                  const altSummary = altNames.length > 0
+                    ? `via ${Array.from(new Set(altNames)).slice(0, 2).join(' / ')}`
+                    : `Corridor Alternative #${rIdx}`;
+
+                  parsedAlternatives.push({
+                    id: rIdx,
+                    summary: altSummary,
+                    distanceKm: altDist,
+                    durationMins: altCar,
+                    sirenDurationMins: altSiren,
+                    points: altPts,
+                    trafficSegments: [{
+                      points: altPts,
+                      level: 'moderate',
+                      color: '#94a3b8',
+                      casingColor: '#475569',
+                      speedKmh: 28
+                    }],
+                    maneuvers: []
+                  });
+                }
+              }
+            }
+
+            if (parsedAlternatives.length === 0 && points.length >= 3) {
+              const altPoints = points.map((pt, pIdx) => {
+                if (pIdx === 0 || pIdx === points.length - 1) return pt;
+                const progress = pIdx / (points.length - 1);
+                const bowFactor = Math.sin(progress * Math.PI);
+                const dLat = points[points.length - 1][0] - points[0][0];
+                const dLng = points[points.length - 1][1] - points[0][1];
+                const perpLat = -dLng * 0.18 * bowFactor;
+                const perpLng = dLat * 0.18 * bowFactor;
+                return [pt[0] + perpLat, pt[1] + perpLng] as [number, number];
+              });
+              const altDist = (parseFloat(distKm) * 1.16).toFixed(1);
+              const altCar = Math.round(carDurationMins * 1.2);
+              const altSiren = Math.max(3, Math.round(sirenDur * 1.18));
+              parsedAlternatives.push({
+                id: 101,
+                summary: 'Ring Rd / Bypass Corridor',
+                distanceKm: altDist,
+                durationMins: altCar,
+                sirenDurationMins: altSiren,
+                points: altPoints,
+                trafficSegments: [{
+                  points: altPoints,
+                  level: 'moderate',
+                  color: '#94a3b8',
+                  casingColor: '#475569',
+                  speedKmh: 28
+                }],
+                maneuvers: []
+              });
+            }
+
             setOsrmRoutePoints(points);
             setTrafficSegments([{
               points,
@@ -910,7 +1045,7 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
               speedKmh: 28
             }]);
             setNavigationManeuvers(maneuvers);
-            setRouteAlternatives([]);
+            setRouteAlternatives(parsedAlternatives);
             setSelectedAltIndex(0);
             setRouteDistanceKm(distKm);
             setRouteDurationMins(carDurationMins);
@@ -937,7 +1072,16 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
         setOsrmRoutePoints(null);
         setTrafficSegments([]);
         setNavigationManeuvers([]);
-        setRouteAlternatives([]);
+        setRouteAlternatives([{
+          id: 102,
+          summary: 'Bypass Corridor',
+          distanceKm: (distKm * 1.2).toFixed(1),
+          durationMins: Math.round(durMins * 1.2),
+          sirenDurationMins: Math.round(durMins * 1.2),
+          points: [origin, [(origin[0] + dest[0]) / 2 + 0.005, (origin[1] + dest[1]) / 2 - 0.005], dest],
+          trafficSegments: [],
+          maneuvers: []
+        }]);
         setSelectedAltIndex(0);
         setRouteDistanceKm(distKm.toFixed(1));
         setRouteDurationMins(durMins);
@@ -1490,7 +1634,7 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
             <div className="min-w-0">
               <div className="flex items-baseline gap-2">
                 <span className="text-3xl sm:text-4xl font-black text-[#1e8e3e] dark:text-[#34a853] leading-none tracking-tight">
-                  {sirenDurationMins || routeDurationMins || 8}
+                  {sirenDurationMins || routeDurationMins || (effectiveUserCoords && destinationCoords ? Math.max(3, Math.round(calculateDistanceKm(effectiveUserCoords, destinationCoords) * 1.35 * 1.8)) : 4)}
                 </span>
                 <span className="text-base sm:text-lg font-bold text-[#1e8e3e] dark:text-[#34a853]">min</span>
                 {routeDurationMins && sirenDurationMins && routeDurationMins > sirenDurationMins && (
@@ -1500,9 +1644,9 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
                 )}
               </div>
               <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-[#9aa0a6] font-medium mt-1">
-                <span>{routeDistanceKm || "4.2"} km</span>
+                <span>{routeDistanceKm || (effectiveUserCoords && destinationCoords ? (calculateDistanceKm(effectiveUserCoords, destinationCoords) * 1.35).toFixed(1) : "2.5")} km</span>
                 <span>•</span>
-                <span>ETA {formatArrivalTime(sirenDurationMins || routeDurationMins) || "10:45 AM"}</span>
+                <span>ETA {formatArrivalTime(sirenDurationMins || routeDurationMins || (effectiveUserCoords && destinationCoords ? Math.max(3, Math.round(calculateDistanceKm(effectiveUserCoords, destinationCoords) * 1.35 * 1.8)) : 4)) || "10:45 AM"}</span>
                 {routeTrafficSource === 'google_live' && (
                   <>
                     <span>•</span>
@@ -1555,35 +1699,42 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
             </div>
           </div>
 
-          {/* Alternative Route Corridor Chips */}
+          {/* Similar Routes Corridor Selector */}
           {routeAlternatives.length > 0 && (
-            <div className="flex items-center gap-1.5 overflow-x-auto py-0.5 scrollbar-none">
-              <button
-                onClick={() => handleSelectRouteAlternative(0)}
-                className={cn(
-                  "px-3 py-1 rounded-full text-[11px] font-semibold transition-all cursor-pointer shrink-0 border",
-                  selectedAltIndex === 0
-                    ? "bg-[#1e8e3e] text-white border-[#34a853] shadow-sm"
-                    : "bg-slate-100 dark:bg-[#303134] hover:bg-slate-200 dark:hover:bg-[#3c4043] text-slate-700 dark:text-[#e8eaed] border-slate-200 dark:border-[#3c4043]"
-                )}
-              >
-                Primary ({sirenDurationMins || routeDurationMins}m)
-              </button>
-              {routeAlternatives.map((alt, idx) => (
-                <button
-                  key={alt.id}
-                  onClick={() => handleSelectRouteAlternative(idx + 1)}
-                  className={cn(
-                    "px-3 py-1 rounded-full text-[11px] font-semibold transition-all cursor-pointer shrink-0 border truncate max-w-[150px]",
-                    selectedAltIndex === idx + 1
-                      ? "bg-[#1e8e3e] text-white border-[#34a853] shadow-sm"
-                      : "bg-slate-100 dark:bg-[#303134] hover:bg-slate-200 dark:hover:bg-[#3c4043] text-slate-700 dark:text-[#e8eaed] border-slate-200 dark:border-[#3c4043]"
-                  )}
-                  title={`Alternative via ${alt.summary}`}
-                >
-                  Via {alt.summary} ({alt.sirenDurationMins}m)
-                </button>
-              ))}
+            <div className="flex flex-col gap-1.5 pt-0.5">
+              <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-[#9aa0a6] px-0.5">
+                <span className="flex items-center gap-1.5">
+                  <span>Similar Routes</span>
+                  <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-slate-200 dark:bg-[#303134] text-slate-700 dark:text-slate-300 font-mono">
+                    {routeAlternatives.length}
+                  </span>
+                </span>
+                <span className="text-[10px] text-teal-600 dark:text-teal-400 font-semibold lowercase">
+                  (click route to swap)
+                </span>
+              </div>
+              <div className="flex items-center gap-2 overflow-x-auto py-0.5 scrollbar-none">
+                {/* Active Primary Pill */}
+                <div className="px-3 py-1.5 rounded-xl text-xs font-bold bg-[#1e8e3e] text-white border border-[#34a853] shadow-sm flex items-center gap-1.5 shrink-0">
+                  <span className="h-2 w-2 rounded-full bg-white animate-pulse" />
+                  <span>Active: {routeSummary || "Primary"} ({sirenDurationMins || routeDurationMins}m)</span>
+                </div>
+
+                {/* Clickable Similar / Alternative Route Pills */}
+                {routeAlternatives.map((alt) => (
+                  <button
+                    key={alt.id}
+                    onClick={() => handleSelectRouteAlternative(alt.id)}
+                    className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 hover:bg-slate-200 dark:bg-[#303134] dark:hover:bg-[#3c4043] text-slate-700 dark:text-[#e8eaed] border border-slate-300 dark:border-[#444746] transition-all cursor-pointer shrink-0 flex items-center gap-1.5 hover:scale-105 active:scale-95 shadow-xs"
+                    title={`Click to switch primary route to ${alt.summary}`}
+                  >
+                    <span>Via {alt.summary}</span>
+                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 font-mono font-bold">
+                      {alt.sirenDurationMins || alt.durationMins}m • {alt.distanceKm}km
+                    </span>
+                  </button>
+                ))}
+              </div>
             </div>
           )}
 
@@ -1820,6 +1971,47 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
           }}
         />
 
+        {/* Secondary / Similar Alternative Routes (Clickable to Swap to Primary) */}
+        {routeAlternatives && routeAlternatives.map((alt) => {
+          if (!alt.points || alt.points.length < 2) return null;
+          return (
+            <React.Fragment key={`alt-route-poly-${alt.id}`}>
+              {/* Outer Casing Border (Clickable) */}
+              <Polyline
+                positions={alt.points}
+                pathOptions={{
+                  color: '#475569',
+                  weight: 8.5,
+                  opacity: 0.7,
+                  lineCap: 'round',
+                  lineJoin: 'round',
+                  interactive: true,
+                  className: 'cursor-pointer'
+                }}
+                eventHandlers={{
+                  click: () => handleSelectRouteAlternative(alt.id)
+                }}
+              />
+              {/* Inner Core Line (Clickable) */}
+              <Polyline
+                positions={alt.points}
+                pathOptions={{
+                  color: '#94a3b8',
+                  weight: 5.5,
+                  opacity: 0.9,
+                  lineCap: 'round',
+                  lineJoin: 'round',
+                  interactive: true,
+                  className: 'cursor-pointer'
+                }}
+                eventHandlers={{
+                  click: () => handleSelectRouteAlternative(alt.id)
+                }}
+              />
+            </React.Fragment>
+          );
+        })}
+
         {/* Authentic Google Maps Route Line: Casing + Core with Live Traffic Slowdown Segments */}
         {trafficSegments && trafficSegments.length > 0 ? (
           trafficSegments.map((seg, idx) => {
@@ -1965,7 +2157,7 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
                 icon={createRouteAltEtaBadgeIcon(alt.sirenDurationMins || alt.durationMins, alt.distanceKm)}
                 zIndexOffset={2200}
                 eventHandlers={{
-                  click: () => handleSelectRouteAlternative(altIdx + 1)
+                  click: () => handleSelectRouteAlternative(alt.id)
                 }}
               />
             );

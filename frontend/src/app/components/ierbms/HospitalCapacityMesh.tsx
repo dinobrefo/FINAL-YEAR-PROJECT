@@ -20,13 +20,65 @@ export interface HospitalCapacityItem {
   equipment?: Record<string, number>;
 }
 
+export interface WardCapacityData {
+  id?: string;
+  name: string;
+  shortName?: string;
+  total: number;
+  occupied: number;
+  incoming?: number;
+  available: number;
+}
+
 export interface HospitalCapacityMeshProps {
   hospitals?: any[];
   analyticsData?: any;
+  wards?: WardCapacityData[];
+  hospitalName?: string;
   height?: number | string;
 }
 
-export const parseHospitalCapacity = (hospitals?: any[], analyticsData?: any): HospitalCapacityItem[] => {
+export const parseHospitalCapacity = (
+  hospitals?: any[],
+  analyticsData?: any,
+  wards?: WardCapacityData[],
+  hospitalName?: string
+): HospitalCapacityItem[] => {
+  if (wards && Array.isArray(wards) && wards.length > 0) {
+    return wards.map((w, idx) => {
+      const total = Number(w.total || 10);
+      const avail = Number(w.available ?? Math.max(0, total - w.occupied));
+      const occ = Number(w.occupied ?? Math.max(0, total - avail));
+      const incoming = Number(w.incoming || 0);
+      const occRate = Math.min(100, Math.max(0, Math.round((occ / Math.max(1, total)) * 100)));
+      const incomingRate = Math.min(100, Math.max(0, Math.round((incoming / Math.max(1, total)) * 100)));
+
+      const color = occRate > 85 ? "#ef4444" : occRate > 60 ? "#f59e0b" : "#10b981";
+      const icuColor = incoming > 0 ? "#a855f7" : "#06b6d4";
+      const status = occRate > 85 ? "Critical" : occRate > 60 ? "Moderate" : "Optimal";
+
+      const shortName = w.shortName || w.name;
+
+      return {
+        id: w.id || `ward-${idx}`,
+        name: w.name,
+        shortName: shortName.length > 12 ? shortName.substring(0, 11) + "…" : shortName,
+        region: hospitalName || "Internal Ward",
+        totalBeds: total,
+        availableBeds: avail,
+        occupiedBeds: occ,
+        occupancyRate: occRate,
+        icuTotal: incoming > 0 ? incoming : avail,
+        icuAvailable: avail,
+        icuOccupied: incoming,
+        icuOccupancy: incomingRate > 0 ? incomingRate : Math.min(100, Math.round((avail / Math.max(1, total)) * 100)),
+        color,
+        icuColor,
+        status
+      };
+    });
+  }
+
   if (hospitals && Array.isArray(hospitals) && hospitals.length > 0) {
     const sorted = [...hospitals]
       .filter(h => (h.totalBeds || h.total_general_beds || 0) > 0)
@@ -104,13 +156,15 @@ export const parseHospitalCapacity = (hospitals?: any[], analyticsData?: any): H
   return [];
 };
 
-export const HospitalCapacityMesh: React.FC<HospitalCapacityMeshProps> = ({ hospitals, analyticsData }) => {
-  const data = React.useMemo(() => parseHospitalCapacity(hospitals, analyticsData), [hospitals, analyticsData]);
+export const HospitalCapacityMesh: React.FC<HospitalCapacityMeshProps> = ({ hospitals, analyticsData, wards, hospitalName }) => {
+  const isWardMode = Boolean(wards && wards.length > 0);
+  const data = React.useMemo(() => parseHospitalCapacity(hospitals, analyticsData, wards, hospitalName), [hospitals, analyticsData, wards, hospitalName]);
   const [selectedItem, setSelectedItem] = React.useState<HospitalCapacityItem | null>(null);
 
   const totalBeds = data.reduce((acc, d) => acc + d.totalBeds, 0);
   const totalFreeGen = data.reduce((acc, d) => acc + d.availableBeds, 0);
   const totalFreeIcu = data.reduce((acc, d) => acc + d.icuAvailable, 0);
+  const totalHolds = data.reduce((acc, d) => acc + d.icuOccupied, 0);
   const avgOccupancy = data.length > 0 ? Math.round(data.reduce((acc, d) => acc + d.occupancyRate, 0) / data.length) : 0;
 
   if (data.length === 0) {
@@ -139,26 +193,30 @@ export const HospitalCapacityMesh: React.FC<HospitalCapacityMeshProps> = ({ hosp
               <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-600 dark:bg-emerald-500"></span>
             </span>
             <span className="text-xs font-semibold tracking-wider uppercase text-emerald-600 dark:text-emerald-400">
-              Hospital Capacity Mesh
+              {isWardMode ? (hospitalName ? `${hospitalName} — Ward Mesh` : "Department Ward Mesh") : "Hospital Capacity Mesh"}
             </span>
           </div>
           <div className="hidden sm:flex items-center gap-3 text-[11px] text-slate-500 dark:text-slate-400 pl-2 border-l border-slate-200 dark:border-slate-800">
             <span>Total Beds: <strong className="text-slate-800 dark:text-slate-200">{totalBeds}</strong></span>
-            <span>Free ER: <strong className="text-emerald-600 dark:text-emerald-400">{totalFreeGen}</strong></span>
-            <span>Free ICU: <strong className="text-cyan-600 dark:text-cyan-400">{totalFreeIcu}</strong></span>
+            <span>Free {isWardMode ? "Beds" : "ER"}: <strong className="text-emerald-600 dark:text-emerald-400">{totalFreeGen}</strong></span>
+            {isWardMode ? (
+              <span>Holds: <strong className="text-purple-600 dark:text-purple-400">{totalHolds}</strong></span>
+            ) : (
+              <span>Free ICU: <strong className="text-cyan-600 dark:text-cyan-400">{totalFreeIcu}</strong></span>
+            )}
             <span>Load: <strong className={avgOccupancy > 80 ? "text-red-600 dark:text-red-400" : "text-amber-600 dark:text-amber-400"}>{avgOccupancy}%</strong></span>
           </div>
         </div>
 
         <div className="flex items-center gap-2 text-[11px] text-slate-500 dark:text-slate-400">
           <span className="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 font-mono">
-            {data.length} Monitored Centers
+            {isWardMode ? `${data.length} Internal Wards` : `${data.length} Monitored Centers`}
           </span>
         </div>
       </div>
 
       {/* 2.5D Isometric Capacity Grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2.5 py-4 items-end justify-between flex-1">
+      <div className={`${data.length <= 6 ? "grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6" : "grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8"} gap-2.5 py-4 items-end justify-between flex-1`}>
         {data.map((item) => {
           const isSelected = selectedItem?.id === item.id;
           const genHeightPct = Math.max(14, item.occupancyRate);
@@ -192,7 +250,7 @@ export const HospitalCapacityMesh: React.FC<HospitalCapacityMeshProps> = ({ hosp
                   <span className="text-[9px] text-slate-500 dark:text-slate-400 mt-1 font-mono font-medium">{item.occupancyRate}%</span>
                 </div>
 
-                {/* Critical ICU Bed Tower */}
+                {/* Critical ICU / Hold Bed Tower */}
                 <div className="w-1/2 flex flex-col items-center justify-end h-full">
                   <div 
                     className="w-full rounded-t transition-all duration-500 relative group-hover:brightness-125"
@@ -204,11 +262,13 @@ export const HospitalCapacityMesh: React.FC<HospitalCapacityMeshProps> = ({ hosp
                   >
                     <div className="absolute inset-x-0 top-0 h-1 bg-white/40 rounded-t" />
                   </div>
-                  <span className="text-[9px] text-cyan-600 dark:text-cyan-400 mt-1 font-mono font-bold">{item.icuOccupancy}%</span>
+                  <span className={`text-[9px] ${isWardMode && item.icuTotal > 0 ? "text-purple-600 dark:text-purple-400" : "text-cyan-600 dark:text-cyan-400"} mt-1 font-mono font-bold`}>
+                    {item.icuOccupancy}%
+                  </span>
                 </div>
               </div>
 
-              {/* Hospital Title Label */}
+              {/* Title Label */}
               <div className="w-full text-center">
                 <p className="text-[10px] font-semibold text-slate-800 dark:text-slate-200 truncate leading-tight" title={item.name}>
                   {item.shortName}
@@ -232,11 +292,15 @@ export const HospitalCapacityMesh: React.FC<HospitalCapacityMeshProps> = ({ hosp
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-1.5">
             <span className="inline-block w-2.5 h-2.5 rounded-sm bg-emerald-500" />
-            <span className="text-[10px] text-slate-600 dark:text-slate-300">ER Beds (Left)</span>
+            <span className="text-[10px] text-slate-600 dark:text-slate-300">
+              {isWardMode ? "Occupied Beds" : "ER Beds (Left)"}
+            </span>
           </div>
           <div className="flex items-center gap-1.5">
-            <span className="inline-block w-2.5 h-2.5 rounded-sm bg-cyan-500" />
-            <span className="text-[10px] text-slate-600 dark:text-slate-300">ICU Beds (Right)</span>
+            <span className={`inline-block w-2.5 h-2.5 rounded-sm ${isWardMode ? "bg-purple-500" : "bg-cyan-500"}`} />
+            <span className="text-[10px] text-slate-600 dark:text-slate-300">
+              {isWardMode ? "Incoming / Available" : "ICU Beds (Right)"}
+            </span>
           </div>
           <div className="flex items-center gap-1.5">
             <span className="inline-block w-2.5 h-2.5 rounded-sm bg-red-500" />
@@ -247,8 +311,11 @@ export const HospitalCapacityMesh: React.FC<HospitalCapacityMeshProps> = ({ hosp
         {selectedItem ? (
           <div className="hidden sm:flex items-center gap-2 bg-slate-100 dark:bg-slate-900 px-2.5 py-1 rounded border border-slate-200 dark:border-slate-700 text-[11px] text-slate-700 dark:text-slate-200 animate-in fade-in">
             <span className="font-semibold text-slate-900 dark:text-white">{selectedItem.name}:</span>
-            <span>Gen: <strong className="text-emerald-600 dark:text-emerald-400">{selectedItem.availableBeds}/{selectedItem.totalBeds}</strong> free</span>
-            <span>ICU: <strong className="text-cyan-600 dark:text-cyan-400">{selectedItem.icuAvailable}/{selectedItem.icuTotal}</strong> free</span>
+            <span>Free: <strong className="text-emerald-600 dark:text-emerald-400">{selectedItem.availableBeds}/{selectedItem.totalBeds}</strong></span>
+            <span>Occupancy: <strong className={selectedItem.occupancyRate > 80 ? "text-red-600 dark:text-red-400" : "text-amber-600 dark:text-amber-400"}>{selectedItem.occupancyRate}%</strong></span>
+            {isWardMode && selectedItem.icuTotal > 0 && (
+              <span>Holds: <strong className="text-purple-600 dark:text-purple-400">{selectedItem.icuTotal}</strong></span>
+            )}
             <span className={`px-1.5 py-0.2 rounded text-[10px] ${
               selectedItem.status === "Optimal" ? "bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/40" :
               selectedItem.status === "Moderate" ? "bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/40" :
@@ -259,7 +326,7 @@ export const HospitalCapacityMesh: React.FC<HospitalCapacityMeshProps> = ({ hosp
           </div>
         ) : (
           <span className="text-[10px] text-slate-400 dark:text-slate-500 italic hidden sm:inline">
-            Click or hover over any hospital column for real-time triage metrics.
+            {isWardMode ? "Click or hover over any department ward column for real-time telemetry." : "Click or hover over any hospital column for real-time triage metrics."}
           </span>
         )}
       </div>
