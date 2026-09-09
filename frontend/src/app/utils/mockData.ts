@@ -5,22 +5,27 @@ export interface Emergency {
   patientName: string;
   severity: "critical" | "moderate" | "stable";
   emergencyType: string;
-  status: "active" | "in-transit" | "arrived" | "completed";
+  status: "active" | "in-transit" | "arrived" | "completed" | "resolved";
   location: {
     lat: number;
     lng: number;
     address: string;
   };
   assignedHospital?: string;
+  assignedHospitalName?: string;
   ambulanceId?: string;
+  ambulanceCallSign?: string;
   eta?: string;
   timestamp: Date;
+  resolvedAt?: Date;
   vitalSigns?: {
     heartRate: number;
     bloodPressure: string;
     oxygenSaturation: number;
     temperature: number;
   };
+  triageNotes?: string;
+  bedTypeAssigned?: string;
 }
 
 export interface Hospital {

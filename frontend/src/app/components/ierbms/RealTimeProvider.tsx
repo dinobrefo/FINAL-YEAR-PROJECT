@@ -104,9 +104,12 @@ export const RealTimeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             address: c.patient_vitals?.address || "Emergency Location"
           },
           timestamp: new Date(c.created_at || Date.now()),
+          resolvedAt: c.resolved_at ? new Date(c.resolved_at) : undefined,
           vitalSigns: c.patient_vitals,
           assignedHospital: c.assigned_hospital_id,
+          assignedHospitalName: c.hospital_name,
           ambulanceId: c.ambulance_id,
+          ambulanceCallSign: c.ambulance_call_sign,
           triageNotes: c.triage_notes,
           bedTypeAssigned: c.bed_type_assigned
         })));
@@ -249,6 +252,7 @@ export const RealTimeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         return {
           ...e,
           status,
+          ...(status === 'resolved' && !e.resolvedAt ? { resolvedAt: new Date() } : {}),
           ...(extra || {})
         };
       }

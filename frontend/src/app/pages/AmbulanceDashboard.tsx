@@ -232,7 +232,9 @@ export const AmbulanceDashboard: React.FC = () => {
                   {emergency.assignedHospital && (
                     <div>
                       <p className="text-xs text-muted-foreground mb-1">Hospital</p>
-                      <p className="text-sm font-semibold text-blue-500">{emergency.assignedHospital}</p>
+                      <p className="text-sm font-semibold text-blue-500 truncate">
+                        {hospitals.find(h => h.id === emergency.assignedHospital)?.name || emergency.assignedHospitalName || emergency.assignedHospital}
+                      </p>
                     </div>
                   )}
                 </div>
@@ -338,7 +340,7 @@ export const AmbulanceDashboard: React.FC = () => {
                 {emergency.assignedHospital && (
                   <div className="mt-2 text-xs text-muted-foreground flex items-center gap-1">
                     <MapPin className="h-3 w-3" />
-                    Dropped off at: <strong className="text-foreground">{emergency.assignedHospital}</strong>
+                    Dropped off at: <strong className="text-foreground">{hospitals.find(h => h.id === emergency.assignedHospital)?.name || emergency.assignedHospitalName || emergency.assignedHospital}</strong>
                   </div>
                 )}
               </div>
@@ -530,7 +532,7 @@ export const AmbulanceDashboard: React.FC = () => {
                       <div>
                         <span className="text-[10px] text-muted-foreground font-semibold uppercase block mb-0.5">Assigned Facility</span>
                         <p className="text-blue-400 font-semibold truncate">
-                          🏥 {emergency.assignedHospital || "Awaiting AI Match"}
+                          🏥 {hospitals.find(h => h.id === emergency.assignedHospital)?.name || emergency.assignedHospitalName || emergency.assignedHospital || "Awaiting AI Match"}
                         </p>
                       </div>
                     </div>
@@ -614,6 +616,20 @@ export const AmbulanceDashboard: React.FC = () => {
                             Complete Handover
                           </Button>
                         </div>
+                      </div>
+                    )}
+                    {isResolved && (
+                      <div className="pt-3 border-t border-border/40 flex items-center justify-between text-xs text-muted-foreground">
+                        <span className="flex items-center gap-1.5 text-emerald-500 font-semibold">
+                          <CheckCircle2 className="h-4 w-4" /> Handover Completed & Patient Admitted
+                        </span>
+                        <span>
+                          {emergency.resolvedAt 
+                            ? new Date(emergency.resolvedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                            : emergency.timestamp 
+                              ? new Date(emergency.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                              : 'Resolved'}
+                        </span>
                       </div>
                     )}
                   </CardContent>

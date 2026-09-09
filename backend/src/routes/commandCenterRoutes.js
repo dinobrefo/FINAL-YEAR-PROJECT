@@ -2,17 +2,31 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db');
 
-// Get city-wide overview (all hospitals, ambulances, active cases)
+// Get city-wide overview (all hospitals, ambulances, active & recent emergency cases)
 router.get('/overview', async (req, res) => {
-  const hospitals = await db.query('SELECT * FROM hospitals');
-  const ambulances = await db.query('SELECT * FROM ambulances');
-  const activeCases = await db.query("SELECT * FROM emergency_cases WHERE status != 'resolved'");
-  
-  res.json({
-    hospitals: hospitals.rows,
-    ambulances: ambulances.rows,
-    active_cases: activeCases.rows
-  });
+  try {
+    const hospitals = await db.query('SELECT * FROM hospitals');
+    const ambulances = await db.query('SELECT * FROM ambulances');
+    const cases = await db.query(`
+      SELECT ec.*, 
+             h.name as hospital_name, 
+             a.call_sign as ambulance_call_sign
+      FROM emergency_cases ec
+      LEFT JOIN hospitals h ON ec.assigned_hospital_id = h.id
+      LEFT JOIN ambulances a ON ec.ambulance_id = a.id
+      ORDER BY ec.created_at DESC
+      LIMIT 100
+    `);
+    
+    res.json({
+      hospitals: hospitals.rows,
+      ambulances: ambulances.rows,
+      active_cases: cases.rows
+    });
+  } catch (err) {
+    console.error('Error fetching overview:', err);
+    res.status(500).json({ error: 'Failed to fetch overview: ' + err.message });
+  }
 });
 
 // Get real-time analytics

@@ -2246,8 +2246,8 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
               );
             })}
 
-            {/* All Emergency Incidents */}
-            {emergencies.map(emergency => {
+            {/* All Active Emergency Incidents */}
+            {emergencies.filter(e => e.status !== 'resolved' && e.status !== 'completed').map(emergency => {
               const coords = extractCoordinates(emergency);
               if (!coords) return null;
               const isCritical = emergency.severity === 'critical';

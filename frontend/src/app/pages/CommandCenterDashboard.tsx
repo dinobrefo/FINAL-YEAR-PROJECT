@@ -15,7 +15,7 @@ export const CommandCenterDashboard: React.FC = () => {
   const { emergencies, hospitals, ambulances, updateEmergencyLocally } = useRealTime();
   const location = useLocation();
   const navigate = useNavigate();
-  const activeEmergencies = emergencies.filter(e => e.status !== "completed");
+  const activeEmergencies = emergencies.filter(e => e.status !== "completed" && e.status !== "resolved");
   const availableAmbulances = ambulances.filter(a => a.status === "available");
   const totalBeds = hospitals.reduce((sum, h) => sum + h.availableBeds, 0);
 
